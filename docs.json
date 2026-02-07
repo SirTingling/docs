@@ -117,7 +117,7 @@
       },
       {
         "tab": "AI Tools",
-        "icon": "sparkles",
+        "icon": "blocks",
         "groups": [
           {
             "group": "Integrations",
@@ -159,6 +159,6 @@
   },
 
   "contextual": {
-    "options": ["copy", "view"]
+    "options": ["copy", "view", "claude", "chatgpt", "cursor"]
   }
 }
