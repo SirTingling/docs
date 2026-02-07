@@ -1,0 +1,107 @@
+---
+title: Windsurf
+description: Use Takumo with Windsurf IDE
+---
+
+# Windsurf Integration
+
+Protect secrets when using Windsurf's Cascade AI features.
+
+## Setup
+
+<Steps>
+  <Step title="Install the extension">
+    In Windsurf:
+
+    1. Open Extensions (`Cmd/Ctrl + Shift + X`)
+    2. Search for "Takumo"
+    3. Click Install
+  </Step>
+  <Step title="Enable protection">
+    The extension activates automatically. Check the status bar for the shield icon.
+  </Step>
+</Steps>
+
+## Usage
+
+### Cascade
+
+When you use Cascade to edit files, Takumo intercepts the request:
+
+```
+You: Add error handling to the API client
+
+[Takumo: Tokenized 2 secrets]
+
+Cascade: I'll add try-catch blocks and proper error handling...
+```
+
+The AI sees tokenized code, you get real secrets in the result.
+
+### Flows
+
+For multi-step Flows, Takumo maintains session state:
+
+```
+Flow: Refactor authentication
+├─ Step 1: Update auth.ts     [Takumo: 3 secrets tokenized]
+├─ Step 2: Update middleware  [Takumo: same tokens reused]
+└─ Step 3: Update routes      [Takumo: 2 additional secrets]
+```
+
+Same secrets get the same tokens across all steps.
+
+### Inline edits
+
+Select code and trigger inline edit:
+
+```typescript
+// Before (what you see):
+const stripe = new Stripe("sk_test_EXAMPLEKEY");
+
+// What AI sees:
+const stripe = new Stripe("__TAKUMO_v1_KEY_a1b2c3d4__");
+
+// After (what you get):
+const stripe = new Stripe("sk_test_EXAMPLEKEY");
+if (!stripe) throw new Error("Stripe not configured");
+```
+
+## Configuration
+
+Settings available in Windsurf preferences:
+
+```json
+{
+  "takumo.enabled": true,
+  "takumo.autoTokenize": true,
+  "takumo.include": ["**/*"],
+  "takumo.exclude": ["**/node_modules/**"]
+}
+```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `Takumo: Scan Current File` | Check current file for secrets |
+| `Takumo: Scan Workspace` | Full workspace scan |
+| `Takumo: View Detections` | See all detected secrets |
+
+## Troubleshooting
+
+<Accordion title="Extension not working with Cascade">
+Ensure the extension is enabled:
+
+1. Check status bar for shield icon
+2. If missing, run `Takumo: Enable` from command palette
+3. Reload window if needed
+</Accordion>
+
+<Accordion title="Tokens in output">
+If you see `__TAKUMO_v1_...` tokens in Cascade's output:
+
+1. The session may have reset mid-flow
+2. Try: `Takumo: Clear Session` then retry
+3. Check Output panel for errors
+</Accordion>

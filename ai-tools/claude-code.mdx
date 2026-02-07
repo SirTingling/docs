@@ -1,0 +1,134 @@
+---
+title: Claude Code
+description: Use Takumo with Claude Code CLI
+---
+
+# Claude Code Integration
+
+Protect secrets when using Claude's official CLI.
+
+## Setup
+
+<Steps>
+  <Step title="Install Takumo">
+    ```bash
+    npm install -g @takumo/aegis
+    ```
+  </Step>
+  <Step title="Configure Claude Code">
+    Add Takumo as an MCP server in your Claude Code config:
+
+    ```json
+    // ~/.claude/claude_desktop_config.json
+    {
+      "mcpServers": {
+        "takumo": {
+          "command": "takumo-aegis",
+          "args": ["mcp-server"]
+        }
+      }
+    }
+    ```
+  </Step>
+  <Step title="Verify">
+    ```bash
+    claude /mcp
+    ```
+    You should see `takumo` listed as an available server.
+  </Step>
+</Steps>
+
+## Usage
+
+Once configured, Takumo automatically intercepts file operations:
+
+```bash
+# Files are tokenized before Claude sees them
+claude "Refactor the database connection in config.ts"
+
+# Claude works with tokens, you get real secrets back
+```
+
+### Manual mode
+
+For more control, use the CLI wrapper:
+
+```bash
+# Tokenize → Claude → Rehydrate in one command
+takumo-aegis shield src/config.ts --prompt "Add connection pooling"
+```
+
+### Verbose output
+
+See what Takumo detects:
+
+```bash
+takumo-aegis shield src/config.ts --prompt "Add logging" --verbose
+```
+
+```
+[takumo] Scanning src/config.ts...
+[takumo] Found 3 secrets:
+         Line 5   DATABASE_URL     postgres://***
+         Line 8   API_KEY          sk_test_***
+         Line 12  JWT_SECRET       [REDACTED]
+[takumo] Tokenized content sent to Claude
+[takumo] Rehydrating response...
+[takumo] Restored 3 secrets
+```
+
+## Configuration
+
+Create `.takumorc` in your project root:
+
+```json
+{
+  "include": ["src/**/*", "config/**/*"],
+  "exclude": ["**/*.test.ts", "**/node_modules/**"],
+  "patterns": {
+    "custom": [
+      {
+        "name": "internal-api-key",
+        "pattern": "INT_[A-Z0-9]{32}",
+        "category": "KEY"
+      }
+    ]
+  }
+}
+```
+
+## Multi-file context
+
+When Claude reads multiple files, Takumo maintains a shared session:
+
+```bash
+claude "These files share a database connection. Add retry logic."
+# Attaches: src/db.ts, src/migrate.ts, src/seed.ts
+```
+
+Same secret across files → same token. Claude understands they're connected.
+
+## Troubleshooting
+
+<Accordion title="MCP server not showing up">
+1. Check the config path: `~/.claude/claude_desktop_config.json`
+2. Ensure Takumo is installed globally: `npm list -g @takumo/aegis`
+3. Restart Claude Code after config changes
+</Accordion>
+
+<Accordion title="Secrets not being detected">
+Run a scan to see what Takumo finds:
+
+```bash
+takumo-aegis scan src/
+```
+
+If a secret type isn't detected, you can add custom patterns in `.takumorc`.
+</Accordion>
+
+<Accordion title="Tokens appearing in final output">
+This usually means rehydration failed. Check:
+- You're using the same Takumo session
+- The token format matches: `__TAKUMO_v1_{TYPE}_{ID}__`
+- Run with `--verbose` to see warnings
+</Accordion>

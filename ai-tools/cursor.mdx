@@ -1,0 +1,165 @@
+---
+title: Cursor
+description: Use Takumo with Cursor IDE
+---
+
+# Cursor Integration
+
+Protect secrets in Cursor's AI features: Chat, Composer, and inline edits.
+
+## Setup
+
+<Steps>
+  <Step title="Install the extension">
+    Open Cursor and install the Takumo extension:
+
+    1. `Cmd/Ctrl + Shift + X` to open Extensions
+    2. Search for "Takumo"
+    3. Click Install
+  </Step>
+  <Step title="Configure">
+    Open settings (`Cmd/Ctrl + ,`) and search for "Takumo":
+
+    ```json
+    {
+      "takumo.enabled": true,
+      "takumo.autoTokenize": true,
+      "takumo.showNotifications": true
+    }
+    ```
+  </Step>
+  <Step title="Verify">
+    Open a file with secrets. You should see a shield icon in the status bar showing detected secrets.
+  </Step>
+</Steps>
+
+## How it works
+
+The extension intercepts Cursor's AI requests:
+
+1. **Before send**: Scans attached files, tokenizes secrets
+2. **AI processing**: Cursor sees tokens, not real values
+3. **After receive**: Rehydrates tokens in AI responses
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│ Cursor Chat  │ ──►│   Takumo     │ ──►│  Claude/GPT  │
+│ "Fix config" │    │  Extension   │    │  (sees tokens)│
+└──────────────┘    └──────────────┘    └──────────────┘
+```
+
+## Usage
+
+### Chat
+
+Secrets in attached files are automatically tokenized:
+
+```
+You: @config.ts Add retry logic to the database connection
+
+[Takumo: Tokenized 2 secrets in config.ts]
+
+Cursor: Here's the updated config with retry logic...
+```
+
+### Composer
+
+Multi-file edits work the same way:
+
+```
+You: Refactor authentication across these files
+     @auth.ts @middleware.ts @routes/login.ts
+
+[Takumo: Tokenized 5 secrets across 3 files]
+```
+
+### Inline edits
+
+Select code, press `Cmd/Ctrl + K`:
+
+```typescript
+// Selected:
+const db = postgres("postgres://admin:examplepass@prod:5432/app");
+
+// Takumo tokenizes before sending to AI
+// AI response is rehydrated before applying
+```
+
+## Status bar
+
+The status bar shows protection status:
+
+| Icon | Meaning |
+|------|---------|
+| 🛡️ 3 | 3 secrets protected in current file |
+| 🛡️ ✓ | All secrets tokenized, ready to send |
+| ⚠️ | Secrets detected but not yet tokenized |
+
+Click the icon to see details.
+
+## Commands
+
+Open command palette (`Cmd/Ctrl + Shift + P`):
+
+| Command | Description |
+|---------|-------------|
+| `Takumo: Scan File` | Scan current file for secrets |
+| `Takumo: Scan Workspace` | Scan all files in workspace |
+| `Takumo: Show Session` | View current token vault |
+| `Takumo: Clear Session` | Reset token vault |
+
+## Configuration
+
+Full settings reference:
+
+```json
+{
+  // Enable/disable protection
+  "takumo.enabled": true,
+
+  // Auto-tokenize when attaching files to chat
+  "takumo.autoTokenize": true,
+
+  // Show notifications when secrets are detected
+  "takumo.showNotifications": true,
+
+  // Files to scan
+  "takumo.include": ["**/*"],
+  "takumo.exclude": ["**/node_modules/**", "**/.git/**"],
+
+  // Highlight detected secrets in editor
+  "takumo.highlightSecrets": true,
+
+  // Custom patterns (same format as .takumorc)
+  "takumo.customPatterns": []
+}
+```
+
+## Troubleshooting
+
+<Accordion title="Extension not activating">
+Check the Output panel (`View > Output`) and select "Takumo" from the dropdown. Look for activation errors.
+
+Common fixes:
+- Reload window: `Cmd/Ctrl + Shift + P` → "Reload Window"
+- Check extension is enabled for workspace
+</Accordion>
+
+<Accordion title="Secrets not detected in chat">
+The extension only processes files explicitly attached with `@filename`. It doesn't scan:
+- Code pasted directly into chat
+- Files referenced by path only
+
+Attach files using `@` to ensure protection.
+</Accordion>
+
+<Accordion title="Performance issues">
+For large workspaces, limit scanning:
+
+```json
+{
+  "takumo.include": ["src/**/*", "config/**/*"],
+  "takumo.exclude": ["**/dist/**", "**/coverage/**"]
+}
+```
+</Accordion>

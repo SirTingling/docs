@@ -110,6 +110,21 @@
         ]
       },
       {
+        "tab": "AI Tools",
+        "icon": "sparkles",
+        "groups": [
+          {
+            "group": "Integrations",
+            "pages": [
+              "ai-tools/overview",
+              "ai-tools/claude-code",
+              "ai-tools/cursor",
+              "ai-tools/windsurf"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "API",
         "icon": "code",
         "groups": [
