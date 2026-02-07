@@ -9,9 +9,8 @@
 </p>
 
 <p align="center">
-  <a href="https://takumo.com">Website</a> ·
   <a href="https://docs.takumo.com">Documentation</a> ·
-  <a href="https://takumo.com">Request Access</a>
+  <a href="mailto:jordant@takumo.com?subject=Takumo%20Access%20Request">Request Access</a>
 </p>
 
 ---
@@ -61,7 +60,7 @@ npx mintlify dev
 
 ## Status
 
-Private alpha. [Request access](https://takumo.com) to join.
+Private alpha. [Request access](mailto:jordant@takumo.com?subject=Takumo%20Access%20Request) to join.
 
 ---
 

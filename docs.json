@@ -60,7 +60,7 @@
     "primary": {
       "type": "button",
       "label": "Request Access",
-      "href": "https://takumo.com"
+      "href": "mailto:jordant@takumo.com?subject=Takumo%20Access%20Request"
     }
   },
 
