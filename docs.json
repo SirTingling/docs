@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "venus",
+  "theme": "maple",
   "name": "Takumo",
   "description": "Bidirectional AI code governance. Protect secrets going out, validate code coming in.",
 
@@ -34,11 +34,11 @@
 
   "fonts": {
     "heading": {
-      "family": "Geist Sans",
+      "family": "Inter",
       "weight": 700
     },
     "body": {
-      "family": "Geist Sans",
+      "family": "Inter",
       "weight": 400
     }
   },
