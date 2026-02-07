@@ -7,17 +7,21 @@ description: The full flow explained
 
 ## The basic flow
 
+<Frame>
+```mermaid
+flowchart LR
+    A[Your Code<br/>with secrets] --> B[Takumo<br/>tokenize]
+    B --> C[Claude<br/>sees tokens]
+    C --> D[Takumo<br/>rehydrate]
+    D --> E[Output<br/>secrets restored]
+
+    style A fill:#1E293B,stroke:#475569,color:#fff
+    style B fill:#475569,stroke:#94A3B8,color:#fff
+    style C fill:#1E293B,stroke:#475569,color:#fff
+    style D fill:#475569,stroke:#94A3B8,color:#fff
+    style E fill:#1E293B,stroke:#475569,color:#fff
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Your Code  │ ──▶ │  Tokenize   │ ──▶ │   Claude    │
-│ (secrets)   │     │  (safe)     │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘
-                                               │
-┌─────────────┐     ┌─────────────┐            │
-│   Output    │ ◀── │  Rehydrate  │ ◀──────────┘
-│ (secrets)   │     │  (restore)  │
-└─────────────┘     └─────────────┘
-```
+</Frame>
 
 1. You have code with secrets
 2. Takumo replaces secrets with tokens

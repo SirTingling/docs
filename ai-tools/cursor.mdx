@@ -41,12 +41,17 @@ The extension intercepts Cursor's AI requests:
 2. **AI processing**: Cursor sees tokens, not real values
 3. **After receive**: Rehydrates tokens in AI responses
 
+<Frame>
+```mermaid
+flowchart LR
+    A[Cursor Chat<br/>Fix config] --> B[Takumo<br/>Extension]
+    B --> C[Claude/GPT<br/>sees tokens]
+
+    style A fill:#1E293B,stroke:#475569,color:#fff
+    style B fill:#475569,stroke:#94A3B8,color:#fff
+    style C fill:#1E293B,stroke:#475569,color:#fff
 ```
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│ Cursor Chat  │ ──►│   Takumo     │ ──►│  Claude/GPT  │
-│ "Fix config" │    │  Extension   │    │  (sees tokens)│
-└──────────────┘    └──────────────┘    └──────────────┘
-```
+</Frame>
 
 ## Usage
 

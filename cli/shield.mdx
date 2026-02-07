@@ -71,16 +71,26 @@ takumo-aegis shield ./config.ts --prompt "Add validation" --verbose
 
 ## What happens
 
-```
-┌──────────────────────────────────────────────────────────┐
-│ 1. DETECT     Find secrets in your code                  │
-│ 2. TOKENIZE   Replace secrets with tokens                │
-│ 3. SEND       Send tokenized code + prompt to Claude     │
-│ 4. RECEIVE    Get Claude's response (still tokenized)    │
-│ 5. REHYDRATE  Swap tokens back to real secrets           │
-│ 6. OUTPUT     Print or save the final code               │
-└──────────────────────────────────────────────────────────┘
-```
+<Steps>
+  <Step title="Detect">
+    Find secrets in your code
+  </Step>
+  <Step title="Tokenize">
+    Replace secrets with tokens
+  </Step>
+  <Step title="Send">
+    Send tokenized code + prompt to Claude
+  </Step>
+  <Step title="Receive">
+    Get Claude's response (still tokenized)
+  </Step>
+  <Step title="Rehydrate">
+    Swap tokens back to real secrets
+  </Step>
+  <Step title="Output">
+    Print or save the final code
+  </Step>
+</Steps>
 
 Your secrets never leave your machine. Claude only sees tokens.
 
