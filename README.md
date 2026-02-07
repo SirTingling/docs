@@ -1,61 +1,70 @@
-# Takumo Documentation
+<p align="center">
+  <img src="logo/favicon.svg" height="80" alt="Takumo" />
+</p>
 
-Documentation for [Takumo](https://takumo.com) — bidirectional AI code governance.
+<h1 align="center">Takumo</h1>
 
-## What is Takumo?
+<p align="center">
+  <strong>Your secrets stay on your machine.</strong>
+</p>
 
-Takumo protects your secrets when working with AI assistants. It tokenizes sensitive data before it leaves your machine and restores it when responses come back.
+<p align="center">
+  <a href="https://takumo.com">Website</a> ·
+  <a href="https://docs.takumo.com">Documentation</a> ·
+  <a href="https://takumo.com">Request Access</a>
+</p>
 
-- **Aegis Shield** — Outbound protection. Tokenizes secrets before they reach AI.
-- **Sentinel** — Inbound validation. Validates AI-generated code before you use it. (Coming soon)
+---
 
-## Local Development
+You paste code into Claude. That code has your database password, your API keys, your production credentials.
 
-Preview the docs locally:
+Now Claude has them too.
+
+**Takumo fixes this.**
+
+```typescript
+// What you have
+const db = connect("postgres://admin:hunter2@prod.internal:5432/app");
+
+// What Claude sees
+const db = connect("__TAKUMO_v1_CONN_a1b2c3__");
+
+// What you get back
+const db = connect("postgres://admin:hunter2@prod.internal:5432/app");
+```
+
+Secrets are tokenized before they leave your machine. When the AI responds, tokens are swapped back to real values. The AI never sees your actual credentials.
+
+## How it works
+
+**Aegis Shield** — Outbound. Scans your code, finds secrets, replaces them with tokens. Sends safe code to AI. Restores real values in the response.
+
+**Sentinel** — Inbound. Validates AI-generated code before it enters your codebase. Catches security vulnerabilities, license violations, deprecated patterns. *(Coming soon)*
+
+## Documentation
+
+This repo powers [docs.takumo.com](https://docs.takumo.com).
+
+| Section | What you'll find |
+|---------|------------------|
+| [Quickstart](https://docs.takumo.com/quickstart) | Zero to protected in 5 minutes |
+| [How It Works](https://docs.takumo.com/concepts/how-it-works) | The tokenization flow explained |
+| [CLI Reference](https://docs.takumo.com/cli/overview) | `scan`, `tokenize`, `shield` commands |
+| [API Reference](https://docs.takumo.com/api/overview) | Use Takumo in your own code |
+| [Supported Patterns](https://docs.takumo.com/patterns/supported) | Everything we detect |
+
+## Local preview
 
 ```bash
 npx mintlify dev
 ```
 
-Opens at `http://localhost:3000`.
+## Status
 
-## Structure
+Private alpha. [Request access](https://takumo.com) to join.
 
-```
-docs/
-├── docs.json              # Mintlify configuration
-├── introduction.mdx       # Landing page
-├── quickstart.mdx         # Getting started guide
-├── installation.mdx       # Install options
-├── changelog.mdx          # Release history
-├── concepts/              # Core concepts
-│   ├── how-it-works.mdx
-│   ├── aegis-shield.mdx
-│   └── sentinel.mdx
-├── cli/                   # CLI reference
-│   ├── overview.mdx
-│   ├── scan.mdx
-│   ├── tokenize.mdx
-│   └── shield.mdx
-├── api/                   # API reference
-│   ├── overview.mdx
-│   ├── create-session.mdx
-│   ├── tokenize.mdx
-│   └── rehydrate.mdx
-├── patterns/              # Detection patterns
-│   └── supported.mdx
-└── logo/                  # Brand assets
-    ├── takumo-light.svg
-    ├── takumo-dark.svg
-    └── favicon.svg
-```
+---
 
-## Deployment
-
-Connected to Mintlify. Pushes to `main` deploy automatically.
-
-Custom domain: `docs.takumo.com`
-
-## License
-
-Copyright (c) 2025 Takumo. All rights reserved.
+<p align="center">
+  <sub>Copyright © 2025 Takumo. All rights reserved.</sub>
+</p>
