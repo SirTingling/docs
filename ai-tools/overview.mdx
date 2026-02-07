@@ -9,21 +9,23 @@ Takumo sits between your code and AI assistants. Same protection, any tool.
 
 ## How it works
 
-<Frame>
-```mermaid
-flowchart LR
-    A[Your Code<br/>with secrets] --> B[Takumo<br/>tokenize]
-    B --> C[AI Tool<br/>sees tokens]
-    C --> D[Takumo<br/>rehydrate]
-    D --> E[Final Code<br/>secrets restored]
-
-    style A fill:#1E293B,stroke:#475569,color:#fff
-    style B fill:#475569,stroke:#94A3B8,color:#fff
-    style C fill:#1E293B,stroke:#475569,color:#fff
-    style D fill:#475569,stroke:#94A3B8,color:#fff
-    style E fill:#1E293B,stroke:#475569,color:#fff
-```
-</Frame>
+<Steps>
+  <Step title="Your code" icon="file-code">
+    You have code with secrets (API keys, passwords, connection strings)
+  </Step>
+  <Step title="Tokenize" icon="shield">
+    Takumo detects secrets and replaces them with tokens
+  </Step>
+  <Step title="AI processes" icon="brain">
+    AI tool sees only tokens, never your real credentials
+  </Step>
+  <Step title="Rehydrate" icon="rotate">
+    Takumo restores tokens back to real secrets in the response
+  </Step>
+  <Step title="Final code" icon="check">
+    You get working code with your actual credentials restored
+  </Step>
+</Steps>
 
 ## Supported tools
 

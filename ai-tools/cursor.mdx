@@ -37,21 +37,17 @@ Protect secrets in Cursor's AI features: Chat, Composer, and inline edits.
 
 The extension intercepts Cursor's AI requests:
 
-1. **Before send**: Scans attached files, tokenizes secrets
-2. **AI processing**: Cursor sees tokens, not real values
-3. **After receive**: Rehydrates tokens in AI responses
-
-<Frame>
-```mermaid
-flowchart LR
-    A[Cursor Chat<br/>Fix config] --> B[Takumo<br/>Extension]
-    B --> C[Claude/GPT<br/>sees tokens]
-
-    style A fill:#1E293B,stroke:#475569,color:#fff
-    style B fill:#475569,stroke:#94A3B8,color:#fff
-    style C fill:#1E293B,stroke:#475569,color:#fff
-```
-</Frame>
+<CardGroup cols={3}>
+  <Card title="Before send" icon="arrow-right">
+    Scans attached files, tokenizes secrets
+  </Card>
+  <Card title="AI processing" icon="brain">
+    Cursor sees tokens, not real values
+  </Card>
+  <Card title="After receive" icon="arrow-left">
+    Rehydrates tokens in AI responses
+  </Card>
+</CardGroup>
 
 ## Usage
 

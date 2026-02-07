@@ -7,21 +7,23 @@ description: The full flow explained
 
 ## The basic flow
 
-<Frame>
-```mermaid
-flowchart LR
-    A[Your Code<br/>with secrets] --> B[Takumo<br/>tokenize]
-    B --> C[Claude<br/>sees tokens]
-    C --> D[Takumo<br/>rehydrate]
-    D --> E[Output<br/>secrets restored]
-
-    style A fill:#1E293B,stroke:#475569,color:#fff
-    style B fill:#475569,stroke:#94A3B8,color:#fff
-    style C fill:#1E293B,stroke:#475569,color:#fff
-    style D fill:#475569,stroke:#94A3B8,color:#fff
-    style E fill:#1E293B,stroke:#475569,color:#fff
-```
-</Frame>
+<Steps>
+  <Step title="Your code" icon="file-code">
+    Code with secrets (API keys, passwords, connection strings)
+  </Step>
+  <Step title="Tokenize" icon="shield">
+    Takumo detects and replaces secrets with tokens
+  </Step>
+  <Step title="AI processes" icon="brain">
+    Claude/GPT sees only tokens, never real values
+  </Step>
+  <Step title="Rehydrate" icon="rotate">
+    Takumo restores tokens back to real secrets
+  </Step>
+  <Step title="Output" icon="check">
+    You get working code with your actual credentials
+  </Step>
+</Steps>
 
 1. You have code with secrets
 2. Takumo replaces secrets with tokens
@@ -44,15 +46,19 @@ All detection happens locally. Nothing is sent anywhere during this step.
 
 ## Tokenization
 
-Each secret becomes a token:
+Each secret becomes a token with this format:
 
-```
-__TAKUMO_v1_KEY_8f3a2b1c__
-         │   │      │
-         │   │      └── First 8 chars of SHA-256 hash
-         │   └── Category (KEY, SECRET, CONN, HOST, etc.)
-         └── Version (for future compatibility)
-```
+<Card>
+  <code className="text-lg">__TAKUMO_v1_KEY_8f3a2b1c__</code>
+</Card>
+
+| Part | Example | Purpose |
+|------|---------|---------|
+| Prefix | `__TAKUMO_` | Identifies as a Takumo token |
+| Version | `v1` | For future compatibility |
+| Category | `KEY` | Type: KEY, SECRET, CONN, HOST, TOKEN, USER |
+| Hash | `8f3a2b1c` | First 8 chars of SHA-256 (unique per secret) |
+| Suffix | `__` | Closes the token |
 
 **Same secret = same token.** This matters because:
 
