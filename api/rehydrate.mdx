@@ -40,8 +40,8 @@ interface RehydrateWarning {
 ```typescript
 const session = createSession();
 
-// First, tokenize some code
-const original = `const apiKey = "sk_live_abc123";`;
+// First, tokenize some code (example value)
+const original = `const apiKey = "sk_test_EXAMPLEKEY";`;
 session.tokenize(original, 'config.ts');
 
 // Later, rehydrate AI's response
@@ -57,7 +57,7 @@ const result = session.rehydrate(aiResponse);
 
 console.log(result.content);
 // // Added validation
-// const apiKey = "sk_live_abc123";
+// const apiKey = "sk_test_EXAMPLEKEY";
 // if (!apiKey) {
 //   throw new Error("API key is required");
 // }

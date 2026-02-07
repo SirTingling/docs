@@ -10,10 +10,10 @@ You paste code into Claude. That code has secrets in it. Now Claude has your sec
 Takumo fixes this. It swaps your secrets for tokens before anything leaves your machine, then swaps them back when the response comes in.
 
 ```typescript
-// Your code
+// Your code (example values)
 const config = {
-  db: "postgres://admin:s3cr3t@prod.internal:5432/app",
-  stripe: "sk_live_abc123xyz789",
+  db: "postgres://admin:supersecret@prod.internal:5432/app",
+  stripe: "sk_test_abc123EXAMPLE",
   aws: "AKIAIOSFODNN7EXAMPLE"
 };
 
@@ -26,8 +26,8 @@ const config = {
 
 // What you get back (secrets restored)
 const config = {
-  db: "postgres://admin:s3cr3t@prod.internal:5432/app",
-  stripe: "sk_live_abc123xyz789",
+  db: "postgres://admin:supersecret@prod.internal:5432/app",
+  stripe: "sk_test_abc123EXAMPLE",
   aws: "AKIAIOSFODNN7EXAMPLE"
 };
 ```

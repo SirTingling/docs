@@ -23,14 +23,14 @@ Now Claude has them too.
 **Takumo fixes this.**
 
 ```typescript
-// What you have
-const db = connect("postgres://admin:hunter2@prod.internal:5432/app");
+// What you have (example)
+const db = connect("postgres://admin:examplepass@prod.internal:5432/app");
 
 // What Claude sees
 const db = connect("__TAKUMO_v1_CONN_a1b2c3__");
 
 // What you get back
-const db = connect("postgres://admin:hunter2@prod.internal:5432/app");
+const db = connect("postgres://admin:examplepass@prod.internal:5432/app");
 ```
 
 Secrets are tokenized before they leave your machine. When the AI responds, tokens are swapped back to real values. The AI never sees your actual credentials.

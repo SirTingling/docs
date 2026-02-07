@@ -53,9 +53,9 @@ __TAKUMO_v1_KEY_8f3a2b1c__
 **Same secret = same token.** This matters because:
 
 ```typescript
-// Original
-const primary = "postgres://admin:secret@db1:5432/app";
-const replica = "postgres://admin:secret@db1:5432/app";  // Same connection
+// Original (example values)
+const primary = "postgres://admin:examplepass@db1:5432/app";
+const replica = "postgres://admin:examplepass@db1:5432/app";  // Same connection
 
 // Tokenized
 const primary = "__TAKUMO_v1_CONN_a1b2c3d4__";

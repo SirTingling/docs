@@ -18,14 +18,15 @@ takumo-aegis tokenize <file> [options]
 **Input file (`config.ts`):**
 
 ```typescript
+// Example values - never use real credentials
 export const config = {
   database: {
-    url: "postgres://admin:secretpass@db.internal:5432/myapp",
+    url: "postgres://admin:examplepass@db.internal:5432/myapp",
     poolSize: 10
   },
   stripe: {
-    secretKey: "sk_live_51HG3J2eZvKYlo2C0abc123",
-    webhookSecret: "whsec_abc123def456"
+    secretKey: "sk_test_EXAMPLEKEY123456",
+    webhookSecret: "whsec_EXAMPLEHOOK123"
   }
 };
 ```

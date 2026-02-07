@@ -7,6 +7,10 @@ description: All secret types Takumo detects
 
 Everything Takumo can detect and tokenize.
 
+<Note>
+All credentials on this page are fake examples. AWS keys use [AWS's official example format](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html). Never use real credentials in documentation.
+</Note>
+
 ## Cloud Providers
 
 ### AWS
@@ -49,11 +53,11 @@ const secretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
 | Restricted Key | `rk_live_` + ID | `KEY` |
 
 ```typescript
-// All detected
+// All detected (example values)
 const stripe = {
-  secret: "sk_live_51HG3J2eZvKYlo2C0...",
-  publishable: "pk_live_51HG3J2eZvKYlo2C0...",
-  webhook: "whsec_abc123..."
+  secret: "sk_test_EXAMPLEKEY123456789...",
+  publishable: "pk_test_EXAMPLEKEY123456789...",
+  webhook: "whsec_EXAMPLEWEBHOOK123..."
 };
 ```
 
@@ -126,11 +130,11 @@ const stripe = {
 | SQL Server | `Server=...;Password=...` | `CONN` |
 
 ```typescript
-// All detected
+// All detected (example values)
 const dbs = {
-  pg: "postgres://admin:secret@db.internal:5432/app",
-  mongo: "mongodb+srv://user:pass@cluster.mongodb.net/db",
-  redis: "redis://:password@cache.internal:6379"
+  pg: "postgres://admin:examplepass@db.internal:5432/app",
+  mongo: "mongodb+srv://user:examplepass@cluster.example.net/db",
+  redis: "redis://:examplepass@cache.internal:6379"
 };
 ```
 
@@ -143,7 +147,7 @@ const dbs = {
 | JSON Web Token | `eyJ` + base64 + `.` + base64 + `.` + signature | `TOKEN` |
 
 ```typescript
-// Detected
+// Detected (this is the standard example JWT from jwt.io - not a real token)
 const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U";
 ```
 

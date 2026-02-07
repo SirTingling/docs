@@ -24,10 +24,10 @@ const anthropic = new Anthropic();
 // 1. Create a session
 const session = createSession();
 
-// 2. Tokenize your code
+// 2. Tokenize your code (example values)
 const sourceCode = `
-  const db = postgres("postgres://admin:secret@prod:5432/app");
-  const stripe = new Stripe("sk_live_abc123");
+  const db = postgres("postgres://admin:examplepass@prod:5432/app");
+  const stripe = new Stripe("sk_test_EXAMPLEKEY");
 `;
 
 const { content: tokenizedCode, detections } = session.tokenize(sourceCode, 'config.ts');

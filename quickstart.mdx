@@ -28,11 +28,11 @@ yarn add SirTingling/takumo
 Make a file with some secrets:
 
 ```typescript
-// test-secrets.ts
+// test-secrets.ts (example values only)
 const config = {
   awsKey: "AKIAIOSFODNN7EXAMPLE",
-  dbUrl: "postgres://admin:password123@prod.internal:5432/myapp",
-  stripeKey: "sk_live_51ABC123xyz"
+  dbUrl: "postgres://admin:examplepass@prod.internal:5432/myapp",
+  stripeKey: "sk_test_EXAMPLEKEY123"
 };
 
 export default config;
@@ -51,9 +51,9 @@ Scanning: test-secrets.ts
 
 Found 3 secrets:
 
-  Line 3   AWS Access Key         AKIAIOSFODNN7EXAMPLE
-  Line 4   Database URL           postgres://admin:pass...
-  Line 5   Stripe Secret Key      sk_live_51ABC123xyz
+  Line 3   AWS Access Key         AKIAEXAMPLE...
+  Line 4   Database URL           postgres://***...
+  Line 5   Stripe Secret Key      sk_test_EXAMPLE...
 
 Run `takumo-aegis tokenize test-secrets.ts` to see tokenized output.
 ```
