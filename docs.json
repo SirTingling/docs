@@ -34,11 +34,11 @@
 
   "fonts": {
     "heading": {
-      "family": "Inter",
+      "family": "Geist Sans",
       "weight": 700
     },
     "body": {
-      "family": "Inter",
+      "family": "Geist Sans",
       "weight": 400
     }
   },
