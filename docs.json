@@ -34,11 +34,15 @@
 
   "fonts": {
     "heading": {
-      "family": "Inter",
+      "family": "Geist Sans",
+      "source": "https://cdn.vercel.com/fonts/geist-sans/Geist-Bold.woff2",
+      "format": "woff2",
       "weight": 700
     },
     "body": {
-      "family": "Inter",
+      "family": "Geist Sans",
+      "source": "https://cdn.vercel.com/fonts/geist-sans/Geist-Regular.woff2",
+      "format": "woff2",
       "weight": 400
     }
   },
