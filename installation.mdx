@@ -1,0 +1,105 @@
+---
+title: Installation
+description: All the ways to install Takumo
+---
+
+# Installation
+
+Takumo is distributed via private GitHub repo during alpha.
+
+## From GitHub (recommended)
+
+```bash
+npm install github:SirTingling/takumo
+```
+
+<CodeGroup>
+```bash npm
+npm install github:SirTingling/takumo
+```
+
+```bash pnpm
+pnpm add github:SirTingling/takumo
+```
+
+```bash yarn
+yarn add SirTingling/takumo
+```
+</CodeGroup>
+
+This gives you both the CLI and the API.
+
+## From source
+
+If you want to modify or contribute:
+
+```bash
+git clone https://github.com/SirTingling/takumo.git
+cd takumo
+pnpm install
+pnpm build
+```
+
+Run commands from the repo:
+
+```bash
+pnpm aegis scan ./path/to/file.ts
+pnpm aegis tokenize ./path/to/file.ts
+pnpm aegis shield ./path/to/file.ts --prompt "your prompt"
+```
+
+## Global CLI install
+
+To use `takumo-aegis` from anywhere:
+
+```bash
+cd takumo/packages/aegis
+pnpm link --global
+```
+
+Now works globally:
+
+```bash
+takumo-aegis scan ~/any/project/src/
+```
+
+## Environment variables
+
+| Variable | When needed | Description |
+|----------|-------------|-------------|
+| `ANTHROPIC_API_KEY` | `shield` command only | Your Claude API key |
+
+The `scan` and `tokenize` commands work completely offline. Only `shield` needs an API key because it actually calls Claude.
+
+## Verify it works
+
+```bash
+npx takumo-aegis --version
+# takumo-aegis 0.1.0-alpha
+
+npx takumo-aegis --help
+# Usage: takumo-aegis <command> [options]
+#
+# Commands:
+#   scan <path>       Find secrets in files
+#   tokenize <file>   Show tokenized output
+#   shield <file>     Full AI round-trip
+```
+
+## Requirements
+
+- Node.js 20 or higher
+- macOS, Linux, or Windows (WSL recommended on Windows)
+
+<Accordion title="Node version issues?">
+If you're on an older Node version:
+
+```bash
+# Using nvm
+nvm install 20
+nvm use 20
+
+# Verify
+node --version  # Should be v20.x.x or higher
+```
+</Accordion>

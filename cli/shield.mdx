@@ -1,0 +1,122 @@
+---
+title: shield
+description: Full AI round-trip with protection
+---
+
+# shield
+
+The main command. Tokenizes your code, sends it to Claude with your prompt, and rehydrates the response.
+
+## Usage
+
+```bash
+takumo-aegis shield <file> --prompt <prompt> [options]
+```
+
+## Setup
+
+Set your Anthropic API key:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-api03-...
+```
+
+## Examples
+
+**Basic usage:**
+
+```bash
+takumo-aegis shield ./api.ts --prompt "Add error handling"
+```
+
+**Save to a new file:**
+
+```bash
+takumo-aegis shield ./api.ts --prompt "Add TypeScript types" --output ./api.typed.ts
+```
+
+**See what's happening:**
+
+```bash
+takumo-aegis shield ./config.ts --prompt "Add validation" --verbose
+```
+
+```
+→ Scanning config.ts
+  Found 4 secrets
+
+→ Tokenizing
+  config.ts: 847 bytes → 892 bytes (4 tokens)
+
+→ Sending to Claude (claude-sonnet-4-20250514)
+  Prompt: "Add validation"
+
+→ Received response
+  1,247 bytes
+
+→ Rehydrating
+  Restored 4 tokens
+
+✓ Done
+```
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| `--prompt, -p <text>` | What you want Claude to do (required) |
+| `--output, -o <file>` | Write result to file instead of stdout |
+| `--model <model>` | Claude model to use (default: `claude-sonnet-4-20250514`) |
+| `--verbose, -v` | Show progress details |
+
+## What happens
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ 1. DETECT     Find secrets in your code                  │
+│ 2. TOKENIZE   Replace secrets with tokens                │
+│ 3. SEND       Send tokenized code + prompt to Claude     │
+│ 4. RECEIVE    Get Claude's response (still tokenized)    │
+│ 5. REHYDRATE  Swap tokens back to real secrets           │
+│ 6. OUTPUT     Print or save the final code               │
+└──────────────────────────────────────────────────────────┘
+```
+
+Your secrets never leave your machine. Claude only sees tokens.
+
+## Prompt tips
+
+Be specific:
+
+```bash
+# Good
+--prompt "Add try/catch blocks around the database calls and log errors"
+
+# Less good
+--prompt "Make it better"
+```
+
+Reference specific things:
+
+```bash
+--prompt "The function on line 45 throws if the API returns null. Handle that case."
+```
+
+## Error handling
+
+| Error | What to do |
+|-------|------------|
+| `ANTHROPIC_API_KEY not set` | Export your API key |
+| `File not found: ./foo.ts` | Check the path |
+| `No secrets detected` | File has no secrets (still works, just nothing to tokenize) |
+| `Rate limited` | Wait a minute, try again |
+| `Unknown tokens in response` | Claude hallucinated a token; those are left as-is with a warning |
+
+## Models
+
+Default is `claude-sonnet-4-20250514`. You can also use:
+
+```bash
+--model claude-opus-4-20250514
+--model claude-haiku-4-20250514
+```

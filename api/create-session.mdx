@@ -1,0 +1,109 @@
+---
+title: createSession()
+description: Create a tokenization session
+---
+
+# createSession()
+
+Creates a new session with an empty token vault.
+
+## Signature
+
+```typescript
+function createSession(): Session
+```
+
+## Returns
+
+```typescript
+interface Session {
+  tokenize(content: string, filename: string): TokenizeResult;
+  rehydrate(content: string): RehydrateResult;
+  getReport(): SessionReport;
+}
+```
+
+## Example
+
+```typescript
+import { createSession } from '@takumo/aegis';
+
+const session = createSession();
+
+// Now use session.tokenize() and session.rehydrate()
+```
+
+## Session lifecycle
+
+```typescript
+async function processWithAI(code: string, prompt: string) {
+  // Create session at the start
+  const session = createSession();
+
+  // Tokenize
+  const { content: safe } = session.tokenize(code, 'input.ts');
+
+  // Call AI with safe content
+  const response = await callClaude(safe, prompt);
+
+  // Rehydrate
+  const { content: final } = session.rehydrate(response);
+
+  return final;
+  // Session goes out of scope, vault is garbage collected
+}
+```
+
+## Multi-file sessions
+
+Tokenize multiple files with the same session. Same secret = same token:
+
+```typescript
+const session = createSession();
+
+// Both files have the same database password
+const { content: config } = session.tokenize(configCode, 'config.ts');
+const { content: migrate } = session.tokenize(migrateCode, 'migrate.ts');
+
+// If they had the same password, it's the same token in both
+// Claude can see they're related
+```
+
+## getReport()
+
+Get statistics about what's in the vault:
+
+```typescript
+const session = createSession();
+
+session.tokenize(code1, 'config.ts');
+session.tokenize(code2, 'api.ts');
+
+const report = session.getReport();
+console.log(report);
+// {
+//   totalDetections: 8,
+//   byCategory: { KEY: 3, SECRET: 2, CONN: 2, HOST: 1 },
+//   byFile: { 'config.ts': 5, 'api.ts': 3 },
+//   uniqueTokens: 6  // Fewer than detections if same secret appears twice
+// }
+```
+
+## Thread safety
+
+Sessions are **not** thread-safe. Don't share across concurrent operations:
+
+```typescript
+// Bad - shared session
+const session = createSession();
+await Promise.all([
+  processFile(session, file1),
+  processFile(session, file2),
+]);
+
+// Good - separate sessions
+await Promise.all([
+  processFile(createSession(), file1),
+  processFile(createSession(), file2),
+]);
+```

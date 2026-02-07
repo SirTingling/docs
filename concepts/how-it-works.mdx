@@ -1,0 +1,111 @@
+---
+title: How It Works
+description: The full flow explained
+---
+
+# How It Works
+
+## The basic flow
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Your Code  │ ──▶ │  Tokenize   │ ──▶ │   Claude    │
+│ (secrets)   │     │  (safe)     │     │             │
+└─────────────┘     └─────────────┘     └─────────────┘
+                                               │
+┌─────────────┐     ┌─────────────┐            │
+│   Output    │ ◀── │  Rehydrate  │ ◀──────────┘
+│ (secrets)   │     │  (restore)  │
+└─────────────┘     └─────────────┘
+```
+
+1. You have code with secrets
+2. Takumo replaces secrets with tokens
+3. Tokenized code goes to Claude
+4. Claude responds (tokens still in place)
+5. Takumo swaps tokens back to real values
+6. You get working code with your actual secrets
+
+## Detection
+
+Takumo finds secrets three ways:
+
+**Pattern matching** — Known formats like AWS keys (`AKIA...`), Stripe keys (`sk_live_...`), JWTs (`eyJ...`)
+
+**Context analysis** — Variables named `password`, `secret`, `api_key`, etc.
+
+**Config file parsing** — Special handling for `.env`, YAML, JSON, TOML files
+
+All detection happens locally. Nothing is sent anywhere during this step.
+
+## Tokenization
+
+Each secret becomes a token:
+
+```
+__TAKUMO_v1_KEY_8f3a2b1c__
+         │   │      │
+         │   │      └── First 8 chars of SHA-256 hash
+         │   └── Category (KEY, SECRET, CONN, HOST, etc.)
+         └── Version (for future compatibility)
+```
+
+**Same secret = same token.** This matters because:
+
+```typescript
+// Original
+const primary = "postgres://admin:secret@db1:5432/app";
+const replica = "postgres://admin:secret@db1:5432/app";  // Same connection
+
+// Tokenized
+const primary = "__TAKUMO_v1_CONN_a1b2c3d4__";
+const replica = "__TAKUMO_v1_CONN_a1b2c3d4__";  // Same token!
+```
+
+Claude can see they're the same connection without knowing the actual credentials.
+
+## Sessions
+
+A **session** holds the mapping between tokens and real values:
+
+```typescript
+const session = createSession();
+
+// Tokenizing adds to the session's vault
+session.tokenize(code1, 'config.ts');  // Vault: { token1: secret1, token2: secret2 }
+session.tokenize(code2, 'api.ts');     // Vault: { token1: secret1, token2: secret2, token3: secret3 }
+
+// Rehydrating looks up from the vault
+session.rehydrate(response);  // Finds tokens, replaces with secrets
+```
+
+Sessions are ephemeral. When the operation ends, the vault is gone. Nothing persists to disk.
+
+## Rehydration
+
+When Claude responds, Takumo finds all tokens and swaps them back:
+
+```typescript
+// Claude's response
+const url = `https://__TAKUMO_v1_HOST_abc123__/api/v1`;
+if (!__TAKUMO_v1_KEY_def456__) {
+  throw new Error("Missing API key");
+}
+
+// After rehydration
+const url = `https://api.internal.company.com/api/v1`;
+if (!sk_live_abc123xyz) {
+  throw new Error("Missing API key");
+}
+```
+
+If Claude hallucinates a token that doesn't exist in the vault, it's left as-is and you get a warning.
+
+## Security guarantees
+
+| Guarantee | What it means |
+|-----------|---------------|
+| **No secret transmission** | Real values never leave your machine |
+| **Deterministic tokens** | Same secret always produces same token (within a session) |
+| **One-way tokens** | Can't reverse a token without the session vault |
+| **Ephemeral sessions** | Vault only exists in memory during operation |

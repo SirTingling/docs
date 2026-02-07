@@ -1,0 +1,75 @@
+---
+title: Introduction
+description: AI code governance
+---
+
+# Takumo
+
+You paste code into Claude. That code has secrets in it. Now Claude has your secrets.
+
+Takumo fixes this. It swaps your secrets for tokens before anything leaves your machine, then swaps them back when the response comes in.
+
+```typescript
+// Your code
+const config = {
+  db: "postgres://admin:s3cr3t@prod.internal:5432/app",
+  stripe: "sk_live_abc123xyz789",
+  aws: "AKIAIOSFODNN7EXAMPLE"
+};
+
+// What Claude sees
+const config = {
+  db: "__TAKUMO_v1_CONN_a1b2c3__",
+  stripe: "__TAKUMO_v1_KEY_d4e5f6__",
+  aws: "__TAKUMO_v1_KEY_g7h8i9__"
+};
+
+// What you get back (secrets restored)
+const config = {
+  db: "postgres://admin:s3cr3t@prod.internal:5432/app",
+  stripe: "sk_live_abc123xyz789",
+  aws: "AKIAIOSFODNN7EXAMPLE"
+};
+```
+
+No config. No setup. Your secrets stay on your machine.
+
+---
+
+## Two parts
+
+<CardGroup cols={2}>
+  <Card title="Aegis Shield" icon="shield" href="/concepts/aegis-shield">
+    **Outbound.** Tokenizes secrets before they reach AI. Done and working.
+  </Card>
+  <Card title="Sentinel" icon="eye" href="/concepts/sentinel">
+    **Inbound.** Validates AI-generated code before you use it. Coming soon.
+  </Card>
+</CardGroup>
+
+---
+
+## What it catches
+
+| Type | Examples |
+|------|----------|
+| Cloud | AWS access keys, GCP service accounts, Azure connection strings |
+| Payments | Stripe secret/publishable keys, webhook secrets |
+| Databases | PostgreSQL, MySQL, MongoDB, Redis connection URIs |
+| Auth | JWTs, bearer tokens, session secrets, OAuth tokens |
+| Dev tools | GitHub PATs, GitLab tokens, npm tokens, Slack tokens |
+| Crypto | RSA/EC/OpenSSH private keys, PGP keys |
+| Infra | Internal hostnames (`*.internal`), private IPs, localhost URLs |
+| Generic | Any value assigned to `password`, `secret`, `api_key`, etc. |
+
+Full list at [Supported Patterns](/patterns/supported).
+
+---
+
+## Status
+
+Private alpha. Aegis Shield is complete. Sentinel is in development.
+
+<Card title="Request Access" icon="arrow-right" href="https://takumo.com">
+  Join the early access program
+</Card>

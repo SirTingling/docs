@@ -1,122 +1,143 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "theme": "willow",
+  "name": "Takumo",
+  "description": "Bidirectional AI code governance. Protect secrets going out, validate code coming in.",
+
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#475569",
+    "light": "#94A3B8",
+    "dark": "#1E293B"
   },
-  "favicon": "/favicon.svg",
+
+  "logo": {
+    "light": "/logo/takumo-dark.svg",
+    "dark": "/logo/takumo-light.svg",
+    "href": "https://takumo.com"
+  },
+
+  "favicon": "/logo/favicon.svg",
+
+  "styling": {
+    "eyebrows": "breadcrumbs",
+    "codeblocks": "dark",
+    "icons": {
+      "library": "lucide"
+    }
+  },
+
+  "fonts": {
+    "heading": {
+      "family": "Inter",
+      "weight": 600
+    },
+    "body": {
+      "family": "Inter",
+      "weight": 400
+    }
+  },
+
+  "appearance": {
+    "default": "dark",
+    "strict": false
+  },
+
+  "background": {
+    "decoration": "grid",
+    "color": {
+      "light": "#FAFAFA",
+      "dark": "#0C0F14"
+    }
+  },
+
+  "navbar": {
+    "links": [
+      {
+        "label": "Changelog",
+        "href": "/changelog"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Request Access",
+      "href": "https://takumo.com"
+    }
+  },
+
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/how-it-works",
+              "concepts/aegis-shield",
+              "concepts/sentinel"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Reference",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "patterns/supported",
+              "changelog"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "CLI",
+        "icon": "terminal",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Commands",
             "pages": [
-              "api-reference/introduction"
+              "cli/overview",
+              "cli/scan",
+              "cli/tokenize",
+              "cli/shield"
             ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "API",
+        "icon": "code",
+        "groups": [
           {
-            "group": "Endpoint examples",
+            "group": "Reference",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/overview",
+              "api/create-session",
+              "api/tokenize",
+              "api/rehydrate"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
+
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/SirTingling/takumo"
     }
+  },
+
+  "search": {
+    "prompt": "Search docs..."
+  },
+
+  "contextual": {
+    "options": ["copy", "view"]
   }
 }

@@ -1,0 +1,60 @@
+---
+title: CLI Overview
+description: Command-line reference
+---
+
+# CLI
+
+The Takumo CLI provides three commands for working with secrets in your code.
+
+## Commands
+
+| Command | What it does |
+|---------|--------------|
+| [`scan`](/cli/scan) | Find secrets in files or directories |
+| [`tokenize`](/cli/tokenize) | Output tokenized version of a file |
+| [`shield`](/cli/shield) | Full round-trip: tokenize → Claude → rehydrate |
+
+## Basic usage
+
+```bash
+# If installed in project
+npx takumo-aegis <command> [options]
+
+# If installed globally
+takumo-aegis <command> [options]
+```
+
+## Quick examples
+
+```bash
+# Find all secrets in src/
+takumo-aegis scan ./src/
+
+# See what Claude would receive
+takumo-aegis tokenize ./config.ts
+
+# Ask Claude to refactor, with secrets protected
+takumo-aegis shield ./api.ts --prompt "Add error handling"
+```
+
+## Global options
+
+```
+--version   Show version
+--help      Show help
+```
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success (or no secrets found for `scan`) |
+| `1` | Secrets found (for `scan`) or error |
+| `2` | Invalid arguments |
+
+Useful for CI:
+
+```bash
+takumo-aegis scan ./src/ || echo "Secrets found!"
+```

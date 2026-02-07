@@ -1,0 +1,103 @@
+---
+title: scan
+description: Find secrets in your code
+---
+
+# scan
+
+Find secrets in files or directories without modifying anything.
+
+## Usage
+
+```bash
+takumo-aegis scan <path> [options]
+```
+
+## Examples
+
+**Scan a single file:**
+
+```bash
+takumo-aegis scan ./src/config.ts
+```
+
+```
+Scanning: ./src/config.ts
+
+Found 2 secrets:
+
+  Line 5    Database URL       postgres://admin:pass...
+  Line 8    Stripe Key         sk_live_51ABC...
+```
+
+**Scan a directory:**
+
+```bash
+takumo-aegis scan ./src/
+```
+
+```
+Scanning: ./src/ (24 files)
+
+Found 7 secrets across 4 files:
+
+src/config.ts
+  Line 5    Database URL         postgres://admin:...
+  Line 8    Stripe Key           sk_live_51ABC...
+
+src/lib/aws.ts
+  Line 12   AWS Access Key       AKIAIOSFODNN7...
+  Line 13   AWS Secret Key       wJalrXUtnFEMI/K7...
+
+src/.env
+  Line 1    JWT Secret           super_secret_jwt_key
+  Line 3    API Key              api_key_production
+
+src/test/fixtures.ts
+  Line 22   Test Password        testpassword123
+```
+
+**Scan with exclusions:**
+
+```bash
+takumo-aegis scan ./src/ --ignore "**/*.test.ts" --ignore "**/fixtures/**"
+```
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| `--ignore <pattern>` | Glob pattern to exclude (can use multiple times) |
+| `--no-recursive` | Don't scan subdirectories |
+
+## CI/CD usage
+
+`scan` exits with code 1 if secrets are found:
+
+```bash
+# In your CI pipeline
+takumo-aegis scan ./src/
+if [ $? -eq 1 ]; then
+  echo "Secrets detected in source code"
+  exit 1
+fi
+```
+
+Or as a one-liner:
+
+```bash
+takumo-aegis scan ./src/ || (echo "Secrets found!" && exit 1)
+```
+
+## Supported file types
+
+| Type | Extensions |
+|------|------------|
+| JavaScript/TypeScript | `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs` |
+| Python | `.py` |
+| Go | `.go` |
+| Rust | `.rs` |
+| Config | `.json`, `.yaml`, `.yml`, `.toml` |
+| Environment | `.env`, `.env.*` |
+
+Binary files are automatically skipped.

@@ -1,0 +1,94 @@
+---
+title: API Overview
+description: Use Takumo in your own code
+---
+
+# API
+
+Use Takumo programmatically in Node.js applications.
+
+## Installation
+
+```bash
+npm install github:SirTingling/takumo
+```
+
+## Basic example
+
+```typescript
+import { createSession } from '@takumo/aegis';
+import Anthropic from '@anthropic-ai/sdk';
+
+const anthropic = new Anthropic();
+
+// 1. Create a session
+const session = createSession();
+
+// 2. Tokenize your code
+const sourceCode = `
+  const db = postgres("postgres://admin:secret@prod:5432/app");
+  const stripe = new Stripe("sk_live_abc123");
+`;
+
+const { content: tokenizedCode, detections } = session.tokenize(sourceCode, 'config.ts');
+
+console.log(`Tokenized ${detections.length} secrets`);
+
+// 3. Send to Claude (secrets are now safe)
+const response = await anthropic.messages.create({
+  model: 'claude-sonnet-4-20250514',
+  max_tokens: 4096,
+  messages: [{
+    role: 'user',
+    content: `Add error handling to this code:\n\n${tokenizedCode}`
+  }]
+});
+
+const aiOutput = response.content[0].text;
+
+// 4. Rehydrate (restore real secrets)
+const { content: finalCode, rehydratedCount } = session.rehydrate(aiOutput);
+
+console.log(`Restored ${rehydratedCount} secrets`);
+console.log(finalCode);  // Has real secrets again
+```
+
+## Core functions
+
+| Function | Description |
+|----------|-------------|
+| [`createSession()`](/api/create-session) | Create a new session with empty vault |
+| [`session.tokenize()`](/api/tokenize) | Detect and tokenize secrets in code |
+| [`session.rehydrate()`](/api/rehydrate) | Restore tokens to original secrets |
+| `session.getReport()` | Get detection statistics |
+
+## TypeScript types
+
+```typescript
+import {
+  createSession,
+  Session,
+  TokenizeResult,
+  RehydrateResult,
+  Detection,
+  TakumoError
+} from '@takumo/aegis';
+```
+
+## Error handling
+
+```typescript
+import { createSession, TakumoError } from '@takumo/aegis';
+
+try {
+  const session = createSession();
+  const result = session.tokenize(code, 'file.ts');
+} catch (error) {
+  if (error instanceof TakumoError) {
+    console.error('Takumo error:', error.message);
+    console.error('Code:', error.code);  // e.g., 'PARSE_ERROR', 'INVALID_INPUT'
+  } else {
+    throw error;
+  }
+}
+```

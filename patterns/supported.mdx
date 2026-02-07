@@ -1,0 +1,244 @@
+---
+title: Supported Patterns
+description: All secret types Takumo detects
+---
+
+# Supported Patterns
+
+Everything Takumo can detect and tokenize.
+
+## Cloud Providers
+
+### AWS
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| Access Key ID | `AKIA` + 16 alphanumeric | `KEY` |
+| Secret Access Key | 40 characters, base64-ish | `SECRET` |
+| Session Token | `FwoGZXIvYXdz...` | `TOKEN` |
+
+```typescript
+// Detected
+const accessKey = "AKIAIOSFODNN7EXAMPLE";
+const secretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
+```
+
+### Google Cloud
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| API Key | `AIza` + 35 characters | `KEY` |
+| Service Account Key | JSON with `private_key` field | `SECRET` |
+
+### Azure
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| Connection String | `DefaultEndpointsProtocol=...` | `CONN` |
+| Storage Account Key | Base64, ~88 characters | `KEY` |
+
+## Payment Providers
+
+### Stripe
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| Secret Key | `sk_live_` or `sk_test_` + ID | `KEY` |
+| Publishable Key | `pk_live_` or `pk_test_` + ID | `KEY` |
+| Webhook Secret | `whsec_` + ID | `SECRET` |
+| Restricted Key | `rk_live_` + ID | `KEY` |
+
+```typescript
+// All detected
+const stripe = {
+  secret: "sk_live_51HG3J2eZvKYlo2C0...",
+  publishable: "pk_live_51HG3J2eZvKYlo2C0...",
+  webhook: "whsec_abc123..."
+};
+```
+
+## Developer Tools
+
+### GitHub
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| Personal Access Token | `ghp_` + 36 alphanumeric | `TOKEN` |
+| OAuth Access Token | `gho_` + 36 alphanumeric | `TOKEN` |
+| App Token | `ghu_` / `ghs_` / `ghr_` + ID | `TOKEN` |
+| Fine-grained PAT | `github_pat_` + ID | `TOKEN` |
+
+### GitLab
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| Personal Access Token | `glpat-` + 20 characters | `TOKEN` |
+| Pipeline Token | `glptt-` + ID | `TOKEN` |
+
+### npm
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| Auth Token | `npm_` + 36 characters | `TOKEN` |
+
+## Communication
+
+### Slack
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| Bot Token | `xoxb-` + IDs | `TOKEN` |
+| User Token | `xoxp-` + IDs | `TOKEN` |
+| App Token | `xapp-` + IDs | `TOKEN` |
+| Webhook URL | `hooks.slack.com/services/...` | `URL` |
+
+### Discord
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| Bot Token | Base64 user ID + timestamp + HMAC | `TOKEN` |
+| Webhook URL | `discord.com/api/webhooks/...` | `URL` |
+
+### Twilio
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| Account SID | `AC` + 32 hex characters | `KEY` |
+| Auth Token | 32 hex characters | `SECRET` |
+
+### SendGrid
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| API Key | `SG.` + base64 | `KEY` |
+
+## Databases
+
+### Connection Strings
+
+| Database | Format | Category |
+|----------|--------|----------|
+| PostgreSQL | `postgres://user:pass@host:5432/db` | `CONN` |
+| MySQL | `mysql://user:pass@host:3306/db` | `CONN` |
+| MongoDB | `mongodb://user:pass@host:27017/db` | `CONN` |
+| MongoDB+SRV | `mongodb+srv://user:pass@cluster/db` | `CONN` |
+| Redis | `redis://user:pass@host:6379` | `CONN` |
+| SQL Server | `Server=...;Password=...` | `CONN` |
+
+```typescript
+// All detected
+const dbs = {
+  pg: "postgres://admin:secret@db.internal:5432/app",
+  mongo: "mongodb+srv://user:pass@cluster.mongodb.net/db",
+  redis: "redis://:password@cache.internal:6379"
+};
+```
+
+## Authentication
+
+### JWT
+
+| Pattern | Format | Category |
+|---------|--------|----------|
+| JSON Web Token | `eyJ` + base64 + `.` + base64 + `.` + signature | `TOKEN` |
+
+```typescript
+// Detected
+const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U";
+```
+
+### Generic Auth
+
+| Context | Examples | Category |
+|---------|----------|----------|
+| Bearer tokens | `Authorization: Bearer ...` | `TOKEN` |
+| Basic auth | `Authorization: Basic ...` | `SECRET` |
+
+## Cryptographic Keys
+
+| Type | Header | Category |
+|------|--------|----------|
+| RSA Private Key | `-----BEGIN RSA PRIVATE KEY-----` | `SECRET` |
+| EC Private Key | `-----BEGIN EC PRIVATE KEY-----` | `SECRET` |
+| OpenSSH Private Key | `-----BEGIN OPENSSH PRIVATE KEY-----` | `SECRET` |
+| Generic Private Key | `-----BEGIN PRIVATE KEY-----` | `SECRET` |
+| PGP Private Key | `-----BEGIN PGP PRIVATE KEY BLOCK-----` | `SECRET` |
+
+## Infrastructure
+
+### Internal Hostnames
+
+| Pattern | Examples | Category |
+|---------|----------|----------|
+| `.internal` domains | `db.internal`, `api.prod.internal` | `HOST` |
+| `.local` domains | `server.local` | `HOST` |
+| `.corp` domains | `ldap.corp.company.com` | `HOST` |
+| Private hostnames | `prod-db-01`, `api-server-2` | `HOST` |
+
+### Private IPs
+
+| Range | Examples | Category |
+|-------|----------|----------|
+| Class A | `10.0.0.1`, `10.255.255.255` | `HOST` |
+| Class B | `172.16.0.1` - `172.31.255.255` | `HOST` |
+| Class C | `192.168.0.1`, `192.168.255.255` | `HOST` |
+| Localhost | `127.0.0.1` | `HOST` |
+
+## Generic Detection
+
+### Variable Names
+
+Secrets assigned to suspicious variable names:
+
+```typescript
+// All detected
+const password = "secret123";
+const db_password = "secret123";
+const PASSWORD = "secret123";
+const userPassword = "secret123";
+const api_key = "abc123";
+const apiSecret = "xyz789";
+
+// NOT detected (not suspicious names)
+const username = "admin";
+const greeting = "hello";
+const count = 42;
+```
+
+### Config Files
+
+In `.env`, YAML, JSON, TOML files, values for sensitive keys:
+
+```yaml
+# config.yaml - all detected
+database:
+  password: "secret123"     # Detected (key is "password")
+  secret: "abc123"          # Detected (key is "secret")
+  api_key: "xyz789"         # Detected (key is "api_key")
+
+  host: "localhost"         # NOT detected
+  port: 5432                # NOT detected
+  name: "myapp"             # NOT detected
+```
+
+```bash
+# .env - all detected
+DATABASE_PASSWORD=secret123
+API_KEY=abc123
+JWT_SECRET=xyz789
+
+# NOT detected
+NODE_ENV=production
+PORT=3000
+DEBUG=true
+```
+
+## Missing a pattern?
+
+If Takumo misses something it should catch:
+
+1. [Open an issue](https://github.com/SirTingling/takumo/issues)
+2. Include an example (redact the actual secret!)
+3. Link to docs about the format if available
+
+We'll add it.

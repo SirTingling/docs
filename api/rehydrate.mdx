@@ -1,0 +1,124 @@
+---
+title: rehydrate()
+description: Restore tokens to original secrets
+---
+
+# session.rehydrate()
+
+Replaces tokens in content with their original secret values.
+
+## Signature
+
+```typescript
+session.rehydrate(content: string): RehydrateResult
+```
+
+## Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `content` | `string` | Content with Takumo tokens (e.g., AI response) |
+
+## Returns
+
+```typescript
+interface RehydrateResult {
+  content: string;               // Content with tokens replaced by secrets
+  rehydratedCount: number;       // Number of tokens replaced
+  warnings: RehydrateWarning[];  // Any issues encountered
+}
+
+interface RehydrateWarning {
+  type: 'unknown-token' | 'partial-match';
+  token: string;
+  message: string;
+}
+```
+
+## Example
+
+```typescript
+const session = createSession();
+
+// First, tokenize some code
+const original = `const apiKey = "sk_live_abc123";`;
+session.tokenize(original, 'config.ts');
+
+// Later, rehydrate AI's response
+const aiResponse = `
+// Added validation
+const apiKey = "__TAKUMO_v1_KEY_a1b2c3d4__";
+if (!apiKey) {
+  throw new Error("API key is required");
+}
+`;
+
+const result = session.rehydrate(aiResponse);
+
+console.log(result.content);
+// // Added validation
+// const apiKey = "sk_live_abc123";
+// if (!apiKey) {
+//   throw new Error("API key is required");
+// }
+
+console.log(result.rehydratedCount);
+// 1
+```
+
+## Same token, multiple occurrences
+
+If the same token appears multiple times, all instances are replaced:
+
+```typescript
+const aiResponse = `
+const primary = "__TAKUMO_v1_CONN_abc123__";
+const fallback = "__TAKUMO_v1_CONN_abc123__";
+console.log("Connecting to " + "__TAKUMO_v1_CONN_abc123__");
+`;
+
+const result = session.rehydrate(aiResponse);
+// All three occurrences are replaced with the same original value
+
+console.log(result.rehydratedCount);
+// 3
+```
+
+## Unknown tokens
+
+If Claude hallucinates a token that doesn't exist in the vault:
+
+```typescript
+const aiResponse = `
+const real = "__TAKUMO_v1_KEY_a1b2c3d4__";      // In vault
+const fake = "__TAKUMO_v1_KEY_xxxxxxxx__";      // NOT in vault
+`;
+
+const result = session.rehydrate(aiResponse);
+
+console.log(result.content);
+// const real = "sk_live_abc123";                // Replaced
+// const fake = "__TAKUMO_v1_KEY_xxxxxxxx__";    // Left as-is
+
+console.log(result.warnings);
+// [{ type: 'unknown-token', token: '__TAKUMO_v1_KEY_xxxxxxxx__', message: '...' }]
+```
+
+## Must use same session
+
+Tokens are only valid for the session that created them:
+
+```typescript
+const session1 = createSession();
+const session2 = createSession();
+
+// Tokenize with session1
+session1.tokenize(code, 'file.ts');
+
+// Try to rehydrate with session2 - won't work!
+const result = session2.rehydrate(aiResponse);
+// result.warnings will have 'unknown-token' for every token
+// result.content will still have all the tokens
+```
+
+Always use the same session for `tokenize` and `rehydrate`.

@@ -1,0 +1,91 @@
+---
+title: tokenize
+description: Preview tokenized output
+---
+
+# tokenize
+
+Shows what your code looks like after secrets are replaced with tokens. Useful for previewing before you copy-paste to AI manually.
+
+## Usage
+
+```bash
+takumo-aegis tokenize <file> [options]
+```
+
+## Example
+
+**Input file (`config.ts`):**
+
+```typescript
+export const config = {
+  database: {
+    url: "postgres://admin:secretpass@db.internal:5432/myapp",
+    poolSize: 10
+  },
+  stripe: {
+    secretKey: "sk_live_51HG3J2eZvKYlo2C0abc123",
+    webhookSecret: "whsec_abc123def456"
+  }
+};
+```
+
+**Command:**
+
+```bash
+takumo-aegis tokenize ./config.ts
+```
+
+**Output:**
+
+```
+Tokenized 3 secrets:
+
+  DATABASE_URL    →  __TAKUMO_v1_CONN_a1b2c3d4__
+  STRIPE_KEY      →  __TAKUMO_v1_KEY_e5f6g7h8__
+  WEBHOOK_SECRET  →  __TAKUMO_v1_SECRET_i9j0k1l2__
+
+---
+
+export const config = {
+  database: {
+    url: "__TAKUMO_v1_CONN_a1b2c3d4__",
+    poolSize: 10
+  },
+  stripe: {
+    secretKey: "__TAKUMO_v1_KEY_e5f6g7h8__",
+    webhookSecret: "__TAKUMO_v1_SECRET_i9j0k1l2__"
+  }
+};
+```
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| `--output, -o <file>` | Write to file instead of stdout |
+| `--quiet, -q` | Only output the code, no summary |
+
+## Save to file
+
+```bash
+takumo-aegis tokenize ./config.ts -o ./config.tokenized.ts
+```
+
+## Pipe to clipboard
+
+```bash
+# macOS
+takumo-aegis tokenize ./config.ts -q | pbcopy
+
+# Linux
+takumo-aegis tokenize ./config.ts -q | xclip -selection clipboard
+```
+
+## When to use this
+
+- **Manual AI workflow**: Copy tokenized code, paste into ChatGPT/Claude web UI, copy response back
+- **Debugging**: See exactly what tokens are generated
+- **Sharing**: Send code to someone without exposing secrets
+
+For automated workflows, use [`shield`](/cli/shield) instead.

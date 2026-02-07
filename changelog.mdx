@@ -1,0 +1,67 @@
+---
+title: Changelog
+description: Release history
+---
+
+# Changelog
+
+## v0.1.0-alpha
+
+*Current release*
+
+First alpha release. Aegis Shield is complete and working.
+
+### What's included
+
+**Detection**
+- 13+ secret pattern types (AWS, Stripe, GitHub, databases, etc.)
+- Context-based detection for generic secrets
+- Config file parsing (.env, YAML, JSON, TOML)
+
+**CLI**
+- `scan` - find secrets in files/directories
+- `tokenize` - preview tokenized output
+- `shield` - full round-trip with Claude
+
+**API**
+- `createSession()` - create token vault
+- `session.tokenize()` - detect and tokenize
+- `session.rehydrate()` - restore secrets
+- Full TypeScript types
+
+**Integration**
+- Claude API (Anthropic) built-in
+- Works with claude-sonnet-4-20250514 (default), opus, haiku
+
+### Known limitations
+
+- Sentinel (inbound validation) not yet available
+- Only Claude supported (OpenAI, local models coming)
+- No custom pattern configuration yet
+- No IDE integration yet
+
+---
+
+## Roadmap
+
+### v0.2.0 — Sentinel
+
+- Inbound code validation
+- Security vulnerability scanning
+- License compliance checking
+- Custom rule definitions
+
+### v0.3.0 — IDE Integration
+
+- VS Code extension
+- Real-time secret detection
+- Inline warnings
+
+### Future
+
+- OpenAI / GPT support
+- Local model support (Ollama, etc.)
+- Custom pattern configuration
+- Team features
+- CI/CD integrations
+- Web dashboard

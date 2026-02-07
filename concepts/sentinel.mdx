@@ -1,0 +1,69 @@
+---
+title: Sentinel
+description: Inbound code validation
+---
+
+# Sentinel
+
+<Note>
+Sentinel is in development. This page describes what's coming.
+</Note>
+
+Sentinel is the inbound protection layer. It validates AI-generated code before you use it.
+
+## The problem
+
+AI can generate code that:
+
+- Has security vulnerabilities (SQL injection, XSS, etc.)
+- Uses copyleft-licensed code in your proprietary project
+- Violates your team's coding standards
+- Includes deprecated or dangerous APIs
+
+You catch these in code review... if you notice them.
+
+## What Sentinel will do
+
+**Security scanning**
+- SQL/NoSQL injection patterns
+- Command injection
+- XSS vulnerabilities
+- Insecure crypto usage
+- Hardcoded secrets (yes, AI sometimes adds new ones)
+
+**License compliance**
+- Detect GPL/AGPL code in proprietary projects
+- Flag license-incompatible dependencies
+- Identify code that looks like known open source
+
+**Custom rules**
+- Your team's patterns to enforce
+- Your team's patterns to forbid
+- Framework-specific best practices
+
+## Planned API
+
+```typescript
+import { createSentinel } from '@takumo/sentinel';
+
+const sentinel = createSentinel({
+  rules: ['security', 'license'],
+  licensePolicy: 'permissive-only',  // No copyleft
+  customRules: './takumo-rules.yaml'
+});
+
+// Validate before using AI-generated code
+const result = await sentinel.validate(aiGeneratedCode);
+
+if (!result.passed) {
+  console.log('Issues found:');
+  for (const issue of result.issues) {
+    console.log(`  ${issue.severity}: ${issue.message}`);
+    console.log(`    Line ${issue.line}: ${issue.snippet}`);
+  }
+}
+```
+
+## Help shape it
+
+What validations matter most to you? [Request access](https://takumo.com) and tell us.
