@@ -1,26 +1,32 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "willow",
+  "theme": "venus",
   "name": "Takumo",
   "description": "Bidirectional AI code governance. Protect secrets going out, validate code coming in.",
 
   "colors": {
-    "primary": "#475569",
-    "light": "#94A3B8",
-    "dark": "#1E293B"
+    "primary": "#6366F1",
+    "light": "#818CF8",
+    "dark": "#4F46E5",
+    "background": {
+      "light": "#FAFAFA",
+      "dark": "#09090B"
+    }
   },
 
   "logo": {
     "light": "/logo/takumo-dark.svg",
     "dark": "/logo/takumo-light.svg",
-    "href": "https://takumo.com"
+    "href": "/"
   },
 
   "favicon": "/logo/favicon.svg",
 
   "styling": {
     "eyebrows": "breadcrumbs",
-    "codeblocks": "dark",
+    "codeblocks": "system",
+    "anchors": "sections",
+    "rounded": "default",
     "icons": {
       "library": "lucide"
     }
@@ -29,7 +35,7 @@
   "fonts": {
     "heading": {
       "family": "Inter",
-      "weight": 600
+      "weight": 700
     },
     "body": {
       "family": "Inter",
@@ -43,10 +49,10 @@
   },
 
   "background": {
-    "decoration": "grid",
+    "decoration": "none",
     "color": {
-      "light": "#FAFAFA",
-      "dark": "#0C0F14"
+      "light": "#FFFFFF",
+      "dark": "#09090B"
     }
   },
 
