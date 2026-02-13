@@ -84,7 +84,8 @@
             "pages": [
               "concepts/how-it-works",
               "concepts/aegis-shield",
-              "concepts/sentinel"
+              "concepts/sentinel",
+              "concepts/security"
             ]
           },
           {

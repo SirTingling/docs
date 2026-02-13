@@ -1,0 +1,246 @@
+---
+title: Security
+description: How Takumo protects your code, credentials, and data
+---
+
+# Security
+
+Takumo is a security product. If you can't trust it, nothing else matters. This page explains exactly what happens to your data, what guarantees we make, and what we don't do.
+
+## Architecture overview
+
+<Steps>
+  <Step title="Local detection" icon="eye">
+    Secrets are identified on your machine. Nothing is sent during this step.
+  </Step>
+  <Step title="Local tokenization" icon="shield">
+    Secrets are replaced with deterministic tokens. The mapping lives only in memory.
+  </Step>
+  <Step title="Tokenized code leaves" icon="arrow-right">
+    Only tokenized code (no real values) is sent to AI providers or Takumo Cloud.
+  </Step>
+  <Step title="Local rehydration" icon="rotate">
+    Tokens are swapped back to real values on your machine. The session vault is destroyed.
+  </Step>
+</Steps>
+
+**The fundamental principle:** real secret values never leave your machine. Everything that crosses a network boundary has been tokenized first.
+
+## What never leaves your machine
+
+| Data | Transmitted? | Details |
+|------|-------------|---------|
+| API keys, passwords, credentials | **Never** | Tokenized locally before any transmission |
+| Connection strings | **Never** | Tokenized locally |
+| Private hostnames / internal URLs | **Never** | Tokenized locally |
+| JWTs and bearer tokens | **Never** | Tokenized locally |
+| Session vault (token → secret mapping) | **Never** | In-memory only, destroyed after operation |
+| Your `.env` files | **Never** | Read locally for detection, never uploaded |
+
+## What is transmitted
+
+| Data | When | To where |
+|------|------|----------|
+| Tokenized code (secrets replaced with placeholders) | During AI operations | Third-party AI provider (Claude, GPT, etc.) |
+| Audit metadata (what was detected, when, category) | If using Takumo Cloud | Takumo Cloud (encrypted) |
+| Account info (email, name) | Account creation | Takumo servers |
+| Usage telemetry (anonymized, opt-out available) | During operation | Takumo servers |
+
+<Note>
+Audit metadata includes the **type** of secret detected (e.g., "AWS key on line 8") but never the **value** (e.g., never `AKIAIOSFODNN7EXAMPLE`).
+</Note>
+
+## Token security model
+
+### Deterministic but non-reversible
+
+Tokens are generated using a SHA-256 hash of the secret value, truncated to the first 8 characters:
+
+```
+__TAKUMO_v1_KEY_8f3a2b1c__
+```
+
+This means:
+
+- **Same secret → same token** (within a session), so AI can reason about relationships
+- **Token → secret is impossible** without the session vault
+- The truncated hash has no cryptographic value for recovering the original
+
+### Session vault isolation
+
+The session vault (the mapping from tokens back to real values) exists only in process memory:
+
+```typescript
+// Vault exists here
+const session = createSession();
+session.tokenize(code, 'config.ts');
+
+// Send tokenized code to AI...
+// Get response...
+
+session.rehydrate(response);
+
+// Vault is gone after this
+session.destroy();
+```
+
+- No vault data is written to disk
+- No vault data is sent over the network
+- Each session is isolated — sessions cannot access each other's vaults
+- When the process ends, the vault is garbage collected
+
+### What if someone intercepts tokenized code?
+
+They see:
+
+```typescript
+const db = "__TAKUMO_v1_CONN_a1b2c3d4__";
+const key = "__TAKUMO_v1_KEY_e5f6g7h8__";
+```
+
+They can tell you have a database connection and an API key. They **cannot** determine:
+
+- The actual connection string or key value
+- The provider (AWS, Stripe, etc.) beyond what the surrounding code implies
+- Any information that would help them authenticate
+
+## Infrastructure security
+
+### Encryption
+
+| Layer | Standard | Details |
+|-------|----------|---------|
+| In transit | TLS 1.3 | All connections to Takumo Cloud and APIs |
+| At rest | AES-256 | All stored data (audit logs, account data, configs) |
+| Vault (in memory) | Process isolation | Never written to disk or transmitted |
+
+### Takumo Cloud
+
+For teams using Takumo Cloud (dashboard, audit logs, policy management):
+
+- Hosted on SOC 2 Type II compliant infrastructure (AWS)
+- Data encrypted at rest and in transit
+- Role-based access controls
+- All API requests authenticated and authorized
+- Audit logs are append-only and tamper-evident
+- Tenant data is logically isolated
+
+### On-premise deployments
+
+For Enterprise customers deploying Takumo on their own infrastructure:
+
+- All processing stays within your network
+- No data is sent to Takumo servers
+- You control encryption keys, access policies, and retention
+- Support provided via secure channels
+
+## Third-party AI providers
+
+When tokenized code is sent to AI providers (Claude, GPT, Copilot, etc.):
+
+| Concern | How Takumo addresses it |
+|---------|------------------------|
+| AI sees my secrets | Impossible — secrets are tokenized before transmission |
+| AI provider stores my code | Tokenized code only; no secrets present. Enterprise providers offer zero-retention APIs |
+| AI provider trains on my code | Enterprise API agreements prohibit training. Tokenized code has no secret value regardless |
+| AI hallucinates credentials | Sentinel (inbound) catches hardcoded secrets in AI responses |
+
+## Zero Data Retention (ZDR) mode
+
+ZDR mode ensures no code data persists anywhere beyond real-time processing:
+
+- Code inputs and outputs are processed in memory only
+- No code is written to disk or stored at rest
+- Dedicated processing infrastructure isolated from non-ZDR workloads
+- Audit logs record metadata (event type, timestamp, category counts) but no code content
+
+| Plan | ZDR default | Can enable? |
+|------|------------|------------|
+| Individual | Off | Yes, in settings |
+| Pro | Off | Yes, in settings |
+| Teams | **On** | Always on |
+| Enterprise | **On** | Always on, configurable retention |
+
+## Threat model
+
+### What Takumo protects against
+
+| Threat | Protection |
+|--------|-----------|
+| Secrets leaked to AI providers | Aegis Shield tokenizes before transmission |
+| Secrets leaked in AI-generated code | Sentinel detects hardcoded secrets in responses |
+| AI-generated security vulnerabilities | Sentinel scans for SQL injection, XSS, command injection, insecure crypto |
+| License-incompatible AI suggestions | Sentinel checks for copyleft code in proprietary projects |
+| Unauthorized access to audit data | RBAC, encryption, tenant isolation |
+| Credential exposure in logs/telemetry | Secrets are never included in logs or telemetry |
+
+### What Takumo does not protect against
+
+We believe in being honest about scope:
+
+| Out of scope | Why |
+|-------------|-----|
+| Secrets already committed to git | Use `git-secrets`, `truffleHog`, or `gitleaks` for historical scanning |
+| Runtime secret management | Use a vault (HashiCorp Vault, AWS Secrets Manager) for runtime injection |
+| Network-level attacks on your machine | Use standard endpoint security |
+| Malicious insiders with vault access | If someone has access to your running process memory, they have access to your secrets regardless |
+| Novel zero-day vulnerabilities in AI output | Sentinel catches known patterns; unknown vulnerabilities require manual review |
+
+## Compliance
+
+| Framework | Status |
+|-----------|--------|
+| SOC 2 Type II | In progress |
+| GDPR | Compliant — DPA available on request |
+| CCPA | Compliant |
+| HIPAA | Available for Enterprise plans with BAA |
+
+For compliance documentation, DPA requests, or security questionnaires, contact [security@takumo.io](mailto:security@takumo.io).
+
+## Vulnerability reporting
+
+If you discover a security vulnerability in Takumo, please report it responsibly:
+
+**Email:** [security@takumo.io](mailto:security@takumo.io)
+
+**What to include:**
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Your contact information (for follow-up)
+
+**Our commitment:**
+- Acknowledge receipt within 24 hours
+- Provide an initial assessment within 72 hours
+- Keep you informed of remediation progress
+- Credit you in our security advisories (if desired)
+
+Please do not disclose vulnerabilities publicly until we've had a reasonable opportunity to address them.
+
+## Security best practices
+
+Takumo is one layer of defense. We recommend:
+
+1. **Never commit secrets to version control** — use `.env` files and `.gitignore`
+2. **Use a secrets manager** for production — HashiCorp Vault, AWS Secrets Manager, or similar
+3. **Review AI-generated code** before merging — Sentinel helps, but human review is still important
+4. **Enable ZDR mode** if your organization handles sensitive data
+5. **Rotate credentials regularly** — even with Takumo, credential rotation limits blast radius
+6. **Keep Takumo updated** — security improvements ship in every release
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Aegis Shield" icon="shield" href="/concepts/aegis-shield">
+    How outbound tokenization works
+  </Card>
+  <Card title="Sentinel" icon="scan" href="/concepts/sentinel">
+    How inbound code validation works
+  </Card>
+  <Card title="How It Works" icon="play" href="/concepts/how-it-works">
+    The full Takumo flow explained
+  </Card>
+  <Card title="Supported Patterns" icon="list" href="/patterns/supported">
+    All secret types Takumo can detect
+  </Card>
+</CardGroup>
