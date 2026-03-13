@@ -37,22 +37,15 @@ The management UI at cloud.takumo.io. Handles API keys, policies, team managemen
 
 ## How requests flow
 
+```mermaid
+flowchart TD
+    A[Your AI Tool] --> B[Aegis Shield Gateway]
+    B -->|Tokenized request| C[AI Provider\nAnthropic, OpenAI, etc.]
+    B -->|gRPC| D[Gateway Coordinator\naudit, policy, health]
+    D --> E[(PostgreSQL)]
 ```
-Your AI Tool
-    │
-    ▼
-┌──────────────────┐
-│  Aegis Shield    │ ← Tokenizes secrets, proxies request
-│  Gateway         │
-└──────┬───────────┘
-       │
-       ├──── gRPC ────► Gateway Coordinator ──► PostgreSQL
-       │                (audit, policy, health)
-       │
-       ▼
-  AI Provider
-  (Anthropic, OpenAI, etc.)
-```
+
+The gateway tokenizes secrets before forwarding to the AI provider, and ships audit events to the coordinator in the background.
 
 1. Your AI tool sends a request to the gateway instead of directly to the AI provider.
 2. The gateway scans the request for secrets. Found secrets are replaced with deterministic tokens.
