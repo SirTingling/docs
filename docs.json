@@ -69,7 +69,7 @@
   "anchors": [
     {
       "anchor": "Takumo Cloud",
-      "icon": "grid-2x2",
+      "icon": "server",
       "href": "https://cloud.takumo.io/dashboard"
     },
     {
@@ -123,7 +123,7 @@
       },
       {
         "tab": "Dashboard",
-        "icon": "grid-2x2",
+        "icon": "server",
         "groups": [
           {
             "group": "Guide",
@@ -175,7 +175,7 @@
       },
       {
         "tab": "AI Tools",
-        "icon": "puzzle",
+        "icon": "zap",
         "groups": [
           {
             "group": "Integrations",

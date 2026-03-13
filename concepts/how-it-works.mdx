@@ -1,7 +1,7 @@
 ---
 title: How It Works
 description: The full flow explained
-icon: "workflow"
+icon: "replace"
 ---
 
 # How It Works
@@ -9,19 +9,19 @@ icon: "workflow"
 ## The basic flow
 
 <Steps>
-  <Step title="Your code" icon="file-code">
+  <Step title="Your code" icon="code">
     Code with secrets (API keys, passwords, connection strings)
   </Step>
   <Step title="Tokenize" icon="shield">
     Takumo detects and replaces secrets with tokens
   </Step>
-  <Step title="AI processes" icon="brain">
+  <Step title="AI processes" icon="zap">
     Claude/GPT sees only tokens, never real values
   </Step>
-  <Step title="Rehydrate" icon="rotate">
+  <Step title="Rehydrate" icon="replace">
     Takumo restores tokens back to real secrets
   </Step>
-  <Step title="Output" icon="check">
+  <Step title="Output" icon="play">
     You get working code with your actual credentials
   </Step>
 </Steps>
