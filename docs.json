@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
-  "name": "Takumo",
+  "name": "Docs",
   "description": "Bidirectional AI code governance. Protect secrets going out, validate code coming in.",
 
   "colors": {
@@ -20,8 +20,13 @@
 
   "styling": {
     "eyebrows": "breadcrumbs",
-    "codeblocks": "system",
-    "anchors": "sections",
+    "codeblocks": {
+      "themes": {
+        "light": "github-light",
+        "dark": "github-dark"
+      }
+    },
+    "anchors": "buttons",
     "rounded": "default",
     "icons": {
       "library": "lucide"
@@ -31,9 +36,9 @@
   "fonts": {
     "heading": {
       "family": "Geist Sans",
-      "source": "https://cdn.vercel.com/fonts/geist-sans/Geist-Bold.woff2",
+      "source": "https://cdn.vercel.com/fonts/geist-sans/Geist-SemiBold.woff2",
       "format": "woff2",
-      "weight": 700
+      "weight": 600
     },
     "body": {
       "family": "Geist Sans",
@@ -45,34 +50,29 @@
 
   "appearance": {
     "default": "dark",
-    "strict": false
+    "strict": true
   },
 
   "background": {
-    "decoration": "gradient"
+    "decoration": "gradient",
+    "color": {
+      "light": "#FFFFFF",
+      "dark": "#000000"
+    }
   },
 
   "navbar": {
-    "links": [
-      {
-        "label": "Changelog",
-        "href": "/changelog"
-      },
-      {
-        "label": "takumo.io",
-        "href": "https://takumo.io"
-      }
-    ],
+    "links": [],
     "primary": {
       "type": "button",
-      "label": "Open Dashboard",
+      "label": "Open Takumo Cloud",
       "href": "https://cloud.takumo.io/dashboard"
     }
   },
 
   "anchors": [
     {
-      "anchor": "Dashboard",
+      "anchor": "Takumo Cloud",
       "icon": "layout-dashboard",
       "href": "https://cloud.takumo.io/dashboard"
     },
@@ -87,6 +87,7 @@
     "tabs": [
       {
         "tab": "Documentation",
+        "icon": "book-open",
         "groups": [
           {
             "group": "Get Started",
@@ -219,7 +220,26 @@
   "footer": {
     "socials": {
       "github": "https://github.com/SirTingling/takumo"
-    }
+    },
+    "links": [
+      {
+        "header": "Product",
+        "items": [
+          { "label": "Aegis Shield", "href": "/concepts/aegis-shield" },
+          { "label": "Sentinel", "href": "/concepts/sentinel" },
+          { "label": "Pricing", "href": "/reference/plan-comparison" },
+          { "label": "Changelog", "href": "/changelog" }
+        ]
+      },
+      {
+        "header": "Resources",
+        "items": [
+          { "label": "Documentation", "href": "/introduction" },
+          { "label": "API Reference", "href": "/api/overview" },
+          { "label": "Dashboard", "href": "https://cloud.takumo.io/dashboard" }
+        ]
+      }
+    ]
   },
 
   "search": {

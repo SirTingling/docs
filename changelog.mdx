@@ -1,83 +1,86 @@
 ---
 title: Changelog
 description: Release history
-icon: "file-clock"
+icon: "clock"
 ---
 
 # Changelog
 
-## v0.6.0 — Cloud Coordinator
+<AccordionGroup>
+  <Accordion title="v0.6.0 — Cloud Coordinator">
+    Gateway Coordinator connects your gateways to the dashboard over gRPC. You can now see all running instances, their health, and manage join keys from a single page.
 
-Gateway-to-dashboard connectivity. Fleet management. Real-time policy streaming.
+    - Fleet management page shows connected gateways with live health status
+    - Policies push from the dashboard to gateways in real time
+    - Audit events flow from gateways to the dashboard database automatically
+    - Gateways send health reports every 30 seconds (version, active sessions, SLI metrics, memory usage)
+    - Instances that miss reports are marked stale after 90 seconds
+    - Organizations choose SaaS or On-Prem deployment mode at creation
+  </Accordion>
 
-- **Gateway Coordinator** — Rust gRPC service connecting gateways to the dashboard
-- **Fleet management** — Monitor connected gateway instances, track health, manage join keys
-- **Policy streaming** — Push policy updates from dashboard to gateways in real-time
-- **Audit shipping** — Gateway audit events flow to the dashboard database automatically
-- **Health reporting** — Gateways send health reports every 30 seconds (version, sessions, SLI metrics, memory)
-- **Stale detection** — Gateways that miss health reports are marked stale after 90 seconds
-- **Deployment mode** — Organizations choose SaaS or On-Prem at creation
+  <Accordion title="v0.5.0 — Redis + Token Revocation">
+    Distributed state across gateway instances. Rate limiting and circuit breakers now share state via Redis, so scaling horizontally works without sticky sessions.
 
-## v0.5.0 — Redis + Token Revocation
+    - Redis-backed rate limiting across the gateway fleet
+    - JWKS auto-discovery for signing key rotation
+    - Revoked API keys propagate to all gateways within seconds
+    - Circuit breaker state shared across instances via Redis
+  </Accordion>
 
-Distributed state. Instant key revocation. Circuit breaker sync.
+  <Accordion title="v0.4.0 — Enterprise Infrastructure">
+    Production-grade deployment tooling. Helm charts, CI/CD pipelines, and monitoring out of the box.
 
-- **Redis integration** — Distributed rate limiting across gateway instances
-- **JWKS auto-discovery** — Gateways fetch signing keys automatically
-- **Token revocation** — Revoked API keys propagate to all gateways within seconds
-- **Circuit breaker sync** — Shared circuit state across gateway fleet via Redis
+    - Helm charts for Aegis Shield, Gateway Coordinator, and monitoring stack
+    - GitHub Actions pipelines for build, test, lint, security scanning, and multi-arch Docker builds
+    - Container images are multi-arch (amd64/arm64), cosign-signed, and Trivy-scanned
+    - Prometheus ServiceMonitor, Grafana dashboards, and alert rules included
+    - Pod-level network isolation policies
+    - HPA autoscaling with configurable thresholds
+  </Accordion>
 
-## v0.4.0 — Enterprise Infrastructure
+  <Accordion title="v0.3.0 — Gateway MVP">
+    The Aegis Shield gateway, fully functional with 11 modules and 369 tests. This is the core proxy that sits between your AI tools and upstream providers.
 
-Helm charts. CI/CD pipelines. Production-grade deployment.
+    - Transparent HTTP/HTTPS proxy for AI provider APIs
+    - Real-time secret detection in request bodies
+    - In-memory vault with deterministic token generation
+    - Automatic secret restoration (rehydration) in responses
+    - Full SSE streaming support with chunk-level rehydration
+    - Per-key and per-org rate limiting with sliding windows
+    - Circuit breakers for upstream provider failures
+    - Structured JSON access logs (secrets and bodies are never logged)
+    - JWT validation and API key authentication
+    - Liveness and readiness health probes
+  </Accordion>
 
-- **Helm charts** — aegis-shield, gateway-coordinator, monitoring
-- **CI/CD** — GitHub Actions for build, test, lint, security scan, Docker multi-arch builds
-- **Container images** — Multi-arch (amd64/arm64), cosign-signed, Trivy-scanned
-- **Monitoring** — Prometheus ServiceMonitor, Grafana dashboards, alert rules
-- **Network policies** — Pod-level network isolation
-- **Autoscaling** — HPA with configurable thresholds
+  <Accordion title="v0.2.0 — Core Engine">
+    The detection and tokenization engine. This is the foundation everything else builds on.
 
-## v0.3.0 — Gateway MVP
+    - 13+ secret types detected: AWS, Stripe, GitHub, database URLs, JWTs, and more
+    - Context-based detection catches generic secrets by analyzing surrounding code
+    - Config file parsing for .env, YAML, JSON, and TOML
+    - Deterministic tokenization ensures the same secret always produces the same token
+    - Session vault with isolated in-memory storage, zeroized on completion
+    - SHA-256 based token generation with truncated hashes
+  </Accordion>
 
-The Aegis Shield gateway. 11 modules. 369 tests.
+  <Accordion title="v0.1.0-alpha — Initial Release">
+    First alpha release with the Aegis Shield CLI and programmatic API.
 
-- **Proxy engine** — Transparent HTTP/HTTPS proxy for AI provider APIs
-- **Secret detection** — Real-time scanning of request bodies
-- **Tokenization** — In-memory vault with deterministic token generation
-- **Rehydration** — Automatic secret restoration in responses
-- **Streaming support** — Full SSE streaming with chunk-level rehydration
-- **Rate limiting** — Per-key, per-org rate limiting with sliding window
-- **Circuit breakers** — Automatic fallback when upstream providers fail
-- **Access logging** — Structured JSON logs (never logs secrets or bodies)
-- **Auth module** — JWT validation, API key authentication
-- **Health checks** — Liveness and readiness probes
-
-## v0.2.0 — Core Engine
-
-Detection, tokenization, and the in-memory vault.
-
-- **Pattern detection** — 13+ secret types (AWS, Stripe, GitHub, database URLs, JWTs, etc.)
-- **Context-based detection** — Generic secrets identified by surrounding code context
-- **Config file parsing** — .env, YAML, JSON, TOML
-- **Deterministic tokenization** — Same secret always produces the same token
-- **Session vault** — Isolated in-memory storage, zeroized on completion
-- **SHA-256 token generation** — Truncated hash-based tokens
-
-## v0.1.0-alpha — Initial Release
-
-First alpha. Aegis Shield CLI and API.
-
-- **CLI** — `scan`, `tokenize`, `shield` commands
-- **API** — `createSession()`, `session.tokenize()`, `session.rehydrate()`
-- **Claude integration** — Built-in Anthropic API support
-- **TypeScript** — Full type definitions
+    - CLI with `scan`, `tokenize`, and `shield` commands
+    - Programmatic API: `createSession()`, `session.tokenize()`, `session.rehydrate()`
+    - Built-in Anthropic API support for Claude integration
+    - Full TypeScript type definitions
+  </Accordion>
+</AccordionGroup>
 
 ---
 
 ## Roadmap
 
-- **Sentinel API** — Standalone inbound validation API
-- **OpenAI support** — GPT model routing through the gateway
-- **Custom patterns** — User-defined secret detection patterns
-- **CI/CD integration** — Pre-commit hooks and pipeline scanning
+What's coming next:
+
+- Sentinel API for standalone inbound code validation
+- OpenAI model routing through the gateway
+- User-defined custom detection patterns
+- CI/CD integration with pre-commit hooks and pipeline scanning
