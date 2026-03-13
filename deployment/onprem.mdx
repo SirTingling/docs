@@ -1,0 +1,171 @@
+---
+title: On-Premises
+description: Deploy Takumo in your own infrastructure
+icon: "building"
+---
+
+For organizations that need full control over where their data flows. Deploy the gateway and coordinator in your Kubernetes cluster.
+
+## Prerequisites
+
+| Requirement | Minimum Version |
+|------------|----------------|
+| Kubernetes | 1.27+ |
+| Helm | 3.x |
+| PostgreSQL | 15+ (or Neon Postgres) |
+| Redis | 7+ |
+| Container registry access | Access to `ghcr.io/sirtingling` for Takumo images |
+
+## Deployment
+
+<Steps>
+  <Step title="Add the Helm repository">
+    ```bash
+    helm repo add takumo https://charts.takumo.io
+    helm repo update
+    ```
+  </Step>
+
+  <Step title="Create namespace and secrets">
+    ```bash
+    kubectl create namespace takumo
+    ```
+
+    Create the database credentials for the coordinator:
+
+    ```bash
+    kubectl create secret generic coordinator-database \
+      --namespace takumo \
+      --from-literal=database-url="postgres://user:pass@host:5432/takumo" \
+      --from-literal=database-url-direct="postgres://user:pass@host:5432/takumo"
+    ```
+
+    Create the JWT signing and verification keys:
+
+    ```bash
+    kubectl create secret generic coordinator-jwt-signing \
+      --namespace takumo \
+      --from-file=signing.pem=./signing.pem \
+      --from-file=verification.pem=./verification.pem
+    ```
+
+    Create the image pull secret for `ghcr.io`:
+
+    ```bash
+    kubectl create secret docker-registry ghcr-pull-secret \
+      --namespace takumo \
+      --docker-server=ghcr.io \
+      --docker-username=YOUR_USERNAME \
+      --docker-password=YOUR_PAT
+    ```
+  </Step>
+
+  <Step title="Deploy the coordinator">
+    The coordinator uses the `manual` secrets provider for on-prem, meaning it expects you to create Kubernetes secrets yourself (done in the previous step).
+
+    ```bash
+    helm install gateway-coordinator takumo/gateway-coordinator \
+      --namespace takumo \
+      --values https://charts.takumo.io/gateway-coordinator/values-onprem.yaml
+    ```
+
+    This sets:
+    - `secrets.provider: manual`
+    - `secrets.database.enabled: true` with secret name `coordinator-database`
+    - `secrets.jwtSigning.enabled: true` with secret name `coordinator-jwt-signing`
+
+    Verify the coordinator is running:
+
+    ```bash
+    kubectl get pods -n takumo -l app.kubernetes.io/name=gateway-coordinator
+    ```
+  </Step>
+
+  <Step title="Deploy the gateway">
+    ```bash
+    helm install aegis-shield takumo/aegis-shield \
+      --namespace takumo \
+      --values https://charts.takumo.io/aegis-shield/values-onprem.yaml \
+      --set connector.grpcUrl="gateway-coordinator.takumo.svc.cluster.local:9090"
+    ```
+
+    This configures the gateway to connect to the coordinator via gRPC on port 9090 and disables the cloud connector (`cloud.enabled: false`).
+
+    Verify the gateway is running:
+
+    ```bash
+    kubectl get pods -n takumo -l app.kubernetes.io/name=aegis-shield
+    ```
+  </Step>
+
+  <Step title="Create a join key in the dashboard">
+    Go to **Settings > Gateway** in the dashboard and click **Create Join Key**. Give it a name (e.g., `production-cluster`). Copy the key immediately.
+  </Step>
+
+  <Step title="Configure the gateway with the join key">
+    Create the join key secret:
+
+    ```bash
+    kubectl create secret generic aegis-join-key \
+      --namespace takumo \
+      --from-literal=join-key="your-join-key-here"
+    ```
+
+    Upgrade the gateway to use it:
+
+    ```bash
+    helm upgrade aegis-shield takumo/aegis-shield \
+      --namespace takumo \
+      --reuse-values \
+      --set secrets.joinKey.enabled=true \
+      --set secrets.joinKey.secretName=aegis-join-key
+    ```
+  </Step>
+
+  <Step title="Verify the connection">
+    Check the **Fleet** page in the dashboard. Your gateway instance should appear with a **Connected** state.
+
+    You can also verify locally:
+
+    ```bash
+    kubectl logs -n takumo -l app.kubernetes.io/name=aegis-shield --tail=20
+    ```
+
+    Look for a log line indicating successful registration with the coordinator.
+  </Step>
+</Steps>
+
+<Warning>The join key is shown once. Store it in your secrets management system (Vault, AWS Secrets Manager, etc.) before closing the dialog.</Warning>
+
+## Required secrets reference
+
+### Coordinator
+
+| Secret Name | Keys | Description |
+|------------|------|-------------|
+| `coordinator-database` | `database-url`, `database-url-direct` | PostgreSQL connection strings (pooled and direct) |
+| `coordinator-jwt-signing` | `signing.pem`, `verification.pem` | JWT signing and verification key pair |
+| `coordinator-join-key` | `join-key` | Join key for gateway authentication (optional) |
+
+### Gateway
+
+| Secret Name | Keys | Description |
+|------------|------|-------------|
+| `aegis-jwt-key` | `public.pem` | JWT public key for auth verification |
+| `aegis-join-key` | `join-key` | Join key for coordinator registration |
+| `ghcr-pull-secret` | Docker registry credentials | Image pull secret for `ghcr.io` |
+
+## Network requirements
+
+The gateway needs outbound access to:
+
+- Your AI provider (e.g., `api.anthropic.com`, `api.openai.com`)
+- The coordinator gRPC endpoint (port 9090)
+
+The coordinator needs:
+
+- Access to PostgreSQL
+- Inbound gRPC from gateway pods (port 9090)
+- Inbound HTTP for health checks (port 8080)
+
+Both services create NetworkPolicy resources by default (`networkPolicy.enabled: true`).

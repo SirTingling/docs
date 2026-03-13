@@ -1,0 +1,125 @@
+---
+title: Rate Limits
+description: Request limits by plan and operation
+icon: "gauge"
+---
+
+Every API operation has rate limits. Limits are per-organization, not per-key. If two keys belong to the same org, they share the same quota.
+
+## Per-plan rate limits
+
+These values come directly from the plan configuration. Per-minute limits protect against bursts. Monthly limits cap total usage.
+
+### Secret scans
+
+| | Free | Developer | Pro | Enterprise |
+|--|------|-----------|-----|------------|
+| Per minute | 10 | 20 | 30 | 100 |
+| Per hour | 100 | 300 | 500 | 2,000 |
+| Per month | 1,000 | 5,000 | 10,000 | Unlimited |
+
+### Vulnerability scans
+
+| | Free | Developer | Pro | Enterprise |
+|--|------|-----------|-----|------------|
+| Per minute | 5 | 5 | 10 | 50 |
+| Per hour | 50 | 100 | 200 | 1,000 |
+| Per month | 500 | 2,500 | 5,000 | Unlimited |
+
+### Policy evaluations
+
+| | Free | Developer | Pro | Enterprise |
+|--|------|-----------|-----|------------|
+| Per minute | 20 | 40 | 60 | 200 |
+| Per hour | 200 | 500 | 1,000 | 5,000 |
+| Per month | 5,000 | 20,000 | Unlimited | Unlimited |
+
+### Auto-fix generation
+
+| | Free | Developer | Pro | Enterprise |
+|--|------|-----------|-----|------------|
+| Per minute | 5 | 10 | 20 | 50 |
+| Per hour | 50 | 150 | 300 | 1,000 |
+| Per month | 500 | 2,500 | 5,000 | Unlimited |
+
+### API requests
+
+| | Free | Developer | Pro | Enterprise |
+|--|------|-----------|-----|------------|
+| Per minute | 30 | 60 | 120 | 500 |
+| Per hour | 500 | 2,500 | 5,000 | 20,000 |
+| Per month | 10,000 | 50,000 | 100,000 | Unlimited |
+
+### Webhook deliveries
+
+| | Free | Developer | Pro | Enterprise |
+|--|------|-----------|-----|------------|
+| Per minute | 10 | 20 | 30 | 100 |
+| Per hour | 200 | 500 | 1,000 | 5,000 |
+| Per month | 5,000 | 25,000 | 50,000 | Unlimited |
+
+## Rate limit headers
+
+Every response includes these headers:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests allowed in the current window |
+| `X-RateLimit-Remaining` | Requests remaining in the current window |
+| `X-RateLimit-Reset` | Unix timestamp when the window resets |
+| `Retry-After` | Seconds to wait before retrying (only on `429` responses) |
+
+## Handling rate limits
+
+When you receive a `429`:
+
+```
+HTTP/1.1 429 Too Many Requests
+Retry-After: 30
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1710360000
+```
+
+1. Read the `Retry-After` header.
+2. Wait that many seconds.
+3. Retry the request.
+
+Do not retry in a tight loop. Implement exponential backoff if you are batching requests.
+
+```typescript
+async function requestWithRetry(url: string, options: RequestInit, maxRetries = 3) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(url, options);
+
+    if (response.status !== 429) return response;
+
+    const retryAfter = Number(response.headers.get("Retry-After") ?? 30);
+    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+  }
+
+  throw new Error("Rate limit exceeded after max retries");
+}
+```
+
+## Overage behavior
+
+- **Free plan**: Hard-capped. When you hit the monthly limit, requests return `403 FORBIDDEN` with code `PLAN_LIMIT_REACHED` until the next billing cycle.
+- **Developer and Pro plans**: Overage is billed at $0.02 per credit. You are not cut off mid-request. Usage is billed at the end of the billing cycle.
+- **Enterprise plans**: Unlimited credits. No overage charges.
+
+## Credit costs
+
+Every operation consumes credits from your included balance:
+
+| Operation | Credits |
+|-----------|---------|
+| Shield scan | 1 |
+| Sentinel review | 2 |
+| Fix suggestion | 3 |
+| Code review | 5 |
+| Policy evaluation | 1 |
+
+See [Plan Comparison](/reference/plan-comparison) for included credit amounts per plan.
+
+<Tip>If you consistently hit rate limits, check your plan's monthly allowance first. Per-minute limits reset quickly, but monthly limits don't. Upgrading your plan is usually more cost-effective than optimizing around limits.</Tip>

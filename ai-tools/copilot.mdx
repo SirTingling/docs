@@ -1,0 +1,126 @@
+---
+title: GitHub Copilot
+description: Use Takumo with GitHub Copilot
+icon: "github"
+---
+
+# GitHub Copilot
+
+GitHub Copilot doesn't let you set a custom API endpoint in its standard configuration. It talks directly to GitHub's servers, and there's no setting to change that.
+
+Two ways to get protection anyway.
+
+## Option 1: CLI pre-processing
+
+Use the Takumo CLI to tokenize files before Copilot reads them. This works for any workflow where you're feeding code to Copilot through chat or inline suggestions.
+
+<Steps>
+  <Step title="Install the CLI">
+    ```bash
+    npm install -g github:SirTingling/takumo
+    ```
+  </Step>
+  <Step title="Tokenize your file">
+    Before opening a file that has secrets, tokenize it:
+
+    ```bash
+    takumo-aegis tokenize src/config.ts > src/config.tokenized.ts
+    ```
+
+    The tokenized file has all secrets replaced:
+
+    ```typescript
+    // src/config.tokenized.ts
+    const config = {
+      dbUrl: "__TAKUMO_v1_CONN_a1b2c3d4__",
+      stripeKey: "__TAKUMO_v1_KEY_d4e5f6__",
+      awsSecret: "__TAKUMO_v1_KEY_g7h8i9__"
+    };
+    ```
+  </Step>
+  <Step title="Work with the tokenized file">
+    Open the tokenized file in your editor. Copilot's suggestions are based on this file -- it never sees your real secrets.
+  </Step>
+  <Step title="Rehydrate when done">
+    When you're finished, restore the real values:
+
+    ```bash
+    takumo-aegis rehydrate src/config.tokenized.ts > src/config.ts
+    ```
+  </Step>
+</Steps>
+
+## Option 2: System-level proxy
+
+Route Copilot's API calls through a local proxy that sends them through the Takumo gateway. This is more involved but protects everything automatically.
+
+<Steps>
+  <Step title="Set up the local proxy">
+    Configure your system or editor to route HTTPS traffic through a local proxy:
+
+    ```bash
+    # Set HTTP proxy environment variables
+    export HTTP_PROXY="http://localhost:8976"
+    export HTTPS_PROXY="http://localhost:8976"
+    ```
+
+    Then start the Takumo proxy:
+
+    ```bash
+    takumo-aegis proxy --port 8976 --api-key your-takumo-api-key
+    ```
+  </Step>
+  <Step title="Configure VS Code proxy settings">
+    In VS Code settings, set the proxy:
+
+    ```json
+    {
+      "http.proxy": "http://localhost:8976",
+      "http.proxyStrictSSL": false
+    }
+    ```
+  </Step>
+  <Step title="Restart Copilot">
+    Reload VS Code. Copilot's requests now route through the Takumo proxy.
+  </Step>
+</Steps>
+
+<Warning>
+  The proxy approach intercepts all HTTP traffic from VS Code, not just Copilot. Make sure you understand the implications before using it in production.
+</Warning>
+
+## Which approach to use
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| CLI pre-processing | Simple, no proxy setup, works today | Manual step, doesn't cover inline suggestions |
+| System proxy | Automatic, covers everything | More setup, intercepts all traffic |
+
+<Note>
+  Copilot's tight integration with GitHub means custom endpoints aren't natively supported. The CLI wrapper gives you protection for files you're actively working on. The proxy approach is more complete but requires more configuration.
+</Note>
+
+## Troubleshooting
+
+<Accordion title="Tokenized files confuse Copilot suggestions">
+  Copilot uses surrounding code for context. Tokens look like strings to Copilot, so suggestions still work. If you're getting odd completions, make sure only the secret values are tokenized -- the rest of the code should be unchanged.
+</Accordion>
+
+<Accordion title="Proxy not intercepting Copilot traffic">
+  Copilot may bypass system proxy settings. Check:
+
+  1. VS Code proxy settings are configured (not just system-level)
+  2. The proxy is running (`curl -x http://localhost:8976 https://api.github.com`)
+  3. Restart VS Code completely after proxy changes
+</Accordion>
+
+<Accordion title="Rehydration produces wrong values">
+  Make sure you're rehydrating with the same session that tokenized the file. If you tokenized, closed the terminal, and then tried to rehydrate, the session is gone.
+
+  Keep the same terminal session open, or use the `--session-file` flag to persist the vault:
+
+  ```bash
+  takumo-aegis tokenize src/config.ts --session-file .takumo-session > src/config.tokenized.ts
+  takumo-aegis rehydrate src/config.tokenized.ts --session-file .takumo-session > src/config.ts
+  ```
+</Accordion>

@@ -1,134 +1,144 @@
 ---
 title: Claude Code
-description: Use Takumo with Claude Code CLI
+description: Route Claude Code requests through Takumo
+icon: "message-square-code"
 ---
 
-# Claude Code Integration
+# Claude Code
 
-Protect secrets when using Claude's official CLI.
+Claude Code reads environment variables for its API connection. Set two variables and every request goes through Takumo.
 
 ## Setup
 
 <Steps>
-  <Step title="Install Takumo">
-    ```bash
-    npm install -g @takumo/aegis
-    ```
+  <Step title="Get your API key">
+    Log into [cloud.takumo.io](https://cloud.takumo.io) and copy your API key from the dashboard.
   </Step>
-  <Step title="Configure Claude Code">
-    Add Takumo as an MCP server in your Claude Code config:
+  <Step title="Set environment variables">
+    Two variables. That's the whole setup.
 
-    ```json
-    // ~/.claude/claude_desktop_config.json
-    {
-      "mcpServers": {
-        "takumo": {
-          "command": "takumo-aegis",
-          "args": ["mcp-server"]
-        }
-      }
-    }
+    ```bash
+    export ANTHROPIC_BASE_URL="https://gateway.takumo.io/v1"
+    export ANTHROPIC_API_KEY="your-takumo-api-key"
     ```
   </Step>
-  <Step title="Verify">
+  <Step title="Run Claude Code">
+    Use Claude Code like you normally would. Every request routes through the Takumo gateway automatically.
+
     ```bash
-    claude /mcp
+    claude "Refactor the database connection in config.ts"
     ```
-    You should see `takumo` listed as an available server.
+  </Step>
+  <Step title="Check the dashboard">
+    Open the [Takumo dashboard](https://cloud.takumo.io/dashboard). You should see detections logged for any secrets in files Claude Code read.
   </Step>
 </Steps>
 
+## Add to your shell profile
+
+Set the variables once so they persist across terminal sessions.
+
+### Bash
+
+```bash
+# Add to ~/.bashrc or ~/.bash_profile
+export ANTHROPIC_BASE_URL="https://gateway.takumo.io/v1"
+export ANTHROPIC_API_KEY="your-takumo-api-key"
+```
+
+### Zsh
+
+```bash
+# Add to ~/.zshrc
+export ANTHROPIC_BASE_URL="https://gateway.takumo.io/v1"
+export ANTHROPIC_API_KEY="your-takumo-api-key"
+```
+
+### Fish
+
+```fish
+# Add to ~/.config/fish/config.fish
+set -gx ANTHROPIC_BASE_URL "https://gateway.takumo.io/v1"
+set -gx ANTHROPIC_API_KEY "your-takumo-api-key"
+```
+
+Reload your shell after adding:
+
+```bash
+source ~/.zshrc  # or ~/.bashrc, depending on your shell
+```
+
 ## Usage
 
-Once configured, Takumo automatically intercepts file operations:
+Once the variables are set, Claude Code works exactly the same. You don't change any commands or flags.
 
 ```bash
-# Files are tokenized before Claude sees them
-claude "Refactor the database connection in config.ts"
-
-# Claude works with tokens, you get real secrets back
+# All of these route through Takumo automatically
+claude "Add retry logic to src/db.ts"
+claude "Explain what config.ts does"
+claude "Find the bug in auth/middleware.ts"
 ```
 
-### Manual mode
+Every file Claude Code reads goes through the gateway. Secrets are tokenized on the way out, rehydrated on the way back.
 
-For more control, use the CLI wrapper:
+<Note>
+  Claude Code doesn't know Takumo is there. It sends requests to `ANTHROPIC_BASE_URL`, which happens to be your gateway. The gateway handles tokenization and rehydration transparently.
+</Note>
+
+## Self-hosted gateway
+
+If you're running your own gateway, point to that instead:
 
 ```bash
-# Tokenize → Claude → Rehydrate in one command
-takumo-aegis shield src/config.ts --prompt "Add connection pooling"
+export ANTHROPIC_BASE_URL="https://gateway.your-company.com/v1"
+export ANTHROPIC_API_KEY="your-takumo-api-key"
 ```
 
-### Verbose output
+Same two variables, different URL.
 
-See what Takumo detects:
+## Per-project configuration
+
+If you only want Takumo on specific projects, set the variables in a `.envrc` file with [direnv](https://direnv.net):
 
 ```bash
-takumo-aegis shield src/config.ts --prompt "Add logging" --verbose
+# .envrc (in your project root)
+export ANTHROPIC_BASE_URL="https://gateway.takumo.io/v1"
+export ANTHROPIC_API_KEY="your-takumo-api-key"
 ```
 
-```
-[takumo] Scanning src/config.ts...
-[takumo] Found 3 secrets:
-         Line 5   DATABASE_URL     postgres://***
-         Line 8   API_KEY          sk_test_***
-         Line 12  JWT_SECRET       [REDACTED]
-[takumo] Tokenized content sent to Claude
-[takumo] Rehydrating response...
-[takumo] Restored 3 secrets
-```
-
-## Configuration
-
-Create `.takumorc` in your project root:
-
-```json
-{
-  "include": ["src/**/*", "config/**/*"],
-  "exclude": ["**/*.test.ts", "**/node_modules/**"],
-  "patterns": {
-    "custom": [
-      {
-        "name": "internal-api-key",
-        "pattern": "INT_[A-Z0-9]{32}",
-        "category": "KEY"
-      }
-    ]
-  }
-}
-```
-
-## Multi-file context
-
-When Claude reads multiple files, Takumo maintains a shared session:
-
-```bash
-claude "These files share a database connection. Add retry logic."
-# Attaches: src/db.ts, src/migrate.ts, src/seed.ts
-```
-
-Same secret across files → same token. Claude understands they're connected.
+Then `cd` into the project and the variables are set automatically. Leave the project and they're unset.
 
 ## Troubleshooting
 
-<Accordion title="MCP server not showing up">
-1. Check the config path: `~/.claude/claude_desktop_config.json`
-2. Ensure Takumo is installed globally: `npm list -g @takumo/aegis`
-3. Restart Claude Code after config changes
+<Accordion title="Claude Code ignoring the environment variables">
+  Check that the variables are actually set:
+
+  ```bash
+  echo $ANTHROPIC_BASE_URL
+  echo $ANTHROPIC_API_KEY
+  ```
+
+  If they're empty:
+
+  1. Make sure you sourced your shell profile after adding them
+  2. If using direnv, run `direnv allow` in the project directory
+  3. New terminal windows should pick them up automatically
+</Accordion>
+
+<Accordion title="Authentication errors">
+  The gateway authenticates you with Takumo, then forwards requests to Anthropic using your organization's provider key. If you're getting auth errors:
+
+  1. Check your Takumo API key is valid (dashboard shows key status)
+  2. Make sure your organization has a provider key configured in settings
+  3. The `ANTHROPIC_API_KEY` should be your Takumo key, not your Anthropic key
 </Accordion>
 
 <Accordion title="Secrets not being detected">
-Run a scan to see what Takumo finds:
+  Run a scan to see what Takumo finds in a specific file:
 
-```bash
-takumo-aegis scan src/
-```
+  ```bash
+  takumo-aegis scan src/config.ts
+  ```
 
-If a secret type isn't detected, you can add custom patterns in `.takumorc`.
-</Accordion>
-
-<Accordion title="Tokens appearing in final output">
-This usually means rehydration failed. Check:
-- You're using the same Takumo session
-- The token format matches: `__TAKUMO_v1_{TYPE}_{ID}__`
-- Run with `--verbose` to see warnings
+  If a secret type isn't detected, check [Supported Patterns](/patterns/supported) or add custom patterns in your organization settings.
 </Accordion>

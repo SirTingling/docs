@@ -1,0 +1,114 @@
+---
+title: Policies
+description: Governance rules for your AI workflow
+icon: "file-check"
+---
+
+# Policies
+
+Policies define what Takumo enforces. Which secrets to block, which patterns to flag, how to handle violations.
+
+## What a policy contains
+
+Every policy has three parts:
+
+| Part | What it controls |
+|------|-----------------|
+| **Rules** | The patterns and conditions that trigger the policy |
+| **Enforcement mode** | What happens when a rule matches |
+| **Scope** | Where the policy applies |
+
+## Enforcement modes
+
+Three modes. Pick the one that matches your risk tolerance.
+
+### Block
+
+Request is rejected. The secret is not sent to the AI. The user sees an error with the detection details.
+
+Use this for high-severity secrets in production: database credentials, cloud provider keys, private keys.
+
+### Warn
+
+Request goes through. The secret is tokenized as usual. But the detection is logged with a warning flag, and the user gets a notification.
+
+Use this for medium-severity patterns where you want visibility without blocking work.
+
+### Monitor
+
+Request goes through. Detection is logged silently. No notification, no warning. Just data.
+
+Use this when rolling out new patterns. Watch the detection rate before deciding whether to block or warn.
+
+## Built-in policies
+
+Takumo ships with default detection patterns that cover the most common secret types:
+
+- AWS access keys and secret keys
+- Database connection strings (PostgreSQL, MySQL, MongoDB, Redis)
+- Stripe API keys and webhook secrets
+- GitHub personal access tokens
+- JWT tokens
+- Private keys (RSA, EC, OpenSSH, PGP)
+- Generic patterns (`password`, `secret`, `api_key` in variable names)
+
+Built-in policies run in **Block** mode by default. You can change the enforcement mode but you cannot delete built-in policies.
+
+## Custom policies
+
+Create your own rules in the dashboard under **Settings > Policies**.
+
+A custom policy rule looks like this:
+
+```json
+{
+  "name": "internal-service-token",
+  "pattern": "svc_[a-zA-Z0-9]{40}",
+  "category": "TOKEN",
+  "description": "Internal service-to-service authentication token",
+  "enforcement": "block"
+}
+```
+
+You can match on:
+
+- **Regex patterns** -- match specific token formats
+- **Variable names** -- flag values assigned to keys like `INTERNAL_SECRET`
+- **File paths** -- only enforce in certain directories or file types
+- **Content context** -- match patterns near specific keywords
+
+## Policy scope
+
+Apply policies at different levels:
+
+| Scope | What it covers |
+|-------|---------------|
+| **Organization** | Every team, every repo, every request |
+| **Team** | All repos and members within a team |
+| **Repository** | Only requests involving that repo |
+
+Narrower scopes override broader ones. A repo-level policy takes precedence over an org-level policy for the same pattern.
+
+<Note>
+Policies apply at the gateway level. When you update a policy, the gateway picks up the change within seconds via config versioning.
+</Note>
+
+## Policy limits by plan
+
+| Plan | Max Policies |
+|------|-------------|
+| Free | 5 |
+| Developer | 15 |
+| Pro | 25 |
+| Enterprise | Unlimited |
+
+## Example: phased rollout
+
+A common pattern for introducing a new policy:
+
+1. Create the policy in **Monitor** mode
+2. Watch detections for a week. Check for false positives.
+3. Switch to **Warn** mode. Users see notifications but aren't blocked.
+4. After another week with no complaints, switch to **Block** mode.
+
+This takes about two weeks. You get data at every step. No surprises.

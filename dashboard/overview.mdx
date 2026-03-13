@@ -1,0 +1,50 @@
+---
+title: Dashboard Overview
+description: Your command center for AI code governance
+icon: "layout-dashboard"
+---
+
+The Takumo dashboard at [cloud.takumo.io](https://cloud.takumo.io) is where you manage API keys, monitor detections, configure policies, and control your organization.
+
+## Main Sections
+
+<CardGroup cols={2}>
+  <Card title="API Keys" icon="key" href="/dashboard/api-keys">
+    Create and manage keys for your AI tools. Each key has scoped permissions that control exactly what it can do.
+  </Card>
+  <Card title="Activity" icon="activity" href="/dashboard/audit-log">
+    Real-time feed of detections and events. See every scan, every blocked secret, every policy evaluation as it happens.
+  </Card>
+  <Card title="Fleet" icon="server" href="/dashboard/fleet">
+    Monitor connected gateway instances. Track health, manage join keys, and see connection state for on-prem deployments.
+  </Card>
+  <Card title="Settings" icon="settings" href="/dashboard/settings">
+    Organization configuration, security controls, billing, and team management.
+  </Card>
+</CardGroup>
+
+## What You See on the Overview Page
+
+The dashboard overview gives you an at-a-glance picture of your organization's security posture.
+
+**Key metrics** are displayed at the top:
+
+- **Total scans** -- cumulative number of code scans processed
+- **Secrets detected** -- total secrets caught before they leaked
+- **Active API keys** -- how many keys are currently in use
+
+**Scan statistics breakdown** shows the distribution of scan types across your organization -- Shield scans, Sentinel reviews, code reviews, and policy evaluations.
+
+**Policy compliance status** tells you how your organization is tracking against configured governance policies. Green means compliant. Yellow means warnings. Red means violations that need attention.
+
+**Recent activity feed** surfaces the latest detections, key creations, member changes, and policy updates in chronological order.
+
+**Threat trend visualization** charts detection volume over time so you can spot patterns -- a spike in secret detections after onboarding a new team, a drop after tightening policies.
+
+## Organizations
+
+Each organization has its own dashboard, API keys, team, and billing. If you belong to multiple organizations, switch between them from the sidebar.
+
+Your current organization context is always visible in the sidebar. All data -- keys, scans, policies, audit logs -- is scoped to the active organization.
+
+<Tip>Bookmark cloud.takumo.io/dashboard for quick access. The dashboard remembers your last active organization.</Tip>

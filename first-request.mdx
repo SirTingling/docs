@@ -1,0 +1,105 @@
+---
+title: Your First Request
+description: Send code through Takumo and see what happens
+icon: "play"
+---
+
+# Your First Request
+
+Walk through a complete request. You'll write code with a secret, send it through Takumo, and see the detection in your dashboard.
+
+## Prerequisites
+
+- API key created ([Authentication](/authentication))
+- AI tool configured ([AI Tools](/ai-tools/overview))
+
+## The walkthrough
+
+<Steps>
+  <Step title="Write code with a secret">
+    Here's a config file with three secrets. In real life, this is your actual codebase.
+
+    ```typescript
+    const config = {
+      db: "postgres://admin:s3cret@prod.internal:5432/app",
+      stripe: "sk_test_abc123EXAMPLE",
+      aws: "AKIAIOSFODNN7EXAMPLE"
+    };
+    ```
+
+    Three secrets. A database connection string, a Stripe key, and an AWS access key.
+  </Step>
+
+  <Step title="Send it to your AI tool">
+    Ask your AI tool to refactor the config or add error handling. The exact prompt doesn't matter. What matters is that your code is about to leave your machine.
+
+    ```
+    "Refactor this config to use environment variables with validation and defaults."
+    ```
+  </Step>
+
+  <Step title="What the AI sees">
+    Takumo intercepts the request. It detects three secrets, tokenizes them, and forwards the sanitized code. The AI receives this:
+
+    ```typescript
+    const config = {
+      db: "__TAKUMO_v1_CONN_a1b2c3__",
+      stripe: "__TAKUMO_v1_KEY_d4e5f6__",
+      aws: "__TAKUMO_v1_KEY_g7h8i9__"
+    };
+    ```
+
+    The structure is intact. The values are tokens. The AI can reason about the code, suggest refactors, add error handling. It just can't see the real credentials.
+  </Step>
+
+  <Step title="What you get back">
+    The AI responds with refactored code. It references the same tokens. Takumo intercepts the response and rehydrates them:
+
+    ```typescript
+    const config = {
+      db: process.env.DATABASE_URL || "postgres://admin:s3cret@prod.internal:5432/app",
+      stripe: process.env.STRIPE_SECRET_KEY || "sk_test_abc123EXAMPLE",
+      aws: process.env.AWS_ACCESS_KEY_ID || "AKIAIOSFODNN7EXAMPLE"
+    };
+    ```
+
+    Real values restored. The AI never saw them.
+  </Step>
+
+  <Step title="Check the dashboard">
+    Open [cloud.takumo.io](https://cloud.takumo.io). The Activity feed shows the detection:
+
+    - **3 secrets detected** in a single request
+    - Types: `CONN` (database URL), `KEY` (Stripe), `KEY` (AWS)
+    - Timestamp, request duration, token count
+    - All three successfully rehydrated on response
+
+    Every request is logged. Every detection is recorded. Nothing is stored in plaintext.
+  </Step>
+</Steps>
+
+<Tip>
+Every request gets an `X-Aegis-Request-Id` header. Use it to look up any specific request in the audit trail.
+</Tip>
+
+## What just happened
+
+1. Your code left your editor
+2. Takumo caught the secrets before they hit the network
+3. The AI got clean tokens instead of real credentials
+4. The AI's response came back with those same tokens
+5. Takumo swapped the tokens back to real values
+6. You got working code with real secrets intact
+
+The whole thing took about 3ms on top of the normal AI request time.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="How It Works" icon="gear" href="/concepts/how-it-works">
+    Understand the tokenization and rehydration pipeline
+  </Card>
+  <Card title="Supported Patterns" icon="list" href="/patterns/supported">
+    Every secret type Takumo detects
+  </Card>
+</CardGroup>

@@ -1,0 +1,113 @@
+---
+title: Authentication
+description: How API authentication works
+icon: "key"
+---
+
+Every API request requires an API key in the `Authorization` header.
+
+## Authenticating requests
+
+Pass your API key as a Bearer token:
+
+```bash
+curl https://gateway.takumo.io/v1/tokenize \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "const key = \"AKIAIOSFODNN7EXAMPLE\"", "filename": "config.ts"}'
+```
+
+In code:
+
+```typescript
+const response = await fetch("https://gateway.takumo.io/v1/tokenize", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${process.env.TAKUMO_API_KEY}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    content: sourceCode,
+    filename: "config.ts"
+  })
+});
+```
+
+## How keys are validated
+
+1. The gateway receives your key from the `Authorization` header.
+2. It computes a SHA-256 hash of the raw key.
+3. The hash is looked up in the database.
+4. If found and not revoked, the request proceeds.
+5. Constant-time comparison prevents timing attacks.
+
+The raw key is never stored. It exists only at creation time. After you close the creation dialog in the dashboard, the only copy is the one you saved.
+
+## Key prefixes
+
+| Prefix | Environment |
+|--------|-------------|
+| `tk_live_` | Production |
+| `tk_test_` | Test / development |
+
+Keys are 64-character hex strings following the prefix.
+
+## Key scopes
+
+Each key has a set of scopes that control what it can do. A request that requires a scope the key doesn't have returns `403 FORBIDDEN`.
+
+| Scope | What it controls |
+|-------|-----------------|
+| `shield:read` | Read scan results and detection history |
+| `shield:write` | Run scans, tokenize, and rehydrate |
+| `audit:read` | Read audit log entries |
+| `fleet:read` | View gateway fleet status |
+| `fleet:write` | Register and manage gateways |
+| `policy:read` | Read policy configurations |
+| `policy:write` | Create and update policies |
+| `org:read` | Read organization settings |
+| `org:write` | Update organization settings, manage members |
+
+Assign the minimum scopes needed. A key used only for secret scanning needs `shield:write` and nothing else.
+
+## Rate limit headers
+
+Every response includes rate limit headers, regardless of whether the request succeeded:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests allowed in the current window |
+| `X-RateLimit-Remaining` | Requests remaining in the current window |
+| `X-RateLimit-Reset` | Unix timestamp when the window resets |
+| `Retry-After` | Seconds to wait before retrying (only present on `429` responses) |
+
+Example response headers:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 42
+X-RateLimit-Reset: 1710360000
+```
+
+When you receive a `429 Too Many Requests`, stop and wait for the number of seconds specified in `Retry-After`. See [Rate Limits](/api/rate-limits) for per-plan limits.
+
+## Key rotation
+
+For zero-downtime rotation:
+
+1. Create a new key with the same scopes.
+2. Deploy the new key to your tools.
+3. Verify requests succeed with the new key.
+4. Revoke the old key.
+
+Revocation takes effect within seconds. A revoked key returns `401 UNAUTHORIZED` immediately. There is no undo.
+
+## Error responses
+
+| Status | Code | When |
+|--------|------|------|
+| `401` | `UNAUTHORIZED` | Missing key, invalid key, expired key, revoked key |
+| `403` | `FORBIDDEN` | Key lacks required scope, feature not available on your plan |
+| `429` | `RATE_LIMITED` | Too many requests in the current window |
+
+See [Errors](/api/errors) for the full error response format.

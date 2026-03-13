@@ -1,0 +1,84 @@
+---
+title: Fleet Management
+description: Monitor and manage gateway instances
+icon: "server"
+---
+
+The Fleet page shows every Aegis Shield gateway instance connected to your organization. Monitor health, manage join keys, and track connection state.
+
+<Note>Fleet management requires a Pro or Enterprise plan. It's enabled by default for on-prem deployments.</Note>
+
+## Fleet Overview
+
+The top of the Fleet page shows four counters:
+
+- **Total instances** -- Every gateway instance that has ever connected
+- **Connected** -- Actively communicating with the coordinator right now
+- **Stale** -- Missed the last health check (default threshold: 90 seconds)
+- **Disconnected** -- Offline for an extended period
+
+## Instance States
+
+| State | Meaning |
+|-------|---------|
+| **Connected** | Gateway is actively communicating with the coordinator |
+| **Stale** | Gateway missed its last health report (default: 90 seconds) |
+| **Disconnected** | Gateway has been offline for an extended period |
+
+A gateway transitions from Connected to Stale after missing a single health check. If it remains unresponsive, it moves to Disconnected.
+
+## Instance Details
+
+Each instance in the fleet list shows:
+
+- **Instance ID** -- Unique identifier assigned at registration
+- **Version** -- The Aegis Shield version running on this instance
+- **State** -- Current connection state (Connected, Stale, Disconnected)
+- **Last seen** -- Timestamp of the most recent health report
+- **Coordinator ID** -- Which coordinator this instance reports to
+
+Click any instance to view its full details and recent activity.
+
+## Join Keys
+
+Join keys authenticate gateway instances with the coordinator. A gateway needs a valid join key to register and begin communicating.
+
+### Creating a Join Key
+
+<Steps>
+  <Step title="Open Join Keys">
+    Navigate to the **Fleet** page and find the Join Keys section.
+  </Step>
+  <Step title="Create a new key">
+    Click **Create Join Key** and give it a descriptive name (e.g., `production-cluster`, `staging-east`).
+  </Step>
+  <Step title="Copy the key">
+    Copy the key immediately. It is shown exactly once.
+  </Step>
+  <Step title="Configure your gateway">
+    Add the join key to your gateway's deployment configuration.
+  </Step>
+</Steps>
+
+### Join Key Properties
+
+Each join key shows:
+
+- **Name** -- Human-readable label
+- **Prefix** -- Visible identifier for recognition
+- **Environment** -- Which environment this key is used in
+- **Last used** -- When a gateway last authenticated with this key
+- **Created** -- Creation timestamp
+
+### Revoking a Join Key
+
+Revoking a join key disconnects all gateway instances that authenticated with it. Those instances will need a new key to reconnect.
+
+## Gateway Settings
+
+Under **Settings > Gateway**, you can configure:
+
+- **Configuration version** -- An incrementing counter. Bumping this number triggers a policy sync to all connected gateways. When you update policies and want them pushed immediately, increment the configuration version.
+- **Fleet overview totals** -- Summary of total, connected, stale, and disconnected instances.
+
+<Warning>Join keys are shown once at creation. Store them securely -- you'll need them in your gateway's deployment configuration.</Warning>

@@ -1,69 +1,89 @@
 ---
 title: Sentinel
 description: Inbound code validation
+icon: "scan-eye"
 ---
 
 # Sentinel
 
-<Note>
-Sentinel is in development. This page describes what's coming.
-</Note>
+Sentinel is the inbound protection layer. It validates AI-generated code before it reaches your codebase.
 
-Sentinel is the inbound protection layer. It validates AI-generated code before you use it.
+<Note>
+Sentinel is in active development. Security scanning and vulnerability detection are available in the dashboard. The standalone API is coming.
+</Note>
 
 ## The problem
 
-AI can generate code that:
+AI generates code fast. That code can contain:
 
-- Has security vulnerabilities (SQL injection, XSS, etc.)
-- Uses copyleft-licensed code in your proprietary project
-- Violates your team's coding standards
-- Includes deprecated or dangerous APIs
+- Security vulnerabilities (SQL injection, XSS, command injection)
+- Copyleft-licensed code in your proprietary project
+- Deprecated or dangerous APIs
+- Patterns that violate your team's standards
 
-You catch these in code review... if you notice them.
+You catch these in code review. Sometimes. Sentinel catches them every time.
 
-## What Sentinel will do
+## What Sentinel does
 
 **Security scanning**
-- SQL/NoSQL injection patterns
+- SQL and NoSQL injection patterns
 - Command injection
-- XSS vulnerabilities
-- Insecure crypto usage
-- Hardcoded secrets (yes, AI sometimes adds new ones)
+- Cross-site scripting (XSS)
+- Insecure cryptographic usage
+- Hardcoded secrets in AI-generated code (yes, AI adds new ones)
+- OWASP Top 10 pattern matching
 
 **License compliance**
 - Detect GPL/AGPL code in proprietary projects
 - Flag license-incompatible dependencies
-- Identify code that looks like known open source
+- Identify code that matches known open source
 
 **Custom rules**
-- Your team's patterns to enforce
-- Your team's patterns to forbid
+- Patterns to enforce (your team's standards)
+- Patterns to forbid (banned APIs, deprecated functions)
 - Framework-specific best practices
 
-## Planned API
+## How it works
+
+Sentinel runs after the AI responds, before the code reaches your editor:
+
+1. AI generates code
+2. The gateway intercepts the response
+3. Sentinel scans for vulnerabilities, license issues, and policy violations
+4. Clean code passes through. Flagged code is annotated with the issue.
+
+The enforcement mode depends on your policy configuration:
+- **Block** — flagged code is rejected
+- **Warn** — code passes through with warnings attached
+- **Monitor** — code passes through, issue is logged to the audit trail
+
+## In the dashboard
+
+The dashboard shows Sentinel detections under the vulnerability breakdown. You can see:
+- Detection type and severity
+- Affected code location
+- Suggested remediation
+- Trend data over time
+
+## Standalone API
+
+The Sentinel API will allow you to validate code outside the gateway flow:
 
 ```typescript
-import { createSentinel } from '@takumo/sentinel';
-
-const sentinel = createSentinel({
-  rules: ['security', 'license'],
-  licensePolicy: 'permissive-only',  // No copyleft
-  customRules: './takumo-rules.yaml'
+const result = await sentinel.validate(aiGeneratedCode, {
+  rules: ["security", "license"],
+  licensePolicy: "permissive-only",
+  customRules: "./takumo-rules.yaml"
 });
 
-// Validate before using AI-generated code
-const result = await sentinel.validate(aiGeneratedCode);
-
 if (!result.passed) {
-  console.log('Issues found:');
   for (const issue of result.issues) {
-    console.log(`  ${issue.severity}: ${issue.message}`);
-    console.log(`    Line ${issue.line}: ${issue.snippet}`);
+    console.log(`${issue.severity}: ${issue.message}`);
+    console.log(`  Line ${issue.line}: ${issue.snippet}`);
   }
 }
 ```
 
-## Help shape it
-
-What validations matter most to you? [Request access](mailto:jordant@takumo.com?subject=Takumo%20Access%20Request) and tell us.
+<Note>
+The standalone Sentinel API is in development. Security scanning is available today through the gateway and dashboard.
+</Note>

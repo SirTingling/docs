@@ -1,0 +1,194 @@
+---
+title: Configuration
+description: Environment variables and Helm values reference
+icon: "sliders"
+---
+
+Complete reference for configuring the gateway and coordinator. All values are set via Helm chart values, which generate Kubernetes ConfigMaps with the corresponding environment variables.
+
+## Gateway (Aegis Shield)
+
+### Core settings
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `TAKUMO_LISTEN_ADDR` | `server.port` | `0.0.0.0:8080` | Address and port the gateway listens on |
+| `TAKUMO_SHUTDOWN_TIMEOUT` | `server.shutdownTimeout` | `30` | Graceful shutdown timeout in seconds |
+| `TAKUMO_AUTH_MODE` | `auth.mode` | `jwt` | Authentication mode (`jwt` or `none`) |
+| `TAKUMO_AUTH_ISSUER` | `auth.issuer` | `https://cloud.takumo.io` | Expected JWT issuer |
+| `TAKUMO_AUTH_AUDIENCE` | `auth.audience` | `aegis-gateway` | Expected JWT audience |
+| `TAKUMO_AUTH_PUBLIC_KEY_PATH` | `secrets.jwt.key` | - | Path to JWT public key (mounted at `/etc/takumo/keys/`) |
+| `TAKUMO_FAIL_MODE` | `aegis.failMode` | `fail_closed` | Behavior when coordinator is unreachable: `fail_closed` rejects requests, `fail_open` passes them through |
+| `TAKUMO_MAX_VAULT_ENTRIES` | `aegis.maxVaultEntries` | `10000` | Maximum secrets held in the in-memory vault |
+| `TAKUMO_MAX_CONCURRENT_SESSIONS` | `aegis.maxConcurrentSessions` | `5000` | Maximum concurrent active sessions |
+
+### Cloud and coordinator
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `TAKUMO_CLOUD_ENABLED` | `cloud.enabled` | `true` | Enable cloud connector (set `false` for air-gapped) |
+| `TAKUMO_CLOUD_URL` | `cloud.url` | `https://cloud.takumo.io` | Cloud dashboard URL |
+| `TAKUMO_CONNECTOR_ENABLED` | `connector.grpcUrl` | - | Auto-set to `true` when `connector.grpcUrl` is provided |
+| `TAKUMO_COORDINATOR_URL` | `connector.grpcUrl` | - | Coordinator gRPC URL (e.g., `gateway-coordinator.takumo.svc:9090`) |
+| `TAKUMO_AUTH_EXCHANGE_ENABLED` | `connector.exchangeEnabled` | `false` | Enable API key exchange via coordinator |
+| `TAKUMO_AUTH_EXCHANGE_URL` | `connector.exchangeUrl` | - | Coordinator HTTP URL for token exchange |
+| `TAKUMO_JWKS_ENDPOINT` | `connector.jwksEndpoint` | - | JWKS endpoint for key rotation |
+| `TAKUMO_JWKS_REFRESH_INTERVAL` | `connector.jwksRefreshInterval` | `300` | JWKS refresh interval in seconds |
+
+### Rate limiting
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `TAKUMO_RATE_LIMIT_ENABLED` | `rateLimit.enabled` | `true` | Enable rate limiting |
+| `TAKUMO_RATE_LIMIT_ORG_RPM` | `rateLimit.orgRpm` | `1000` | Organization-level requests per minute |
+| `TAKUMO_RATE_LIMIT_USER_RPM` | `rateLimit.userRpm` | `60` | User-level requests per minute |
+| `TAKUMO_RATE_LIMIT_POD_ESTIMATE` | `rateLimit.fallbackPodEstimate` | `5` | Assumed pod count when no shared state is available |
+
+### Logging
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `TAKUMO_LOG_FORMAT` | `log.format` | `json` | Log format (`json` or `pretty`) |
+| `RUST_LOG` | `log.level` | `info,takumo=debug` | Rust log level directive |
+
+## Coordinator
+
+### Server
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `TAKUMO_HTTP_PORT` | `server.httpPort` | `8080` | HTTP API port |
+| `TAKUMO_GRPC_PORT` | `server.grpcPort` | `9090` | gRPC port for gateway connections |
+| `TAKUMO_SHUTDOWN_TIMEOUT` | `server.shutdownTimeout` | `30` | Graceful shutdown timeout in seconds |
+
+### Authentication
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `TAKUMO_JWT_ISSUER` | `auth.issuer` | `https://cloud.takumo.io` | JWT issuer claim |
+| `TAKUMO_JWT_AUDIENCE` | `auth.audience` | `aegis-shield` | JWT audience claim |
+| `TAKUMO_JWT_TTL_SECS` | `auth.jwtTtlSecs` | `300` | JWT token time-to-live in seconds |
+
+### Coordinator behavior
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `TAKUMO_POLICY_DEBOUNCE_MS` | `coordinator.policyDebouncMs` | `500` | Debounce time in ms before pushing policy updates to gateways |
+| `TAKUMO_HEALTH_STALE_SECS` | `coordinator.healthStaleSecs` | `120` | Seconds before a gateway is marked stale |
+| `TAKUMO_TELEMETRY_BATCH_SIZE` | `coordinator.telemetryBatchSize` | `500` | Audit events per database write batch |
+| `TAKUMO_TELEMETRY_FLUSH_INTERVAL_MS` | `coordinator.telemetryFlushIntervalMs` | `5000` | Maximum time between telemetry flushes in ms |
+| `TAKUMO_MAX_CONNECTIONS_PER_ORG` | `coordinator.maxConnectionsPerOrg` | `100` | Maximum gateway connections per organization |
+
+## Secrets management
+
+The Helm charts support three secrets providers, controlled by `secrets.provider`:
+
+<Accordion title="Sealed Secrets (default)">
+  Uses [Bitnami Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets) for encrypting secrets in Git. Set `encryptedData` fields in your values file with the output of `kubeseal`.
+
+  ```yaml
+  secrets:
+    provider: sealed
+    database:
+      enabled: true
+      secretName: coordinator-database
+      encryptedData: "AgBy3i4OJSWK+PiTySYZZA9rO..."
+  ```
+
+  This is the default for SaaS and staging environments.
+</Accordion>
+
+<Accordion title="External Secrets">
+  Uses the [External Secrets Operator](https://external-secrets.io/) for pulling secrets from Vault, AWS Secrets Manager, GCP Secret Manager, or Azure Key Vault.
+
+  ```yaml
+  secrets:
+    provider: external
+  ```
+
+  You manage the ExternalSecret resources separately.
+</Accordion>
+
+<Accordion title="Manual">
+  You create Kubernetes secrets directly. This is the default for on-prem deployments.
+
+  ```yaml
+  secrets:
+    provider: manual
+    database:
+      enabled: true
+      secretName: coordinator-database
+      key: database-url
+      directKey: database-url-direct
+  ```
+
+  Create the secrets with `kubectl create secret` before installing the Helm chart.
+</Accordion>
+
+## Autoscaling
+
+Both charts include HPA configuration with identical defaults:
+
+```yaml
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+        - type: Pods
+          value: 4
+          periodSeconds: 60
+```
+
+Scale-down is conservative (25% per minute, 5-minute stabilization). Scale-up is aggressive (100% or 4 pods per 30 seconds).
+
+## Resource defaults
+
+Both services use the same resource requests and limits:
+
+```yaml
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+```
+
+## Pod security
+
+Both charts enforce a restrictive security context by default:
+
+```yaml
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  runAsGroup: 65534
+  fsGroup: 65534
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+```
+
+<Note>Containers run as `nobody` (UID 65534) with a read-only root filesystem and all Linux capabilities dropped.</Note>

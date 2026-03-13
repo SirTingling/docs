@@ -1,0 +1,213 @@
+---
+title: Monitoring
+description: Prometheus metrics, Grafana dashboards, and alerting
+icon: "activity"
+---
+
+The gateway and coordinator expose Prometheus metrics on `/metrics`. The Helm charts include ServiceMonitor resources, PrometheusRule alert definitions, and optional Grafana dashboard ConfigMaps.
+
+## Enabling metrics collection
+
+Both the gateway and coordinator charts have a `serviceMonitor` section:
+
+```yaml
+serviceMonitor:
+  enabled: true
+  interval: 15s
+  scrapeTimeout: 10s
+  additionalLabels: {}
+```
+
+Enable it during installation:
+
+```bash
+helm install aegis-shield takumo/aegis-shield \
+  --namespace takumo \
+  --set serviceMonitor.enabled=true
+```
+
+```bash
+helm install gateway-coordinator takumo/gateway-coordinator \
+  --namespace takumo \
+  --set serviceMonitor.enabled=true
+```
+
+The ServiceMonitor resources are automatically discovered by Prometheus Operator.
+
+## Deploying the monitoring stack
+
+The monitoring chart deploys kube-prometheus-stack (Prometheus, Grafana, Alertmanager) with Takumo-specific defaults:
+
+```bash
+helm install takumo-monitoring takumo/monitoring \
+  --namespace takumo
+```
+
+This provisions:
+
+- **Prometheus** with 7-day retention, 10Gi storage, and cross-namespace ServiceMonitor discovery
+- **Grafana** with 2Gi persistent storage and a sidecar that auto-loads dashboard ConfigMaps from all namespaces
+- **Alertmanager** with 120-hour retention and 1Gi storage
+
+### Enabling Grafana dashboards
+
+The gateway chart includes pre-built Grafana dashboards as ConfigMaps:
+
+```bash
+helm upgrade aegis-shield takumo/aegis-shield \
+  --namespace takumo \
+  --reuse-values \
+  --set grafana.dashboards.enabled=true
+```
+
+The Grafana sidecar automatically picks up the ConfigMap. No manual import needed.
+
+## Gateway metrics
+
+### Request metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `aegis_requests_total` | Counter | Total requests processed, labeled by `status` (HTTP code) and `provider` |
+| `aegis_request_duration_seconds` | Histogram | Request latency from gateway receipt to response delivery |
+| `aegis_upstream_errors_total` | Counter | Errors from upstream AI providers, labeled by `provider` |
+
+### Security metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `aegis_secrets_detected_total` | Counter | Secrets found and tokenized |
+| `aegis_security_violations_total` | Counter | Policy violations detected |
+| `aegis_auth_failures_blocked_total` | Counter | Authentication failures blocked |
+
+### Infrastructure metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `aegis_vault_entries` | Gauge | Current number of entries in the in-memory vault |
+| `aegis_concurrent_sessions` | Gauge | Current number of active sessions |
+| `aegis_circuit_breaker_state` | Gauge | Circuit breaker status: `0` = closed (healthy), `1` = open (tripped) |
+| `aegis_connector_state` | Gauge | Cloud connector status: `4` = standalone mode |
+| `aegis_redis_degraded` | Gauge | Redis connection health: `0` = healthy, `1` = degraded |
+| `aegis_redis_health_state` | Gauge | Redis health detail: `0` = healthy, `>=1` = degraded or unavailable |
+
+### Rate limiting metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `aegis_rate_limit_checks_total` | Counter | Rate limit checks, labeled by `result` (`allowed` or `rejected`) |
+
+### Audit metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `aegis_audit_events_discarded_total` | Counter | Audit events discarded due to shipping failures |
+
+## SLI metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `aegis_sli_availability_ratio` | Gauge | Ratio of successful requests to total requests |
+| `aegis_sli_latency_ratio` | Gauge | Ratio of requests within latency budget |
+| `aegis_sli_security_ratio` | Gauge | Ratio of requests without security violations |
+
+## Alert rules
+
+The gateway chart includes a full set of PrometheusRule alert definitions. Enable them with:
+
+```bash
+helm upgrade aegis-shield takumo/aegis-shield \
+  --namespace takumo \
+  --reuse-values \
+  --set alerting.enabled=true
+```
+
+### SLO alerts
+
+| Alert | Severity | Condition |
+|-------|----------|-----------|
+| `AvailabilitySLOBreach` | critical | Availability ratio below threshold for 5 minutes |
+| `LatencySLOBreach` | warning | Latency ratio below threshold for 5 minutes |
+| `SecuritySLOBreach` | critical | Security ratio below threshold for 5 minutes |
+
+### Error alerts
+
+| Alert | Severity | Condition |
+|-------|----------|-----------|
+| `HighErrorRate` | critical | 5xx error rate exceeds 5% for 5 minutes |
+| `UpstreamErrors` | warning | Upstream provider errors exceed 5/sec for 5 minutes |
+| `AegisUpstreamErrorRate` | critical | Per-provider error rate exceeds 10% for 5 minutes |
+
+### Infrastructure alerts
+
+| Alert | Severity | Condition |
+|-------|----------|-----------|
+| `CircuitBreakerOpen` | critical | Circuit breaker open for 2 minutes |
+| `RedisDegraded` | warning | Redis connection degraded for 3 minutes |
+| `HighConcurrentSessions` | warning | Concurrent sessions exceed threshold for 5 minutes |
+| `AegisGatewayStandalone` | warning | Gateway in standalone mode (no coordinator) for 5 minutes |
+| `AegisTokenExchangeCircuitOpen` | warning | Token exchange circuit breaker open for 2 minutes |
+| `AegisRedisHealthDegraded` | warning | Redis health degraded for 3 minutes |
+
+### Security alerts
+
+| Alert | Severity | Condition |
+|-------|----------|-----------|
+| `SecurityViolationSpike` | critical | Security violations exceed threshold for 3 minutes |
+| `BruteForceDetected` | critical | Auth failures exceed threshold for 2 minutes |
+| `SecretsLeaking` | critical | Secrets detected in outbound traffic for 1 minute |
+
+### Pod health alerts
+
+| Alert | Severity | Condition |
+|-------|----------|-----------|
+| `PodNotReady` | warning | Pod not ready for 5 minutes |
+| `PodRestarting` | warning | Pod restarted more than 3 times in 1 hour |
+
+### Rate limiting alerts
+
+| Alert | Severity | Condition |
+|-------|----------|-----------|
+| `HighRateLimitRejections` | warning | Rate limit rejection rate exceeds 10% for 5 minutes |
+
+### Audit alerts
+
+| Alert | Severity | Condition |
+|-------|----------|-----------|
+| `AegisAuditEventsDiscarded` | warning | Any audit events discarded in the last hour |
+
+## Tuning alert thresholds
+
+All thresholds are configurable via Helm values:
+
+```yaml
+alerting:
+  enabled: true
+  thresholds:
+    availability: 0.99          # 99% availability SLO
+    latency: 0.95               # 95% within latency budget
+    security: 0.999             # 99.9% security SLO
+    errorRate: 0.05             # 5xx error rate
+    upstreamErrorsPerSec: 5     # Upstream errors/sec
+    securityViolationsPerMin: 10
+    bruteForcePerMin: 20
+    maxConcurrentSessions: 4000
+    podRestartsPerHour: 3
+    rateLimitRejectionRate: 0.1 # 10% rejection rate
+```
+
+### Coordinator alert thresholds
+
+```yaml
+alerting:
+  enabled: true
+  thresholds:
+    tokenExchangeErrorRate: 0.05    # 5% token exchange failures
+    grpcErrorRate: 0.05             # 5% gRPC error rate
+    staleInstancesPercent: 0.20     # 20% of instances stale
+    telemetryDropRate: 0.01         # 1% telemetry drop rate
+    dbQueryLatencyP99: 0.5          # 500ms p99 DB query latency
+    podRestartsPerHour: 3
+```
+
+<Tip>The Grafana dashboards are provisioned as ConfigMaps. Customize them by editing the dashboard JSON in the `grafana.dashboards` section of the Helm values, or export from the Grafana UI and re-apply as a ConfigMap.</Tip>

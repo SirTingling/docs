@@ -1,67 +1,83 @@
 ---
 title: Changelog
 description: Release history
+icon: "file-clock"
 ---
 
 # Changelog
 
-## v0.1.0-alpha
+## v0.6.0 — Cloud Coordinator
 
-*Current release*
+Gateway-to-dashboard connectivity. Fleet management. Real-time policy streaming.
 
-First alpha release. Aegis Shield is complete and working.
+- **Gateway Coordinator** — Rust gRPC service connecting gateways to the dashboard
+- **Fleet management** — Monitor connected gateway instances, track health, manage join keys
+- **Policy streaming** — Push policy updates from dashboard to gateways in real-time
+- **Audit shipping** — Gateway audit events flow to the dashboard database automatically
+- **Health reporting** — Gateways send health reports every 30 seconds (version, sessions, SLI metrics, memory)
+- **Stale detection** — Gateways that miss health reports are marked stale after 90 seconds
+- **Deployment mode** — Organizations choose SaaS or On-Prem at creation
 
-### What's included
+## v0.5.0 — Redis + Token Revocation
 
-**Detection**
-- 13+ secret pattern types (AWS, Stripe, GitHub, databases, etc.)
-- Context-based detection for generic secrets
-- Config file parsing (.env, YAML, JSON, TOML)
+Distributed state. Instant key revocation. Circuit breaker sync.
 
-**CLI**
-- `scan` - find secrets in files/directories
-- `tokenize` - preview tokenized output
-- `shield` - full round-trip with Claude
+- **Redis integration** — Distributed rate limiting across gateway instances
+- **JWKS auto-discovery** — Gateways fetch signing keys automatically
+- **Token revocation** — Revoked API keys propagate to all gateways within seconds
+- **Circuit breaker sync** — Shared circuit state across gateway fleet via Redis
 
-**API**
-- `createSession()` - create token vault
-- `session.tokenize()` - detect and tokenize
-- `session.rehydrate()` - restore secrets
-- Full TypeScript types
+## v0.4.0 — Enterprise Infrastructure
 
-**Integration**
-- Claude API (Anthropic) built-in
-- Works with claude-sonnet-4-20250514 (default), opus, haiku
+Helm charts. CI/CD pipelines. Production-grade deployment.
 
-### Known limitations
+- **Helm charts** — aegis-shield, gateway-coordinator, monitoring
+- **CI/CD** — GitHub Actions for build, test, lint, security scan, Docker multi-arch builds
+- **Container images** — Multi-arch (amd64/arm64), cosign-signed, Trivy-scanned
+- **Monitoring** — Prometheus ServiceMonitor, Grafana dashboards, alert rules
+- **Network policies** — Pod-level network isolation
+- **Autoscaling** — HPA with configurable thresholds
 
-- Sentinel (inbound validation) not yet available
-- Only Claude supported (OpenAI, local models coming)
-- No custom pattern configuration yet
-- No IDE integration yet
+## v0.3.0 — Gateway MVP
+
+The Aegis Shield gateway. 11 modules. 369 tests.
+
+- **Proxy engine** — Transparent HTTP/HTTPS proxy for AI provider APIs
+- **Secret detection** — Real-time scanning of request bodies
+- **Tokenization** — In-memory vault with deterministic token generation
+- **Rehydration** — Automatic secret restoration in responses
+- **Streaming support** — Full SSE streaming with chunk-level rehydration
+- **Rate limiting** — Per-key, per-org rate limiting with sliding window
+- **Circuit breakers** — Automatic fallback when upstream providers fail
+- **Access logging** — Structured JSON logs (never logs secrets or bodies)
+- **Auth module** — JWT validation, API key authentication
+- **Health checks** — Liveness and readiness probes
+
+## v0.2.0 — Core Engine
+
+Detection, tokenization, and the in-memory vault.
+
+- **Pattern detection** — 13+ secret types (AWS, Stripe, GitHub, database URLs, JWTs, etc.)
+- **Context-based detection** — Generic secrets identified by surrounding code context
+- **Config file parsing** — .env, YAML, JSON, TOML
+- **Deterministic tokenization** — Same secret always produces the same token
+- **Session vault** — Isolated in-memory storage, zeroized on completion
+- **SHA-256 token generation** — Truncated hash-based tokens
+
+## v0.1.0-alpha — Initial Release
+
+First alpha. Aegis Shield CLI and API.
+
+- **CLI** — `scan`, `tokenize`, `shield` commands
+- **API** — `createSession()`, `session.tokenize()`, `session.rehydrate()`
+- **Claude integration** — Built-in Anthropic API support
+- **TypeScript** — Full type definitions
 
 ---
 
 ## Roadmap
 
-### v0.2.0 — Sentinel
-
-- Inbound code validation
-- Security vulnerability scanning
-- License compliance checking
-- Custom rule definitions
-
-### v0.3.0 — IDE Integration
-
-- VS Code extension
-- Real-time secret detection
-- Inline warnings
-
-### Future
-
-- OpenAI / GPT support
-- Local model support (Ollama, etc.)
-- Custom pattern configuration
-- Team features
-- CI/CD integrations
-- Web dashboard
+- **Sentinel API** — Standalone inbound validation API
+- **OpenAI support** — GPT model routing through the gateway
+- **Custom patterns** — User-defined secret detection patterns
+- **CI/CD integration** — Pre-commit hooks and pipeline scanning

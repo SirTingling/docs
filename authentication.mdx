@@ -1,0 +1,102 @@
+---
+title: Authentication
+description: Create and manage API keys
+icon: "key"
+---
+
+# Authentication
+
+Every request to Takumo needs an API key. Keys authenticate your tools and track usage per organization.
+
+## Getting your first key
+
+<Steps>
+  <Step title="Sign in">
+    Go to [cloud.takumo.io](https://cloud.takumo.io) and sign in to your account.
+  </Step>
+  <Step title="Open API Keys">
+    Navigate to **Settings > API Keys** in the sidebar.
+  </Step>
+  <Step title="Create a key">
+    Click **Create Key**. Give it a name that tells you where it's used (`cursor-laptop`, `ci-pipeline`, `team-shared`).
+  </Step>
+  <Step title="Select scopes">
+    Choose what the key can do. Start with `shield:write` for basic secret protection.
+  </Step>
+  <Step title="Copy the key">
+    Copy the key immediately. It's shown once. You won't see it again.
+  </Step>
+</Steps>
+
+## Setting the key
+
+```bash
+export TAKUMO_API_KEY="tk_live_a1b2c3d4e5f6..."
+```
+
+Or in your `.env` file:
+
+```bash
+TAKUMO_API_KEY=tk_live_a1b2c3d4e5f6...
+```
+
+API keys are 64-character hex strings with a prefix for identification:
+
+| Prefix | Environment |
+|--------|-------------|
+| `tk_live_` | Production |
+| `tk_test_` | Test / development |
+
+## Key scopes
+
+Scopes control what an API key can do. Assign the minimum scopes needed.
+
+| Scope | What it controls |
+|-------|-----------------|
+| `shield:read` | Read scan results and detection history |
+| `shield:write` | Run scans, tokenize, and rehydrate |
+| `audit:read` | Read audit log entries |
+| `fleet:read` | View gateway fleet status |
+| `fleet:write` | Register and manage gateways |
+| `policy:read` | Read policy configurations |
+| `policy:write` | Create and update policies |
+| `org:read` | Read organization settings |
+| `org:write` | Update organization settings, manage members |
+
+## Rotation
+
+Create a new key. Update your tools to use the new key. Revoke the old one. No grace period needed if you switch atomically.
+
+For zero-downtime rotation:
+
+1. Create a new key with the same scopes
+2. Deploy the new key to your tools
+3. Verify requests succeed with the new key
+4. Revoke the old key
+
+## Revocation
+
+Revocation takes effect within seconds. A revoked key returns `401 Unauthorized` immediately. There is no undo.
+
+To revoke a key: **Settings > API Keys > click the key > Revoke**.
+
+## Security
+
+Keys are SHA-256 hashed before storage. Takumo never stores your key in plaintext. Constant-time comparison prevents timing attacks.
+
+The raw key exists only at creation time. After you close the creation dialog, the only copy is the one you saved.
+
+<Warning>
+Your API key is shown once at creation. Copy it immediately. If you lose it, create a new one.
+</Warning>
+
+## Plan limits
+
+| Plan | Max API Keys |
+|------|-------------|
+| Free | 3 |
+| Developer | 10 |
+| Pro | 20 |
+| Enterprise | Unlimited |
+
+See [Plan Comparison](/reference/plan-comparison) for full details.

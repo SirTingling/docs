@@ -57,14 +57,31 @@
       {
         "label": "Changelog",
         "href": "/changelog"
+      },
+      {
+        "label": "takumo.io",
+        "href": "https://takumo.io"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Request Access",
-      "href": "mailto:jordant@takumo.com?subject=Takumo%20Access%20Request"
+      "label": "Open Dashboard",
+      "href": "https://cloud.takumo.io/dashboard"
     }
   },
+
+  "anchors": [
+    {
+      "anchor": "Dashboard",
+      "icon": "layout-dashboard",
+      "href": "https://cloud.takumo.io/dashboard"
+    },
+    {
+      "anchor": "GitHub",
+      "icon": "github",
+      "href": "https://github.com/SirTingling/takumo"
+    }
+  ],
 
   "navigation": {
     "tabs": [
@@ -73,26 +90,73 @@
         "groups": [
           {
             "group": "Get Started",
+            "icon": "rocket",
             "pages": [
               "introduction",
               "quickstart",
-              "installation"
+              "installation",
+              "authentication",
+              "first-request"
             ]
           },
           {
             "group": "Concepts",
+            "icon": "lightbulb",
             "pages": [
               "concepts/how-it-works",
               "concepts/aegis-shield",
               "concepts/sentinel",
-              "concepts/security"
+              "concepts/security",
+              "concepts/policies"
             ]
           },
           {
             "group": "Reference",
+            "icon": "bookmark",
             "pages": [
               "patterns/supported",
+              "reference/plan-comparison",
+              "reference/error-codes",
+              "reference/faq",
+              "reference/troubleshooting",
               "changelog"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Dashboard",
+        "icon": "layout-dashboard",
+        "groups": [
+          {
+            "group": "Guide",
+            "icon": "book-open",
+            "pages": [
+              "dashboard/overview",
+              "dashboard/api-keys",
+              "dashboard/fleet",
+              "dashboard/members",
+              "dashboard/audit-log",
+              "dashboard/security",
+              "dashboard/billing",
+              "dashboard/settings"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Deployment",
+        "icon": "cloud",
+        "groups": [
+          {
+            "group": "Guides",
+            "icon": "server",
+            "pages": [
+              "deployment/overview",
+              "deployment/saas",
+              "deployment/onprem",
+              "deployment/configuration",
+              "deployment/monitoring"
             ]
           }
         ]
@@ -120,9 +184,12 @@
             "group": "Integrations",
             "pages": [
               "ai-tools/overview",
-              "ai-tools/claude-code",
               "ai-tools/cursor",
-              "ai-tools/windsurf"
+              "ai-tools/copilot",
+              "ai-tools/continue",
+              "ai-tools/windsurf",
+              "ai-tools/claude-code",
+              "ai-tools/generic"
             ]
           }
         ]
@@ -135,9 +202,13 @@
             "group": "Reference",
             "pages": [
               "api/overview",
+              "api/authentication",
               "api/create-session",
               "api/tokenize",
-              "api/rehydrate"
+              "api/rehydrate",
+              "api/errors",
+              "api/rate-limits",
+              "api/webhooks"
             ]
           }
         ]

@@ -1,0 +1,115 @@
+---
+title: API Keys
+description: Create and manage API keys
+icon: "key"
+---
+
+API keys authenticate your AI tools with Takumo. Each key has scopes that control what it can do.
+
+## Creating a Key
+
+<Steps>
+  <Step title="Navigate to API Keys">
+    Go to **Settings > API Keys** in the dashboard sidebar.
+  </Step>
+  <Step title="Click Create Key">
+    Hit the **Create Key** button in the top right.
+  </Step>
+  <Step title="Name the key">
+    Give it a descriptive name that identifies its purpose. Examples: `cursor-dev`, `ci-pipeline`, `staging-gateway`.
+  </Step>
+  <Step title="Select scopes">
+    Choose a preset scope profile -- **workspace**, **organization**, or **read-only** -- or build a custom scope set.
+  </Step>
+  <Step title="Copy the key">
+    Copy the key immediately. It is shown exactly once. If you lose it, you'll need to create a new one.
+  </Step>
+</Steps>
+
+## Key Properties
+
+Every API key has the following properties:
+
+| Property | Description |
+|----------|-------------|
+| **Name** | Human-readable label you assigned at creation |
+| **Prefix** | Visible identifier (e.g., `tk_live_a1b2...`) used for recognition without exposing the full key |
+| **Status** | `active`, `disabled`, or `revoked` |
+| **Scopes** | Granular permissions attached to this key |
+| **Created by** | Which team member created the key |
+| **Last used** | Timestamp of the most recent API call made with this key |
+
+## Permission Scopes
+
+Scopes are granular. You can combine them to build exactly the access profile you need.
+
+<Accordion title="Full scope list">
+  **Organization**
+  - `organization.read` -- View organization details
+  - `organization.settings` -- Modify organization settings
+  - `organization.delete` -- Delete the organization
+  - `organization.transfer` -- Transfer ownership
+
+  **Members**
+  - `members.read` -- View team members
+  - `members.invite` -- Invite new members
+  - `members.remove` -- Remove members
+  - `members.role_change` -- Change member roles
+  - `members.suspend` -- Suspend member accounts
+
+  **API Keys**
+  - `api_keys.read` -- View API keys
+  - `api_keys.create` -- Create new keys
+  - `api_keys.revoke` -- Revoke existing keys
+  - `api_keys.manage_all` -- Manage keys created by other members
+
+  **Policies**
+  - `policies.read` -- View policies
+  - `policies.create` -- Create new policies
+  - `policies.edit` -- Edit existing policies
+  - `policies.delete` -- Delete policies
+
+  **Fleet**
+  - `fleet.read` -- View gateway instances
+  - `fleet.manage` -- Manage instances and join keys
+
+  **Audit**
+  - `audit.read` -- View audit log
+  - `audit.export` -- Export audit data
+  - `audit.webhook_manage` -- Configure audit webhooks
+
+  **Billing**
+  - `billing.read` -- View billing information
+  - `billing.manage` -- Change plans and payment methods
+
+  **Security, Roles, Compliance, Integrations, Notifications**
+  - Additional scopes are available for fine-grained control over security settings, custom roles, compliance reporting, third-party integrations, and notification preferences.
+</Accordion>
+
+## Managing Keys
+
+You can perform the following actions on existing keys:
+
+- **Toggle status** -- Switch between `active` and `disabled`. A disabled key rejects all requests but can be re-enabled later.
+- **Delete permanently** -- Remove the key entirely. Cannot be undone.
+- **View permissions** -- Inspect the full scope set attached to a key.
+
+## Dashboard Stats
+
+The API Keys page shows summary stats at the top:
+
+- **Total keys** -- All keys ever created (including deleted)
+- **Active keys** -- Keys currently in `active` status
+- **API calls (24h)** -- Total API calls across all keys in the last 24 hours
+- **Last call** -- Timestamp of the most recent API call from any key
+
+## Plan Limits
+
+| Plan | Max API Keys |
+|------|-------------|
+| Free | 3 |
+| Developer | 10 |
+| Pro | 20 |
+| Enterprise | Unlimited |
+
+<Warning>Deleting a key is permanent. Any tool using that key will immediately lose access. Disable it first if you're unsure.</Warning>

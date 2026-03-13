@@ -1,0 +1,45 @@
+---
+title: FAQ
+description: Common questions about Takumo
+icon: "help-circle"
+---
+
+# FAQ
+
+<Accordion title="Does Takumo store my secrets?">
+No. Secrets live in an in-memory vault for the duration of a request. When the response is delivered, the vault is zeroized. Nothing is written to disk, nothing is logged. The only thing recorded is detection metadata: type of secret, location in the file, timestamp. The actual secret value is never persisted.
+</Accordion>
+
+<Accordion title="Does Takumo see my code?">
+Takumo scans your code to find secrets. The code is processed in memory, never stored, never logged. Only the detection metadata (type of secret, location, timestamp) is recorded. Your code passes through the gateway and out the other side. It does not stop along the way.
+</Accordion>
+
+<Accordion title="What AI providers are supported?">
+Any provider with an HTTP API. Anthropic and OpenAI are the primary targets. The gateway proxies requests transparently -- it doesn't care what's on the other end. If your AI tool sends HTTP requests, Takumo can sit in front of it.
+</Accordion>
+
+<Accordion title="Does it work with streaming responses?">
+Yes. SSE (Server-Sent Events) streaming is fully supported. Tokens in streamed responses are rehydrated as chunks arrive. You don't need to buffer the full response. The rehydration pipeline handles partial token matches across chunk boundaries.
+</Accordion>
+
+<Accordion title="What's the latency overhead?">
+Around 3ms per request after the first request. The first request in a session has additional overhead for key exchange and vault initialization. After that, it's just pattern matching and string replacement. You won't notice it.
+</Accordion>
+
+<Accordion title="Can I use my own AI provider API key?">
+Yes. Takumo passes your provider API key through to the upstream provider. Takumo authenticates you separately via your Takumo API key. Two keys, two purposes: one for Takumo (governance), one for the AI provider (inference).
+</Accordion>
+
+<Accordion title="What happens if Takumo goes down?">
+The gateway returns `503 Service Unavailable`. Your AI tool's built-in retry logic handles it. No data is lost, no secrets are exposed. When the gateway recovers, requests resume normally. If you need guaranteed uptime, deploy on-prem so you control the infrastructure.
+</Accordion>
+
+<Accordion title="Is there an SLA?">
+Enterprise plans include a 99.9% uptime SLA. Free, Developer, and Pro plans are best-effort with historically high availability but no contractual guarantee. Contact sales for SLA details.
+</Accordion>
+
+<Accordion title="What's the difference between SaaS and On-Prem?">
+**SaaS:** Takumo hosts the gateway and coordinator. Your tools connect to `gateway.takumo.io`. We handle updates, scaling, and availability. You handle nothing.
+
+**On-Prem:** You deploy the gateway and coordinator in your own Kubernetes cluster. Same software, your infrastructure. You handle updates (Helm chart), scaling (HPA), and availability. Secrets never leave your network.
+</Accordion>

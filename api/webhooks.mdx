@@ -1,0 +1,215 @@
+---
+title: Webhooks
+description: Receive real-time event notifications
+icon: "webhook"
+---
+
+Webhooks deliver event notifications to your URL in real-time. Configure them in **Settings > Notifications** in the dashboard.
+
+<Note>Webhooks are available on Enterprise plans. See [Plan Comparison](/reference/plan-comparison) for details.</Note>
+
+## Supported events
+
+| Event | Description |
+|-------|-------------|
+| `secret.detected` | A secret was found and tokenized in an outbound request |
+| `policy.violated` | A policy rule was triggered during a scan |
+| `key.revoked` | An API key was revoked |
+| `member.joined` | A new member joined the organization |
+| `member.removed` | A member was removed from the organization |
+
+## Payload format
+
+Every webhook delivery sends a JSON POST request to your endpoint:
+
+```json
+{
+  "event": "secret.detected",
+  "timestamp": "2026-03-13T16:00:00Z",
+  "organization_id": "org_a1b2c3",
+  "data": {
+    "request_id": "req_d4e5f6",
+    "secret_type": "aws_access_key",
+    "action": "tokenized"
+  },
+  "signature": "sha256=abc123..."
+}
+```
+
+The `data` field varies by event type.
+
+### secret.detected
+
+```json
+{
+  "event": "secret.detected",
+  "timestamp": "2026-03-13T16:00:00Z",
+  "organization_id": "org_a1b2c3",
+  "data": {
+    "request_id": "req_d4e5f6",
+    "secret_type": "aws_access_key",
+    "action": "tokenized",
+    "filename": "config.ts"
+  }
+}
+```
+
+### policy.violated
+
+```json
+{
+  "event": "policy.violated",
+  "timestamp": "2026-03-13T16:01:00Z",
+  "organization_id": "org_a1b2c3",
+  "data": {
+    "request_id": "req_g7h8i9",
+    "policy_id": "pol_j1k2l3",
+    "policy_name": "block-production-secrets",
+    "action": "blocked"
+  }
+}
+```
+
+### key.revoked
+
+```json
+{
+  "event": "key.revoked",
+  "timestamp": "2026-03-13T16:02:00Z",
+  "organization_id": "org_a1b2c3",
+  "data": {
+    "key_prefix": "tk_live_a1b2",
+    "key_name": "ci-pipeline",
+    "revoked_by": "user_m4n5o6"
+  }
+}
+```
+
+### member.joined
+
+```json
+{
+  "event": "member.joined",
+  "timestamp": "2026-03-13T16:03:00Z",
+  "organization_id": "org_a1b2c3",
+  "data": {
+    "user_id": "user_p7q8r9",
+    "email": "dev@example.com",
+    "role": "MEMBER"
+  }
+}
+```
+
+### member.removed
+
+```json
+{
+  "event": "member.removed",
+  "timestamp": "2026-03-13T16:04:00Z",
+  "organization_id": "org_a1b2c3",
+  "data": {
+    "user_id": "user_p7q8r9",
+    "email": "dev@example.com",
+    "removed_by": "user_s1t2u3"
+  }
+}
+```
+
+## Verifying signatures
+
+Every webhook includes a signature in the `X-Takumo-Signature` header. Verify it to confirm the payload came from Takumo and wasn't tampered with.
+
+The signature is an HMAC-SHA256 of the raw request body, using your webhook secret as the key.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createHmac, timingSafeEqual } from "crypto";
+
+function verifyWebhook(
+  body: string,
+  signature: string,
+  secret: string
+): boolean {
+  const expected = "sha256=" + createHmac("sha256", secret)
+    .update(body, "utf8")
+    .digest("hex");
+
+  return timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expected)
+  );
+}
+
+// In your webhook handler
+app.post("/webhook", (req, res) => {
+  const signature = req.headers["x-takumo-signature"] as string;
+  const isValid = verifyWebhook(req.rawBody, signature, process.env.WEBHOOK_SECRET);
+
+  if (!isValid) {
+    return res.status(401).json({ error: "Invalid signature" });
+  }
+
+  const event = JSON.parse(req.rawBody);
+  // Process the event
+  res.status(200).json({ received: true });
+});
+```
+
+```python Python
+import hmac
+import hashlib
+
+def verify_webhook(body: bytes, signature: str, secret: str) -> bool:
+    expected = "sha256=" + hmac.new(
+        secret.encode("utf-8"),
+        body,
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(signature, expected)
+
+# In your webhook handler (Flask example)
+@app.route("/webhook", methods=["POST"])
+def handle_webhook():
+    signature = request.headers.get("X-Takumo-Signature")
+    is_valid = verify_webhook(request.data, signature, WEBHOOK_SECRET)
+
+    if not is_valid:
+        return {"error": "Invalid signature"}, 401
+
+    event = request.json
+    # Process the event
+    return {"received": True}, 200
+```
+
+</CodeGroup>
+
+<Warning>Always use constant-time comparison (like `timingSafeEqual` or `hmac.compare_digest`) when verifying signatures. Standard string comparison is vulnerable to timing attacks.</Warning>
+
+## Retry policy
+
+Failed deliveries are retried with exponential backoff:
+
+| Attempt | Delay |
+|---------|-------|
+| 1st retry | 1 second |
+| 2nd retry | 10 seconds |
+| 3rd retry | 60 seconds |
+
+After 3 failed attempts, the delivery is marked as failed. Failed deliveries are visible in the dashboard under **Settings > Notifications > Delivery Log**.
+
+A delivery is considered failed if:
+
+- Your endpoint returns a non-2xx status code
+- The connection times out (10 second timeout)
+- DNS resolution fails
+
+## Best practices
+
+- **Respond quickly.** Return a `200` status code within 5 seconds. Do heavy processing asynchronously after acknowledging receipt.
+- **Verify every signature.** Never process a webhook without checking `X-Takumo-Signature`.
+- **Handle duplicates.** In rare cases, the same event may be delivered more than once. Use `request_id` or `timestamp` to deduplicate.
+- **Use HTTPS.** Webhook URLs must use HTTPS. HTTP endpoints are rejected during configuration.
+
+<Tip>Use a service like webhook.site to test your webhook endpoint before configuring it in production.</Tip>

@@ -1,0 +1,169 @@
+---
+title: Continue.dev
+description: Route Continue.dev requests through Takumo
+icon: "arrow-right"
+---
+
+# Continue.dev
+
+Continue is open source and lets you configure custom provider endpoints. Point it at your Takumo gateway and every chat, autocomplete, and edit request is protected.
+
+## Setup
+
+<Steps>
+  <Step title="Get your API key">
+    Log into [cloud.takumo.io](https://cloud.takumo.io) and copy your API key from the dashboard.
+  </Step>
+  <Step title="Open your Continue config">
+    Continue stores its configuration at `~/.continue/config.json` (or `config.ts` if you prefer TypeScript).
+
+    Open it in your editor:
+
+    ```bash
+    code ~/.continue/config.json
+    ```
+  </Step>
+  <Step title="Set the provider endpoint">
+    Set `apiBase` to your Takumo gateway URL and `apiKey` to your Takumo API key:
+
+    ```json
+    {
+      "models": [
+        {
+          "title": "Claude via Takumo",
+          "provider": "anthropic",
+          "model": "claude-sonnet-4-5-20250929",
+          "apiBase": "https://gateway.takumo.io/v1",
+          "apiKey": "your-takumo-api-key"
+        }
+      ]
+    }
+    ```
+
+    For OpenAI models:
+
+    ```json
+    {
+      "models": [
+        {
+          "title": "GPT-4o via Takumo",
+          "provider": "openai",
+          "model": "gpt-4o",
+          "apiBase": "https://gateway.takumo.io/v1",
+          "apiKey": "your-takumo-api-key"
+        }
+      ]
+    }
+    ```
+
+    Self-hosted gateway users: replace the URL with your own.
+  </Step>
+  <Step title="Configure autocomplete (optional)">
+    If you use tab autocomplete, route that through Takumo too:
+
+    ```json
+    {
+      "tabAutocompleteModel": {
+        "title": "Codestral via Takumo",
+        "provider": "mistral",
+        "model": "codestral-latest",
+        "apiBase": "https://gateway.takumo.io/v1",
+        "apiKey": "your-takumo-api-key"
+      }
+    }
+    ```
+  </Step>
+  <Step title="Test it">
+    Open a file with secrets. Ask Continue a question about the code. Check the [dashboard](https://cloud.takumo.io/dashboard) for detections.
+  </Step>
+</Steps>
+
+## Full config example
+
+Here's a complete `config.json` with multiple models routed through Takumo:
+
+```json
+{
+  "models": [
+    {
+      "title": "Claude Sonnet (Takumo)",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "apiBase": "https://gateway.takumo.io/v1",
+      "apiKey": "your-takumo-api-key"
+    },
+    {
+      "title": "GPT-4o (Takumo)",
+      "provider": "openai",
+      "model": "gpt-4o",
+      "apiBase": "https://gateway.takumo.io/v1",
+      "apiKey": "your-takumo-api-key"
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "Codestral (Takumo)",
+    "provider": "mistral",
+    "model": "codestral-latest",
+    "apiBase": "https://gateway.takumo.io/v1",
+    "apiKey": "your-takumo-api-key"
+  }
+}
+```
+
+## Usage
+
+Once configured, Continue works exactly the same as before. Chat, autocomplete, and slash commands all route through the gateway transparently.
+
+```
+You: @config.ts Why is the database connection timing out?
+Continue: Looking at your config, the connection pool max is set to 5...
+```
+
+The AI saw tokenized credentials. You got an answer that references your actual config. No difference in your workflow.
+
+<Note>
+  Continue's config supports multiple models. You can route some through Takumo and leave others direct. Useful if you want protection on sensitive projects but raw speed on throwaway scripts.
+</Note>
+
+## TypeScript config
+
+If you use `config.ts` instead of `config.json`:
+
+```typescript
+// ~/.continue/config.ts
+import type { ContinueConfig } from "@continuedev/config-types";
+
+export function modifyConfig(config: ContinueConfig): ContinueConfig {
+  config.models = [
+    {
+      title: "Claude via Takumo",
+      provider: "anthropic",
+      model: "claude-sonnet-4-5-20250929",
+      apiBase: "https://gateway.takumo.io/v1",
+      apiKey: process.env.TAKUMO_API_KEY,
+    },
+  ];
+  return config;
+}
+```
+
+This lets you pull the API key from an environment variable instead of hardcoding it.
+
+## Troubleshooting
+
+<Accordion title="Continue can't connect to the gateway">
+  Check the basics:
+
+  1. The gateway URL is correct and reachable: `curl https://gateway.takumo.io/v1/health`
+  2. Your API key is valid (check the dashboard)
+  3. The `provider` field matches what you're actually using (anthropic, openai, mistral, etc.)
+  4. Restart VS Code after config changes
+</Accordion>
+
+<Accordion title="Autocomplete not going through Takumo">
+  Autocomplete uses a separate config key (`tabAutocompleteModel`). Make sure you've set `apiBase` there too, not just in `models`.
+</Accordion>
+
+<Accordion title="Secrets not being detected">
+  Check [Supported Patterns](/patterns/supported) for the full list of what Takumo catches. If your secret format isn't covered, you can add custom patterns in your organization settings on the dashboard.
+</Accordion>

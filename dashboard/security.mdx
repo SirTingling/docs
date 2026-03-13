@@ -1,0 +1,89 @@
+---
+title: Security Settings
+description: MFA, SSO, IP allowlist, and domain controls
+icon: "shield-check"
+---
+
+Security settings control how your team authenticates and what network restrictions apply.
+
+## Features by Plan
+
+| Feature | Free | Developer | Pro | Enterprise |
+|---------|------|-----------|-----|------------|
+| MFA enforcement | - | - | Yes | Yes |
+| Domain verification | - | - | Yes | Yes |
+| SSO / SAML | - | - | - | Yes |
+| SCIM provisioning | - | - | - | Yes |
+| IP allowlist | - | - | - | Yes |
+
+## MFA Enforcement
+
+<Note>Available on Pro and Enterprise plans.</Note>
+
+Require all members to enable multi-factor authentication. When you turn this on, any member without MFA configured is prompted to set it up on their next login. They cannot access the dashboard until MFA is active.
+
+This is a hard requirement, not a suggestion. Members who don't complete MFA setup are effectively locked out until they do.
+
+<Steps>
+  <Step title="Go to Security Settings">
+    Navigate to **Settings > Security** in the dashboard.
+  </Step>
+  <Step title="Enable MFA enforcement">
+    Toggle **Require MFA for all members** to on.
+  </Step>
+  <Step title="Members are notified">
+    Members without MFA will be prompted at next login. No action needed from you beyond enabling it.
+  </Step>
+</Steps>
+
+## Domain Verification
+
+<Note>Available on Pro and Enterprise plans.</Note>
+
+Verify ownership of your email domain. Once verified, this enables:
+
+- **Auto-join** -- Users who sign up with a matching email domain can automatically join your organization without an explicit invitation.
+- **Domain trust** -- Verified domains appear in your security settings as trusted, giving you confidence that members with those email addresses are legitimate.
+
+Verification works via DNS TXT record. Add the provided record to your domain's DNS, then click verify in the dashboard.
+
+## SSO / SAML
+
+<Note>Available on Enterprise plans only.</Note>
+
+Configure SAML-based single sign-on with your identity provider. Supported providers include:
+
+- **Okta**
+- **Azure AD (Microsoft Entra ID)**
+- **Google Workspace**
+- Any SAML 2.0-compliant identity provider
+
+Once SSO is configured, members authenticate through your IdP instead of using email/password. You can optionally enforce SSO-only access, which disables password login entirely.
+
+## SCIM Provisioning
+
+<Note>Available on Enterprise plans only.</Note>
+
+Automatically sync team members from your identity provider. When someone is added or removed in your IdP, the change is reflected in Takumo without manual intervention.
+
+SCIM handles:
+
+- **Provisioning** -- New users in your IdP are automatically invited to your Takumo organization
+- **Deprovisioning** -- Users removed from your IdP are automatically suspended in Takumo
+- **Role mapping** -- Map IdP groups to Takumo roles
+
+## IP Allowlist
+
+<Note>Available on Enterprise plans only.</Note>
+
+Restrict dashboard access to specific IP addresses or CIDR ranges. Requests from IPs not on the allowlist are rejected.
+
+Use this to limit access to your corporate network, VPN exit nodes, or specific office locations. You can add individual IPs (e.g., `203.0.113.50`) or CIDR ranges (e.g., `203.0.113.0/24`).
+
+<Warning>Be careful with IP allowlists. If you lock yourself out by misconfiguring the allowlist, contact support to regain access.</Warning>
+
+## Session Timeout
+
+Configure how long sessions last before requiring re-authentication. Shorter timeouts are more secure but require more frequent logins. Find the right balance for your organization's risk tolerance.
+
+Session timeout applies to all members regardless of role.

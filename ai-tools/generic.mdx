@@ -1,0 +1,145 @@
+---
+title: Generic Setup
+description: Connect any AI tool to Takumo
+icon: "settings"
+---
+
+# Generic Setup
+
+Any AI tool that lets you set a custom API endpoint works with Takumo. The pattern is always the same.
+
+## Three steps
+
+<Steps>
+  <Step title="Find the endpoint setting">
+    Look for a setting called "API base URL", "API endpoint", "Custom endpoint", or similar in your AI tool's configuration. Every tool that supports custom providers has one.
+  </Step>
+  <Step title="Change the URL">
+    Replace the provider's default URL with your Takumo gateway URL:
+
+    ```
+    https://gateway.takumo.io/v1
+    ```
+
+    Self-hosted: use your own gateway URL instead.
+  </Step>
+  <Step title="Set your API key">
+    Use your Takumo API key wherever the tool asks for a provider API key. The gateway handles provider authentication on your behalf.
+  </Step>
+</Steps>
+
+That's it. Requests go through the gateway. Secrets get tokenized. Responses get rehydrated.
+
+## Common provider URLs
+
+Here's what to replace:
+
+| Provider | Default URL | Takumo URL |
+|----------|-------------|------------|
+| Anthropic | `https://api.anthropic.com` | `https://gateway.takumo.io/v1` |
+| OpenAI | `https://api.openai.com` | `https://gateway.takumo.io/v1` |
+| Mistral | `https://api.mistral.ai` | `https://gateway.takumo.io/v1` |
+| Google AI | `https://generativelanguage.googleapis.com` | `https://gateway.takumo.io/v1` |
+
+The gateway auto-detects which provider you're targeting based on the model name in the request.
+
+## Environment variable pattern
+
+For CLI tools, the integration is usually two environment variables:
+
+```bash
+# Anthropic-based tools
+export ANTHROPIC_BASE_URL="https://gateway.takumo.io/v1"
+export ANTHROPIC_API_KEY="your-takumo-api-key"
+
+# OpenAI-based tools
+export OPENAI_BASE_URL="https://gateway.takumo.io/v1"
+export OPENAI_API_KEY="your-takumo-api-key"
+```
+
+Any tool that reads these standard environment variables will route through Takumo without any code changes.
+
+## Config file pattern
+
+For tools with JSON or YAML configuration:
+
+```json
+{
+  "apiBase": "https://gateway.takumo.io/v1",
+  "apiKey": "your-takumo-api-key",
+  "model": "claude-sonnet-4-5-20250929"
+}
+```
+
+The exact field names vary by tool, but the values are always the same: your gateway URL and your Takumo API key.
+
+## SDK pattern
+
+If you're building your own integration with an AI SDK:
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  baseURL: "https://gateway.takumo.io/v1",
+  apiKey: "your-takumo-api-key",
+});
+
+const response = await client.messages.create({
+  model: "claude-sonnet-4-5-20250929",
+  max_tokens: 1024,
+  messages: [{ role: "user", content: codeWithSecrets }],
+});
+// Secrets in codeWithSecrets were tokenized by the gateway
+// Tokens in the response were rehydrated by the gateway
+```
+
+```python
+import anthropic
+
+client = anthropic.Anthropic(
+    base_url="https://gateway.takumo.io/v1",
+    api_key="your-takumo-api-key",
+)
+
+response = client.messages.create(
+    model="claude-sonnet-4-5-20250929",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": code_with_secrets}],
+)
+```
+
+## If your tool doesn't support custom endpoints
+
+Some tools don't let you change the API URL. For those, use the Takumo CLI to pre-process files before pasting or attaching them:
+
+```bash
+# Tokenize a file before pasting into any AI tool
+takumo-aegis tokenize src/config.ts
+```
+
+This prints the tokenized version to stdout. Copy and paste it into your AI tool. When you get a response back, rehydrate it:
+
+```bash
+# Pipe the AI response through rehydrate
+echo "AI response here" | takumo-aegis rehydrate
+```
+
+Or use the `shield` command for a full round-trip:
+
+```bash
+takumo-aegis shield src/config.ts --prompt "Add connection pooling"
+```
+
+<Note>
+  If your tool doesn't support custom endpoints, use the Takumo CLI to pre-process files. Run `takumo-aegis tokenize` on your code before pasting it into any AI tool, and `takumo-aegis rehydrate` on the response to restore secrets.
+</Note>
+
+## Verifying it works
+
+After configuring any tool, verify secrets are being caught:
+
+1. Open a file with a known secret (database URL, API key, etc.)
+2. Send it to your AI tool
+3. Check the [Takumo dashboard](https://cloud.takumo.io/dashboard) -- you should see the request logged with detections
+4. If the detection count is zero, check [Supported Patterns](/patterns/supported)
