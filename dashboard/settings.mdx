@@ -1,0 +1,64 @@
+---
+title: Organization Settings
+description: General configuration and danger zone
+icon: "settings"
+---
+
+Manage your organization's name, slug, and other general settings.
+
+## General Settings
+
+Navigate to **Settings > General** to configure:
+
+- **Organization name** -- The display name shown across the dashboard, in emails, and in team member views. Change it anytime.
+- **Slug** -- The URL-friendly identifier for your organization (e.g., `cloud.takumo.io/org/your-slug`). Changing this updates all URLs, so update any bookmarks or integrations that reference the old slug.
+- **Timezone** -- Affects how timestamps display in the dashboard. Audit log entries, "last seen" times, and billing cycle dates all use this timezone.
+
+## Notifications
+
+Configure how you receive alerts:
+
+- **Email notifications** -- Get notified about security events, member changes, and billing alerts via email.
+- **In-app notifications** -- See alerts directly in the dashboard notification center.
+
+You can configure notification preferences per category. For example, get email alerts for security events but only in-app notifications for billing updates.
+
+## Danger Zone
+
+These actions are destructive and difficult or impossible to reverse.
+
+### Transfer Ownership
+
+Move the Owner role to another member of your organization. When you transfer ownership:
+
+- The target member becomes the new Owner (level 100)
+- You are demoted to Admin (level 80)
+- This is immediate and does not require confirmation from the new Owner
+
+Only the current Owner can initiate a transfer. You must select an existing member of the organization.
+
+<Steps>
+  <Step title="Go to Settings > General">
+    Scroll to the Danger Zone section at the bottom of the page.
+  </Step>
+  <Step title="Click Transfer Ownership">
+    Select the member you want to transfer ownership to.
+  </Step>
+  <Step title="Confirm the transfer">
+    Confirm that you understand you will be demoted to Admin.
+  </Step>
+</Steps>
+
+### Delete Organization
+
+Permanently deletes the organization and everything associated with it:
+
+- All API keys are revoked instantly
+- All member associations are removed
+- All scan data, policies, and audit logs are deleted
+- All gateway instances are disconnected
+- Billing is cancelled
+
+<Warning>Deleting an organization is permanent and irreversible. All API keys stop working immediately. All data is deleted.</Warning>
+
+This action requires the Owner role. You must type the organization name to confirm deletion. There is no grace period and no recovery option.

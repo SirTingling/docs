@@ -1,0 +1,75 @@
+---
+title: SaaS Setup
+description: Get started with Takumo's hosted service
+icon: "cloud"
+---
+
+The fastest path. Sign up, get an API key, point your tool at the gateway. No infrastructure to manage.
+
+## Getting started
+
+<Steps>
+  <Step title="Sign up">
+    Go to [cloud.takumo.io](https://cloud.takumo.io) and create an account.
+  </Step>
+  <Step title="Create an organization">
+    After signing in, create a new organization. This is where your team, API keys, policies, and audit log live.
+  </Step>
+  <Step title="Create an API key">
+    Navigate to **Settings > API Keys** and click **Create Key**. Give it a name that identifies where it will be used (e.g., `cursor-laptop`, `ci-pipeline`). Copy the key immediately -- it is shown once.
+  </Step>
+  <Step title="Configure your AI tool">
+    Set the API base URL in your AI tool to:
+    ```
+    https://gateway.takumo.io/v1
+    ```
+    Set your Takumo API key as the authentication credential. See [AI Tools](/ai-tools/overview) for tool-specific instructions.
+  </Step>
+  <Step title="Set the API key">
+    ```bash
+    export TAKUMO_API_KEY="tk_live_your_api_key_here"
+    ```
+    Or add it to your `.env` file:
+    ```bash
+    TAKUMO_API_KEY=tk_live_your_api_key_here
+    ```
+  </Step>
+  <Step title="Start coding">
+    Secrets are now protected. Every request through the gateway is scanned, tokenized, and logged in the audit trail.
+  </Step>
+</Steps>
+
+## Gateway URL
+
+All requests go through a single endpoint:
+
+```
+https://gateway.takumo.io/v1
+```
+
+This URL replaces the AI provider's API base URL in your tool configuration. The gateway handles routing to the correct upstream provider based on the request.
+
+## What you get
+
+| Capability | Details |
+|-----------|---------|
+| Secret detection | All [supported patterns](/patterns/supported) are active by default |
+| Audit log | Every request is logged with detection results |
+| Rate limiting | Per-organization limits based on your [plan](/reference/plan-comparison) |
+| Policy enforcement | Configure custom rules in the dashboard |
+| Zero infrastructure | Takumo manages the gateway, coordinator, database, and monitoring |
+
+## Verifying it works
+
+After configuring your tool, send a test request that includes a fake secret:
+
+```bash
+curl https://gateway.takumo.io/v1/tokenize \
+  -H "Authorization: Bearer $TAKUMO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "const key = \"AKIAIOSFODNN7EXAMPLE\"", "filename": "test.ts"}'
+```
+
+The response should show the secret replaced with a Takumo token. Check the **Audit Log** in the dashboard to confirm the event was recorded.
+
+<Tip>SaaS is the right choice for most teams. You get the same protection without managing infrastructure. On-prem is for organizations with strict data residency requirements.</Tip>

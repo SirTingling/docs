@@ -1,0 +1,67 @@
+---
+title: Audit Log
+description: Track every action in your organization
+icon: "scroll-text"
+---
+
+The audit log records every significant action in your organization. Who did what, when, and from where.
+
+## What Gets Logged
+
+Every action that changes state in your organization is recorded:
+
+- **Organization changes** -- Name updates, slug changes, settings modifications
+- **Member changes** -- Invitations sent, roles changed, members removed or suspended
+- **Auth events** -- Logins, logouts, MFA enrollments, failed authentication attempts
+- **API key lifecycle** -- Key creation, scope changes, disabling, deletion
+- **Policy changes** -- Policy creation, edits, deletions, version updates
+- **Security setting changes** -- MFA enforcement toggled, domain verification, IP allowlist updates
+- **Billing events** -- Plan changes, payment method updates, credit purchases
+
+## Viewing the Log
+
+The audit log page shows entries in reverse chronological order. Each entry includes:
+
+| Field | Description |
+|-------|-------------|
+| **Action** | What happened (e.g., `api_key.created`, `member.role_changed`) |
+| **Actor** | The team member who performed the action |
+| **Timestamp** | When the action occurred |
+| **Details** | Context-specific information (e.g., which key was deleted, what role was assigned) |
+
+### Filtering
+
+Filter the log by **actor** to see everything a specific team member has done. Use the **search** field to find specific actions or targets. Paginate through results for older entries.
+
+## Immutability
+
+Audit logs are append-only. They cannot be modified or deleted by anyone, including the Owner. This guarantees a tamper-proof record for compliance and incident investigation.
+
+## Plan Availability
+
+| Plan | Audit Log | Retention |
+|------|-----------|-----------|
+| Free | Not available | 7 days |
+| Developer | Yes | 30 days |
+| Pro | Yes | 90 days |
+| Enterprise | Yes | 365 days |
+
+After the retention period, entries are permanently removed.
+
+## Enterprise Features
+
+Enterprise plans unlock additional audit capabilities:
+
+<Accordion title="SIEM Export">
+  Forward audit events to your Security Information and Event Management system. Takumo supports standard log formats so your existing SIEM ingestion pipelines work without modification.
+</Accordion>
+
+<Accordion title="Audit Webhooks">
+  Receive real-time notifications when specific actions occur. Configure webhook endpoints and filter by action type to get only the events you care about.
+</Accordion>
+
+<Accordion title="Extended Retention">
+  Enterprise audit logs are retained for 365 days. For organizations with regulatory requirements that exceed this, contact us about custom retention policies.
+</Accordion>
+
+<Note>Audit log access requires the `audit.read` permission. Export requires `audit.export`.</Note>

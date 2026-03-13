@@ -1,0 +1,111 @@
+---
+title: Troubleshooting
+description: Common issues and how to fix them
+icon: "wrench"
+---
+
+# Troubleshooting
+
+<Accordion title="401 Unauthorized">
+Your API key is invalid, expired, or revoked.
+
+**Check these:**
+- Is the key correct? Copy-paste errors are common. Watch for trailing whitespace.
+- Has it been revoked? Check **Settings > API Keys** in the dashboard.
+- Is it for the right environment? `tk_live_` keys don't work in test mode and vice versa.
+- Is the `Authorization` header formatted correctly? It should be `Bearer tk_live_...`.
+
+```bash
+# Verify your key works
+curl -s -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer $TAKUMO_API_KEY" \
+  https://gateway.takumo.io/v1/health
+# Should return 200
+```
+</Accordion>
+
+<Accordion title="403 Forbidden">
+Your API key doesn't have the required scope, or your plan doesn't include the feature you're trying to use.
+
+**Check these:**
+- Key scopes: go to **Settings > API Keys**, click the key, check its scopes.
+- Plan limits: you might have hit your monthly credit or request limit. Check **Settings > Billing**.
+- The error response body includes the specific reason. Read the `message` field.
+</Accordion>
+
+<Accordion title="429 Rate Limited">
+You've exceeded your plan's rate limit.
+
+**What to do:**
+- Check the `Retry-After` header for when to try again.
+- Check `X-RateLimit-Remaining` to see your current quota.
+- If this happens regularly, upgrade your plan or reduce request frequency.
+- Don't retry in a tight loop. Back off exponentially.
+
+See [Error Codes](/reference/error-codes) for the full rate limit header reference.
+</Accordion>
+
+<Accordion title="502 Bad Gateway">
+The upstream AI provider (Anthropic, OpenAI) returned an error. This is not a Takumo issue.
+
+**Check these:**
+- The provider's status page ([status.anthropic.com](https://status.anthropic.com), [status.openai.com](https://status.openai.com))
+- Your provider API key. Is it valid? Does it have sufficient quota?
+- The error details are in the response body. Takumo forwards the provider's error message.
+</Accordion>
+
+<Accordion title="503 Service Unavailable">
+The gateway or coordinator is down.
+
+**For SaaS users:**
+- Check [status.takumo.io](https://status.takumo.io) for incidents.
+- Wait and retry. The gateway auto-recovers.
+
+**For on-prem users:**
+- Check your fleet status in the dashboard.
+- Verify pods are running: `kubectl get pods -n takumo`.
+- Check coordinator logs: `kubectl logs -n takumo deployment/gateway-coordinator`.
+- Verify the coordinator's gRPC endpoint is reachable from the gateway pods.
+</Accordion>
+
+<Accordion title="Secrets not detected">
+Takumo detects specific patterns. If your secret doesn't match a known pattern, it won't be tokenized.
+
+**Check these:**
+- Review [Supported Patterns](/patterns/supported) for the full list.
+- Run a local scan to see what Takumo finds: `takumo-aegis scan ./your-file.ts`
+- If the secret uses a non-standard format, add a custom pattern in your [policy configuration](/concepts/policies).
+- Generic detection catches values assigned to variables named `password`, `secret`, `api_key`, etc. If your variable name doesn't match, the value won't be flagged.
+</Accordion>
+
+<Accordion title="High latency on first request">
+Normal. The first request in a session performs key exchange and vault initialization. This adds 50-200ms depending on network conditions.
+
+Subsequent requests add approximately 3ms. If every request is slow, check your network path to the gateway. For on-prem, ensure the gateway and coordinator are in the same cluster or region.
+</Accordion>
+
+<Accordion title="Connection refused">
+The gateway is unreachable.
+
+**Check these:**
+- **Gateway URL:** For SaaS, use `https://gateway.takumo.io/v1`. For on-prem, use your gateway's external URL.
+- **DNS resolution:** Can your machine resolve the hostname? `nslookup gateway.takumo.io`
+- **Firewall rules:** Port 443 (HTTPS) must be open to the gateway.
+- **Proxy settings:** If you're behind a corporate proxy, configure it in your tool's HTTP settings.
+
+```bash
+# Test connectivity
+curl -v https://gateway.takumo.io/v1/health
+```
+</Accordion>
+
+<Accordion title="Gateway not appearing in fleet">
+The gateway needs a valid join key to register with the coordinator.
+
+**Check these:**
+- Is the join key correct? Copy it from **Settings > Fleet > Join Keys** in the dashboard.
+- Has the join key been revoked? Revoked keys are rejected immediately.
+- Can the gateway reach the coordinator's gRPC endpoint? The gateway initiates the connection.
+- Check gateway logs for connection errors: `kubectl logs -n takumo deployment/aegis-gateway`.
+- Verify the coordinator's gRPC port (default: 50051) is accessible from the gateway's network.
+</Accordion>

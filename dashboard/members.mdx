@@ -1,0 +1,75 @@
+---
+title: Team Management
+description: Invite members and manage roles
+icon: "users"
+---
+
+Control who has access to your organization and what they can do.
+
+## Inviting Members
+
+<Steps>
+  <Step title="Go to Members">
+    Navigate to **Settings > Members** in the dashboard sidebar.
+  </Step>
+  <Step title="Click Invite Member">
+    Hit the **Invite Member** button.
+  </Step>
+  <Step title="Enter their email">
+    Type the email address of the person you want to invite.
+  </Step>
+  <Step title="Select a role">
+    Choose the role that matches what this person needs to do. See the role table below.
+  </Step>
+  <Step title="Send the invitation">
+    They'll receive an email invitation with a link to join your organization.
+  </Step>
+</Steps>
+
+## Roles
+
+| Role | Level | Available On |
+|------|-------|-------------|
+| Owner | 100 | All plans |
+| Admin | 80 | All plans |
+| Security Lead | 60 | Pro, Enterprise |
+| Billing Admin | 60 | Pro, Enterprise |
+| Member | 40 | All plans |
+| Viewer | 20 | All plans |
+
+## What Each Role Can Do
+
+**Owner** -- Everything. Create and delete the organization, transfer ownership, manage billing, assign any role. There is exactly one Owner per organization.
+
+**Admin** -- Everything except delete the organization, transfer ownership, and manage billing. Admins handle day-to-day operations: managing members, configuring policies, creating API keys.
+
+**Security Lead** -- Security settings, policies, audit log, and fleet management. Cannot manage members or billing. Built for the person responsible for your security posture without giving them team management powers.
+
+**Billing Admin** -- Billing and plan management. Read-only access to the audit log. Built for finance teams who need to manage subscriptions without touching security configuration.
+
+**Member** -- Create API keys, create policies, triage issues. Cannot manage team members or change settings. The default role for developers who need to use Takumo daily.
+
+**Viewer** -- Read-only access to everything. Cannot create, edit, or delete anything. Good for stakeholders who need visibility without the ability to change anything.
+
+## Anti-Escalation
+
+You can only assign roles at or below your own level. An Admin (level 80) cannot create another Owner (level 100). A Member (level 40) cannot promote someone to Admin (level 80).
+
+This prevents privilege escalation. The only way to create a new Owner is for the current Owner to transfer ownership.
+
+## Custom Roles
+
+<Note>Custom roles are an Enterprise feature.</Note>
+
+Enterprise organizations can create roles with specific permission combinations that don't map to the built-in roles. Define exactly which scopes a role should have, give it a name, and assign it to members.
+
+## Member Limits
+
+| Plan | Max Members |
+|------|------------|
+| Free | 5 |
+| Developer | 5 |
+| Pro | 25 |
+| Enterprise | Unlimited |
+
+When you hit the member limit for your plan, you'll need to upgrade before inviting additional members.

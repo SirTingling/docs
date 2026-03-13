@@ -1,107 +1,120 @@
 ---
 title: Windsurf
-description: Use Takumo with Windsurf IDE
+description: Route Windsurf AI requests through Takumo
+icon: "wind"
 ---
 
-# Windsurf Integration
+# Windsurf
 
-Protect secrets when using Windsurf's Cascade AI features.
+Windsurf supports custom API endpoints. Set your Takumo gateway as the base URL, and Cascade, Flows, and inline edits are all protected.
 
 ## Setup
 
 <Steps>
-  <Step title="Install the extension">
-    In Windsurf:
-
-    1. Open Extensions (`Cmd/Ctrl + Shift + X`)
-    2. Search for "Takumo"
-    3. Click Install
+  <Step title="Get your API key">
+    Log into [cloud.takumo.io](https://cloud.takumo.io) and copy your API key from the dashboard.
   </Step>
-  <Step title="Enable protection">
-    The extension activates automatically. Check the status bar for the shield icon.
+  <Step title="Open Windsurf settings">
+    Press `Cmd + ,` (macOS) or `Ctrl + ,` (Windows/Linux) to open Settings.
+  </Step>
+  <Step title="Navigate to AI configuration">
+    Go to the AI provider settings. Look for the API endpoint or base URL configuration.
+  </Step>
+  <Step title="Set the base URL">
+    Set the API base URL to your Takumo gateway:
+
+    ```
+    https://gateway.takumo.io/v1
+    ```
+
+    Self-hosted gateway users: use your own URL instead.
+  </Step>
+  <Step title="Set your API key">
+    Enter your Takumo API key. The gateway handles provider authentication, so this replaces your direct provider key.
+  </Step>
+  <Step title="Test it">
+    Open a file with secrets. Use Cascade or an inline edit. Check the [dashboard](https://cloud.takumo.io/dashboard) to confirm detections are logged.
   </Step>
 </Steps>
 
 ## Usage
 
+Everything works the same as before. You don't change how you use Windsurf.
+
 ### Cascade
 
-When you use Cascade to edit files, Takumo intercepts the request:
+Ask Cascade to work on files that contain secrets. The gateway tokenizes outbound requests and rehydrates inbound responses.
 
 ```
 You: Add error handling to the API client
-
-[Takumo: Tokenized 2 secrets]
-
 Cascade: I'll add try-catch blocks and proper error handling...
 ```
 
-The AI sees tokenized code, you get real secrets in the result.
+The AI never saw your real API keys or database URLs. You got working code back.
 
 ### Flows
 
-For multi-step Flows, Takumo maintains session state:
+Multi-step Flows work transparently. The gateway maintains session state, so the same secret always gets the same token across all steps.
 
-```
-Flow: Refactor authentication
-├─ Step 1: Update auth.ts     [Takumo: 3 secrets tokenized]
-├─ Step 2: Update middleware  [Takumo: same tokens reused]
-└─ Step 3: Update routes      [Takumo: 2 additional secrets]
+```typescript
+// Step 1: AI refactors auth.ts -- secrets tokenized
+// Step 2: AI updates middleware.ts -- same tokens reused
+// Step 3: AI updates routes.ts -- consistent tokens throughout
 ```
 
-Same secrets get the same tokens across all steps.
+The AI sees that the same database URL appears in three files because it gets the same token in all three. It understands they're connected.
 
 ### Inline edits
 
-Select code and trigger inline edit:
+Select code, trigger an inline edit. The selected code is tokenized before it's sent.
 
 ```typescript
-// Before (what you see):
-const stripe = new Stripe("sk_test_EXAMPLEKEY");
+// You select this line:
+const stripe = new Stripe("sk_test_abc123EXAMPLE");
 
-// What AI sees:
-const stripe = new Stripe("__TAKUMO_v1_KEY_a1b2c3d4__");
+// AI sees:
+const stripe = new Stripe("__TAKUMO_v1_KEY_d4e5f6__");
 
-// After (what you get):
-const stripe = new Stripe("sk_test_EXAMPLEKEY");
-if (!stripe) throw new Error("Stripe not configured");
+// You get back:
+const stripe = new Stripe("sk_test_abc123EXAMPLE");
+if (!stripe) throw new Error("Stripe client failed to initialize");
 ```
 
-## Configuration
-
-Settings available in Windsurf preferences:
-
-```json
-{
-  "takumo.enabled": true,
-  "takumo.autoTokenize": true,
-  "takumo.include": ["**/*"],
-  "takumo.exclude": ["**/node_modules/**"]
-}
-```
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `Takumo: Scan Current File` | Check current file for secrets |
-| `Takumo: Scan Workspace` | Full workspace scan |
-| `Takumo: View Detections` | See all detected secrets |
+<Note>
+  Windsurf routes requests through the gateway automatically once configured. You don't need to change how you use Windsurf -- just how it connects.
+</Note>
 
 ## Troubleshooting
 
-<Accordion title="Extension not working with Cascade">
-Ensure the extension is enabled:
+<Accordion title="Requests not going through the gateway">
+  Check the configuration:
 
-1. Check status bar for shield icon
-2. If missing, run `Takumo: Enable` from command palette
-3. Reload window if needed
+  1. Open Settings and verify the base URL is exactly `https://gateway.takumo.io/v1`
+  2. No trailing slash, no extra path segments
+  3. API key is set and valid
+  4. Restart Windsurf after making changes
+
+  Test the gateway is reachable:
+
+  ```bash
+  curl https://gateway.takumo.io/v1/health
+  ```
 </Accordion>
 
-<Accordion title="Tokens in output">
-If you see `__TAKUMO_v1_...` tokens in Cascade's output:
+<Accordion title="Secrets not being detected">
+  The gateway detects secrets based on known patterns and context analysis. Check:
 
-1. The session may have reset mid-flow
-2. Try: `Takumo: Clear Session` then retry
-3. Check Output panel for errors
+  1. [Supported Patterns](/patterns/supported) for the full list
+  2. The dashboard detection log for what was and wasn't flagged
+  3. Custom patterns can be added in your organization settings
+</Accordion>
+
+<Accordion title="Higher latency than usual">
+  The first request in a session has key exchange overhead. After that, requests are faster.
+
+  If latency stays high:
+
+  1. Check your gateway region -- pick one close to you
+  2. Self-hosted gateways eliminate the extra network hop
+  3. The dashboard shows per-request latency breakdown
 </Accordion>

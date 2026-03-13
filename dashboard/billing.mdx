@@ -1,0 +1,92 @@
+---
+title: Billing & Plans
+description: Plans, credits, and subscription management
+icon: "credit-card"
+---
+
+Takumo uses a credit-based system. Each plan includes a credit allowance. Operations consume credits.
+
+## Plans
+
+| Plan | Price | Included Credits |
+|------|-------|-----------------|
+| Free | $0 | 1,000/mo |
+| Developer | $29/mo | 5,000/mo |
+| Pro | $39/mo per seat | 5,000/seat/mo |
+| Enterprise | Custom | Unlimited |
+
+## Credit Costs per Operation
+
+Every operation that Takumo performs consumes a specific number of credits:
+
+| Operation | Credits |
+|-----------|---------|
+| Shield scan | 1 |
+| Sentinel review | 2 |
+| Fix suggestion | 3 |
+| Code review | 5 |
+| Policy evaluation | 1 |
+| Real-time scan | 1 |
+
+A Shield scan is the cheapest operation at 1 credit. A full code review is the most expensive at 5 credits. Most day-to-day usage is Shield scans and policy evaluations, both at 1 credit each.
+
+## Overage
+
+What happens when you exceed your monthly credit allowance depends on your plan:
+
+| Plan | Overage Behavior |
+|------|-----------------|
+| Free | Hard limit. Operations are blocked until the next billing cycle. |
+| Developer | $0.02 per credit over allowance |
+| Pro | $0.02 per credit over allowance |
+| Enterprise | Included. No overage charges. |
+
+<Note>Pro plan credits scale with your team. 5 seats = 25,000 credits/month.</Note>
+
+## Managing Your Subscription
+
+### Upgrading
+
+<Steps>
+  <Step title="Go to Billing">
+    Navigate to **Settings > Billing** in the dashboard.
+  </Step>
+  <Step title="Select a plan">
+    Choose the plan you want to upgrade to.
+  </Step>
+  <Step title="Confirm">
+    The upgrade takes effect immediately. You get access to the new plan's features and credit allowance right away.
+  </Step>
+</Steps>
+
+### Downgrading
+
+Downgrades take effect at the end of the current billing period. You keep access to your current plan's features until then.
+
+If you're downgrading from a plan that includes features you're actively using (e.g., fleet management on Pro, SSO on Enterprise), those features will become unavailable when the downgrade takes effect.
+
+## Monitoring Usage
+
+The Billing page shows:
+
+- **Current plan** and renewal date
+- **Credits used** this billing period vs. your allowance
+- **Credit burn rate** -- how quickly you're consuming credits based on recent usage
+- **Overage charges** -- any charges beyond your included allowance
+
+## Plan Comparison at a Glance
+
+<CardGroup cols={2}>
+  <Card title="Free" icon="gift">
+    1,000 credits/mo. 3 API keys. 5 members. No audit log. Good for trying Takumo on a personal project.
+  </Card>
+  <Card title="Developer" icon="code">
+    5,000 credits/mo. 10 API keys. 5 members. 30-day audit log. Built for individual developers and small teams.
+  </Card>
+  <Card title="Pro" icon="rocket">
+    5,000 credits/seat/mo. 20 API keys. 25 members. 90-day audit log. Fleet management. MFA enforcement. The plan for engineering teams.
+  </Card>
+  <Card title="Enterprise" icon="building">
+    Unlimited credits. Unlimited API keys. Unlimited members. 365-day audit log. SSO, SCIM, IP allowlist. For organizations with compliance requirements.
+  </Card>
+</CardGroup>

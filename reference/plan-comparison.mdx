@@ -1,0 +1,75 @@
+---
+title: Plan Comparison
+description: Feature and limit comparison across plans
+icon: "table"
+---
+
+# Plan Comparison
+
+Takumo has four plans. Here's what each one includes.
+
+## Pricing
+
+| | Free | Developer | Pro | Enterprise |
+|--|------|-----------|-----|------------|
+| Price | $0 | $29/mo | $39/mo per seat | Custom |
+
+## Limits
+
+| Limit | Free | Developer | Pro | Enterprise |
+|-------|------|-----------|-----|------------|
+| Team members | 5 | 5 | 25 | Unlimited |
+| API keys | 3 | 10 | 20 | Unlimited |
+| Repositories | 3 | 10 | Unlimited | Unlimited |
+| Included credits | 1,000 | 5,000 | 5,000/seat | Unlimited |
+| Concurrent scans | 2 | 3 | 5 | 50 |
+| Policies | 5 | 15 | 25 | Unlimited |
+
+## Features
+
+| Feature | Free | Developer | Pro | Enterprise |
+|---------|------|-----------|-----|------------|
+| Aegis Shield | Yes | Yes | Yes | Yes |
+| API access | - | Yes | Yes | Yes |
+| Audit log | - | Yes (30d) | Yes (90d) | Yes (365d) |
+| MFA enforcement | - | - | Yes | Yes |
+| Domain verification | - | - | Yes | Yes |
+| Fleet management | - | - | Yes | Yes |
+| SSO / SAML | - | - | - | Yes |
+| SCIM provisioning | - | - | - | Yes |
+| IP allowlist | - | - | - | Yes |
+| Custom roles | - | - | - | Yes |
+| Service accounts | - | - | - | Yes |
+| SIEM export | - | - | - | Yes |
+| Audit webhooks | - | - | - | Yes |
+| Support | Community | Email | Priority | Dedicated |
+
+## Rate limits
+
+| Operation | Free | Developer | Pro | Enterprise |
+|-----------|------|-----------|-----|------------|
+| Secret scans/mo | 1,000 | 5,000 | 10,000 | Unlimited |
+| Vulnerability scans/mo | 500 | 2,500 | 5,000 | Unlimited |
+| Policy evaluations/mo | 5,000 | 20,000 | Unlimited | Unlimited |
+| Auto-fix/mo | 500 | 2,500 | 5,000 | Unlimited |
+| API requests/mo | 10,000 | 50,000 | 100,000 | Unlimited |
+
+## Credit costs
+
+Every operation consumes credits from your included balance.
+
+| Operation | Credits |
+|-----------|---------|
+| Shield scan | 1 |
+| Sentinel review | 2 |
+| Fix suggestion | 3 |
+| Code review | 5 |
+| Policy evaluation | 1 |
+
+## Overage
+
+Developer and Pro plans charge **$0.02 per credit** over the included amount. You won't be cut off mid-request. Usage is billed at the end of the billing cycle.
+
+Enterprise plans include unlimited credits. No overage charges.
+
+Free plans are hard-capped. When you hit the limit, requests return `403 FORBIDDEN` with the code `PLAN_LIMIT_REACHED` until the next billing cycle.

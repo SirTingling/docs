@@ -1,88 +1,68 @@
 ---
 title: AI Tools
-description: Integrate Takumo with your AI coding workflow
+description: Connect any AI coding tool to Takumo
+icon: "blocks"
 ---
 
 # AI Tool Integrations
 
-Takumo sits between your code and AI assistants. Same protection, any tool.
+Takumo works with any AI tool that lets you set a custom API endpoint. Point it at your gateway, and secrets get tokenized before they leave your machine.
 
 ## How it works
 
 <Steps>
-  <Step title="Your code" icon="file-code">
-    You have code with secrets (API keys, passwords, connection strings)
+  <Step title="Your code">
+    You write code. It has secrets in it -- API keys, database URLs, tokens.
   </Step>
-  <Step title="Tokenize" icon="shield">
-    Takumo detects secrets and replaces them with tokens
+  <Step title="Gateway tokenizes">
+    Your AI tool sends requests through the Takumo gateway. The gateway detects secrets and replaces them with tokens before forwarding to the AI provider.
   </Step>
-  <Step title="AI processes" icon="brain">
-    AI tool sees only tokens, never your real credentials
+  <Step title="AI processes tokens">
+    The AI model sees tokens, not real values. It writes code around them like normal.
   </Step>
-  <Step title="Rehydrate" icon="rotate">
-    Takumo restores tokens back to real secrets in the response
+  <Step title="Gateway rehydrates">
+    The response comes back through the gateway. Takumo finds the tokens and swaps in your real secrets.
   </Step>
-  <Step title="Final code" icon="check">
-    You get working code with your actual credentials restored
+  <Step title="You get working code">
+    Your editor receives working code with actual credentials. You never had to do anything.
   </Step>
 </Steps>
 
 ## Supported tools
 
-| Tool | Integration | Status |
-|------|-------------|--------|
-| [Claude Code](/ai-tools/claude-code) | CLI wrapper, MCP server | Available |
-| [Cursor](/ai-tools/cursor) | Extension, proxy mode | Available |
-| [Windsurf](/ai-tools/windsurf) | Extension | Available |
-| VS Code + Copilot | Extension | Coming soon |
-| JetBrains + AI Assistant | Plugin | Coming soon |
+| Tool | Method | Page |
+|------|--------|------|
+| Cursor | API base URL | [Setup](/ai-tools/cursor) |
+| GitHub Copilot | Proxy configuration | [Setup](/ai-tools/copilot) |
+| Continue.dev | Provider config | [Setup](/ai-tools/continue) |
+| Windsurf | API base URL | [Setup](/ai-tools/windsurf) |
+| Claude Code | Environment variable | [Setup](/ai-tools/claude-code) |
+| Any tool | Generic setup | [Setup](/ai-tools/generic) |
 
-## Integration patterns
+## No extensions required
 
-### CLI wrapper
+<Note>
+  This is not a plugin. There is no extension to install, no marketplace to visit, no beta program to join. Takumo is a proxy. You change one URL in your AI tool's settings, and every request goes through your gateway. That's it.
+</Note>
 
-Wrap your AI tool's CLI to automatically tokenize input and rehydrate output:
+## What the gateway does
 
-```bash
-# Instead of:
-claude "Add retry logic to config.ts"
+Every request that passes through the gateway gets the same treatment:
 
-# Use:
-takumo-aegis shield config.ts --prompt "Add retry logic"
+1. **Outbound** -- Scans your code for secrets, replaces them with tokens, forwards to the AI provider
+2. **Inbound** -- Scans the AI response for tokens, replaces them with your real secrets, returns to your tool
+
+The AI provider never sees your credentials. Your tool never knows the difference.
+
+```typescript
+// What you write
+const db = "postgres://admin:supersecret@prod.internal:5432/app";
+
+// What the AI provider receives
+const db = "__TAKUMO_v1_CONN_a1b2c3d4__";
+
+// What you get back
+const db = "postgres://admin:supersecret@prod.internal:5432/app";
 ```
 
-### MCP server
-
-For tools that support [Model Context Protocol](https://modelcontextprotocol.io), Takumo runs as an MCP server that intercepts file reads:
-
-```json
-{
-  "mcpServers": {
-    "takumo": {
-      "command": "takumo-aegis",
-      "args": ["mcp-server"]
-    }
-  }
-}
-```
-
-### Proxy mode
-
-Route API calls through Takumo's local proxy to tokenize requests and rehydrate responses:
-
-```bash
-takumo-aegis proxy --port 8080
-```
-
-Then point your AI tool at `http://localhost:8080` instead of the provider's API.
-
-## Choosing an integration
-
-| Use case | Recommended |
-|----------|-------------|
-| Quick, one-off tasks | CLI wrapper |
-| Full IDE experience | Extension/plugin |
-| Custom workflows | API + MCP server |
-| CI/CD pipelines | Proxy mode |
-
-Each tool page has specific setup instructions and configuration options.
+Each tool page has specific setup instructions. The pattern is always the same: change the API URL, set your key, done.
