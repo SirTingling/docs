@@ -1,20 +1,17 @@
-/* Bottom page navigation cards */
-[class*="pagination"],
-[class*="PrevNext"],
-[class*="prev-next"],
-nav[aria-label="pagination"] a,
-.prev-next a,
-a[rel="prev"],
-a[rel="next"] {
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+/* Pagination container — more visible border */
+#pagination {
+  background: rgba(255, 255, 255, 0.05) !important;
+  ring: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Pagination links — visible border by default, not just on hover */
+#pagination a {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   background: rgba(255, 255, 255, 0.04) !important;
 }
 
-[class*="pagination"] a:hover,
-[class*="PrevNext"] a:hover,
-nav[aria-label="pagination"] a:hover,
-a[rel="prev"]:hover,
-a[rel="next"]:hover {
+#pagination a:hover {
   border-color: rgba(255, 255, 255, 0.2) !important;
   background: rgba(255, 255, 255, 0.08) !important;
 }
