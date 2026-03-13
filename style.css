@@ -1,17 +1,4 @@
-/* Pagination container — more visible border */
+/* Pagination container */
 #pagination {
-  background: rgba(255, 255, 255, 0.05) !important;
-  ring: 1px solid rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Pagination links — visible border by default, not just on hover */
-#pagination a {
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  background: rgba(255, 255, 255, 0.04) !important;
-}
-
-#pagination a:hover {
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  background: rgba(255, 255, 255, 0.08) !important;
 }
