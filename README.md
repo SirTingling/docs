@@ -2,68 +2,86 @@
   <img src="logo/favicon.svg" height="80" alt="Takumo" />
 </p>
 
-<h1 align="center">Takumo</h1>
+<h1 align="center">Takumo Docs</h1>
 
 <p align="center">
   <strong>Your secrets stay on your machine.</strong>
 </p>
 
 <p align="center">
-  <a href="https://docs.takumo.com">Documentation</a> ·
-  <a href="mailto:jordant@takumo.com?subject=Takumo%20Access%20Request">Request Access</a>
+  <a href="https://docs.takumo.io">docs.takumo.io</a> ·
+  <a href="https://cloud.takumo.io/dashboard">Dashboard</a> ·
+  <a href="https://takumo.io">takumo.io</a>
 </p>
 
 ---
 
-You paste code into Claude. That code has your database password, your API keys, your production credentials.
+This repo powers [docs.takumo.io](https://docs.takumo.io), built on [Mintlify](https://mintlify.com) (maple theme).
 
-Now Claude has them too.
+## What Takumo does
 
-**Takumo fixes this.**
+You paste code into an AI tool. That code has your database password, your API keys, your production credentials. Now the AI has them too.
 
-```typescript
-// What you have (example)
-const db = connect("postgres://admin:examplepass@prod.internal:5432/app");
+Takumo fixes this. Secrets are tokenized before they leave your machine. When the AI responds, tokens are swapped back to real values. The AI never sees your actual credentials.
 
-// What Claude sees
-const db = connect("__TAKUMO_v1_CONN_a1b2c3__");
+**Aegis Shield** — Outbound protection. Scans your code, finds secrets, replaces them with tokens. Sends safe code to AI. Restores real values in the response.
 
-// What you get back
-const db = connect("postgres://admin:examplepass@prod.internal:5432/app");
-```
+**Sentinel** — Inbound validation. Scans AI-generated code for security vulnerabilities, license violations, and deprecated patterns. Dashboard scanning available, standalone API coming.
 
-Secrets are tokenized before they leave your machine. When the AI responds, tokens are swapped back to real values. The AI never sees your actual credentials.
+## Documentation sections
 
-## How it works
+| Section | Pages | What you'll find |
+|---------|-------|------------------|
+| [Get Started](https://docs.takumo.io/introduction) | 5 | Introduction, quickstart, installation, authentication, first request |
+| [Concepts](https://docs.takumo.io/concepts/how-it-works) | 5 | How it works, Aegis Shield, Sentinel, security model, policies |
+| [Dashboard](https://docs.takumo.io/dashboard/overview) | 8 | API keys, fleet management, team members, audit log, security, billing |
+| [Deployment](https://docs.takumo.io/deployment/overview) | 5 | SaaS setup, on-prem Kubernetes, configuration reference, monitoring |
+| [AI Tools](https://docs.takumo.io/ai-tools/overview) | 7 | Cursor, Copilot, Continue.dev, Windsurf, Claude Code, generic setup |
+| [CLI](https://docs.takumo.io/cli/overview) | 4 | `scan`, `tokenize`, `shield` commands |
+| [API](https://docs.takumo.io/api/overview) | 8 | Sessions, tokenize, rehydrate, authentication, errors, rate limits, webhooks |
+| [Reference](https://docs.takumo.io/patterns/supported) | 6 | Supported patterns, plan comparison, error codes, FAQ, troubleshooting, changelog |
 
-**Aegis Shield** — Outbound. Scans your code, finds secrets, replaces them with tokens. Sends safe code to AI. Restores real values in the response.
-
-**Sentinel** — Inbound. Validates AI-generated code before it enters your codebase. Catches security vulnerabilities, license violations, deprecated patterns. *(Coming soon)*
-
-## Documentation
-
-This repo powers [docs.takumo.com](https://docs.takumo.com).
-
-| Section | What you'll find |
-|---------|------------------|
-| [Quickstart](https://docs.takumo.com/quickstart) | Zero to protected in 5 minutes |
-| [How It Works](https://docs.takumo.com/concepts/how-it-works) | The tokenization flow explained |
-| [CLI Reference](https://docs.takumo.com/cli/overview) | `scan`, `tokenize`, `shield` commands |
-| [API Reference](https://docs.takumo.com/api/overview) | Use Takumo in your own code |
-| [Supported Patterns](https://docs.takumo.com/patterns/supported) | Everything we detect |
+48 pages total across 6 navigation tabs.
 
 ## Local preview
+
+Requires Node LTS (22 or earlier):
 
 ```bash
 npx mintlify dev
 ```
 
-## Status
+## Project structure
 
-Private alpha. [Request access](mailto:jordant@takumo.com?subject=Takumo%20Access%20Request) to join.
+```
+docs/
+├── docs.json                  # Mintlify config (nav, theme, fonts, colors)
+├── logo/                      # Wordmark SVGs (light + dark) and favicon
+├── introduction.mdx           # Landing page
+├── quickstart.mdx
+├── installation.mdx
+├── authentication.mdx
+├── first-request.mdx
+├── changelog.mdx
+├── concepts/                  # How it works, Aegis Shield, Sentinel, security, policies
+├── patterns/                  # Supported secret patterns
+├── reference/                 # Plan comparison, error codes, FAQ, troubleshooting
+├── dashboard/                 # Dashboard guide (8 pages)
+├── deployment/                # SaaS, on-prem, configuration, monitoring
+├── cli/                       # CLI command reference
+├── ai-tools/                  # AI tool integrations (7 pages)
+└── api/                       # API reference (8 pages)
+```
+
+## Tech
+
+- **Platform:** [Mintlify](https://mintlify.com) (maple theme)
+- **Font:** Geist Sans
+- **Brand color:** `#6366F1` (indigo)
+- **Dark mode:** Default, with light mode available
 
 ---
 
 <p align="center">
-  <sub>Copyright © 2025 Takumo. All rights reserved.</sub>
+  <sub>Copyright &copy; 2026 Takumo. All rights reserved.</sub>
 </p>
