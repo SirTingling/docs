@@ -1,0 +1,20 @@
+/* Bottom page navigation cards */
+[class*="pagination"],
+[class*="PrevNext"],
+[class*="prev-next"],
+nav[aria-label="pagination"] a,
+.prev-next a,
+a[rel="prev"],
+a[rel="next"] {
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+[class*="pagination"] a:hover,
+[class*="PrevNext"] a:hover,
+nav[aria-label="pagination"] a:hover,
+a[rel="prev"]:hover,
+a[rel="next"]:hover {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
