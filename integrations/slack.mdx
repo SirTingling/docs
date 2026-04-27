@@ -1,0 +1,72 @@
+---
+title: Slack
+description: Violation alerts in Slack channels
+icon: "message-square"
+---
+
+Send security alerts to a Slack channel. Takumo posts messages when violations are detected — secrets exposed, policies triggered, or critical issues found.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Create an incoming webhook">
+    In Slack, go to **Apps → Incoming Webhooks** (or create a Slack App with an incoming webhook). Copy the webhook URL.
+  </Step>
+  <Step title="Add to Takumo">
+    Go to **Dashboard → Settings → Integrations → Slack**. Paste the webhook URL and select which channel it posts to.
+  </Step>
+  <Step title="Choose alert types">
+    Select which events trigger Slack messages:
+    - Security violations (secret exposure, vulnerabilities)
+    - Policy violations
+    - Critical incidents
+  </Step>
+</Steps>
+
+---
+
+## Message format
+
+Slack messages include:
+
+| Field | Description |
+|-------|-------------|
+| **Title** | Violation type and severity |
+| **Repository** | Where it was detected |
+| **File** | File path and line number |
+| **Rule** | Which rule or pattern triggered |
+| **Link** | Direct link to the detection in the dashboard |
+
+---
+
+## How it works
+
+Takumo stores the webhook URL encrypted in the `Integration` record. When a matching event occurs:
+
+1. The notification system (`lib/notify.ts`) checks if Slack is configured for the org
+2. Formats the message as a Slack Block Kit payload
+3. POSTs to the webhook URL
+4. Delivery status is tracked in the notification receipts
+
+---
+
+## Limitations
+
+- **Webhook-based only** — Takumo doesn't use Slack OAuth or the Slack API. No interactive messages, no thread replies, no slash commands.
+- **One channel per webhook** — To post to multiple channels, configure multiple webhooks.
+- **No bidirectional sync** — Slack messages are fire-and-forget. Acknowledging in Slack doesn't update Takumo.
+
+For richer integrations, use the [Stream pipeline](/concepts/streaming) to build custom Slack workflows via webhook destinations.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Notifications" icon="bell" href="/dashboard/notifications">
+    Configure notification preferences
+  </Card>
+  <Card title="Streaming" icon="radio" href="/concepts/streaming">
+    Build custom integrations with event streaming
+  </Card>
+</CardGroup>

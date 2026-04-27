@@ -1,0 +1,88 @@
+---
+title: Splunk
+description: Stream security events to Splunk via HEC
+icon: "activity"
+---
+
+<Note>Requires an Enterprise plan.</Note>
+
+Stream security events from Takumo to Splunk using the HTTP Event Collector (HEC). Every detection, policy violation, and incident is forwarded in real time.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Enable HEC in Splunk">
+    In Splunk, go to **Settings > Data Inputs > HTTP Event Collector**. Create a new token or use an existing one. Note the HEC endpoint URL (e.g. `https://splunk.example.com:8088`) and the token.
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard > Settings > Integrations > Splunk**. Enter your HEC endpoint URL and HEC token.
+  </Step>
+  <Step title="Verify connection">
+    Takumo sends a health check to `{hecUrl}/services/collector/health` using bearer auth. If the endpoint is reachable and the token is valid, the integration shows as connected.
+  </Step>
+</Steps>
+
+---
+
+## Credential fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **HEC Endpoint** | URL | Yes | Your Splunk HEC endpoint (e.g. `https://splunk.example.com:8088`) |
+| **HEC Token** | Password | Yes | The HEC token (UUID format: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`) |
+
+---
+
+## Health check
+
+Takumo verifies the connection by sending a `GET` request to:
+
+```
+{hecUrl}/services/collector/health
+```
+
+The HEC token is sent as a bearer token in the `Authorization` header. A `200` response confirms the integration is healthy.
+
+---
+
+## Event format
+
+Events are sent to HEC as JSON payloads. Each event includes:
+
+| Field | Description |
+|-------|-------------|
+| `event` | The detection or violation payload |
+| `sourcetype` | `takumo:security` |
+| `source` | `takumo` |
+| `host` | Your Takumo org identifier |
+| `time` | Unix epoch timestamp of the event |
+
+---
+
+## What gets streamed
+
+| Event type | When it fires |
+|-----------|--------------|
+| Secret detection | A secret or credential is found in code |
+| Policy violation | A custom rule is triggered |
+| Sentinel finding | AI review flags a security issue |
+| Incident | A critical issue is escalated |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Datadog" icon="bar-chart" href="/integrations/datadog">
+    Send metrics and events to Datadog
+  </Card>
+  <Card title="Elasticsearch" icon="search" href="/integrations/elasticsearch">
+    Index events into Elasticsearch
+  </Card>
+  <Card title="Custom Webhook" icon="webhook" href="/integrations/custom-webhook">
+    Forward events to any HTTP endpoint
+  </Card>
+  <Card title="Streaming" icon="radio" href="/concepts/streaming">
+    Build custom integrations with event streaming
+  </Card>
+</CardGroup>

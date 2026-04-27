@@ -1,0 +1,80 @@
+---
+title: Workbench
+description: Policy rule testing and on-demand scanning (coming soon)
+icon: "flask-conical"
+---
+
+<Note>
+The Workbench is not yet available. The page currently shows a preview of the planned interface behind a "Coming Soon" overlay. The features described below reflect what is being built — they are not functional today.
+</Note>
+
+The Workbench will be an interactive environment for writing custom detection rules, testing them against real code, and running on-demand scans from the dashboard.
+
+---
+
+## Planned capabilities
+
+| Feature | Description |
+|---------|-------------|
+| **Scan launcher** | Run Shield scans, policy evaluations, and Sentinel AI reviews on-demand against any connected repository |
+| **YAML rule editor** | Write custom detection rules with a built-in editor (requires Developer plan or above) |
+| **Review queue** | View and filter Sentinel AI code reviews across all repositories (requires Developer plan or above) |
+| **Credit tracking** | See credit cost before running a scan, with live balance indicator |
+| **Recent scan history** | View results of past scans with conclusion badges and credit usage |
+
+---
+
+## Scan types (planned)
+
+Three scan types are planned for the scan launcher:
+
+| Type | Credits | Description |
+|------|---------|-------------|
+| **Shield Scan** | 1 | Check a repository for known secret fingerprints via Vault |
+| **Policy Check** | 1 | Evaluate all active policies against a repository |
+| **AI Review** | 2 | Queue a Sentinel AI review for a specific pull request |
+
+---
+
+## Rule editor (planned)
+
+The rule editor will accept YAML-format detection rules:
+
+```yaml
+name: custom-secret-detection
+type: security
+severity: critical
+description: Detect exposed API keys and tokens
+
+patterns:
+  - regex: "AKIA[0-9A-Z]{16}"
+    description: "AWS Access Key ID"
+  - regex: "[0-9a-zA-Z/+]{40}"
+    context: aws_secret
+    description: "AWS Secret Access Key"
+
+scope:
+  include: ["*.py", "*.js", "*.env"]
+  exclude: ["*_test.*", "*.example"]
+```
+
+The editor will validate rule structure and report errors, warnings, or success before you export to a policy.
+
+---
+
+## What exists today
+
+The Workbench page renders a blurred, non-interactive preview of the planned interface with a "Coming Soon" overlay. No scan, rule editing, or review functionality is available from this page yet.
+
+To manage detection rules now, use [Security Policies](/dashboard/rules) to create policies with rules directly.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Security Policies" icon="shield-check" href="/dashboard/rules">
+    Create and manage policies with enforcement rules
+  </Card>
+  <Card title="Custom Rules in Studio" icon="monitor" href="/studio/custom-rules">
+    Write rules from selected code in your editor
+  </Card>
+</CardGroup>

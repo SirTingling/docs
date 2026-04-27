@@ -1,0 +1,96 @@
+---
+title: Compliance
+description: Track framework compliance status
+icon: "shield-check"
+---
+
+The Compliance page tracks your organization's posture against security frameworks — SOC 2, PCI-DSS, HIPAA, and ISO 27001.
+
+<Note>Compliance tracking is an Enterprise feature.</Note>
+
+---
+
+## How it works
+
+Takumo maps its detections and controls to compliance framework requirements. Each framework has a set of controls. Takumo checks which controls are satisfied based on:
+
+- **Secret detection coverage** — Are secrets being caught before they reach AI providers?
+- **Policy enforcement** — Are governance policies active and enforced?
+- **Audit logging** — Is the audit trail complete and tamper-evident?
+- **Access controls** — Are RBAC roles properly configured?
+- **Encryption** — Is data encrypted at rest and in transit?
+- **Incident response** — Are notifications configured for security events?
+
+---
+
+## Compliance snapshots
+
+Each framework shows a snapshot with:
+
+| Field | Description |
+|-------|-------------|
+| **Framework** | SOC 2, PCI-DSS, HIPAA, ISO 27001 |
+| **Overall score** | Percentage of controls satisfied |
+| **Controls passed** | Number of passing controls |
+| **Controls failed** | Number of failing controls |
+| **Last assessed** | Timestamp of the most recent assessment |
+
+Click a framework to see the control-by-control breakdown.
+
+---
+
+## Supported frameworks
+
+### SOC 2 Type II
+
+Maps to Trust Services Criteria:
+
+| Criteria | Takumo controls |
+|----------|----------------|
+| CC6.1 — Logical access | RBAC roles, API key scoping, SSO enforcement |
+| CC6.6 — Encryption | TLS 1.3 in transit, AES-256 at rest |
+| CC7.2 — System monitoring | Audit log, real-time detection, alert delivery |
+| CC8.1 — Change management | Sentinel PR reviews, policy enforcement |
+
+### PCI-DSS
+
+Relevant requirements:
+
+| Requirement | Takumo controls |
+|-------------|----------------|
+| 3.4 — Render PAN unreadable | Secret tokenization in AI prompts |
+| 6.5 — Secure development | Sentinel vulnerability scanning |
+| 10.2 — Audit trails | Comprehensive audit logging |
+
+### HIPAA
+
+| Safeguard | Takumo controls |
+|-----------|----------------|
+| Access controls (164.312(a)) | RBAC, SSO, SCIM provisioning |
+| Audit controls (164.312(b)) | Audit log with tamper-evident records |
+| Transmission security (164.312(e)) | TLS 1.3, secret tokenization |
+
+### ISO 27001
+
+| Control | Takumo controls |
+|---------|----------------|
+| A.9 — Access control | RBAC, API key scoping, member management |
+| A.10 — Cryptography | AES-256 at rest, TLS 1.3 in transit |
+| A.12 — Operations security | Detection pipeline, incident response |
+
+---
+
+## Exporting
+
+Export compliance snapshots as PDF or CSV for auditors. Go to **Compliance > Export** and select the framework and date range.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Security" icon="lock" href="/concepts/security">
+    Security architecture
+  </Card>
+  <Card title="Reports" icon="file-text" href="/dashboard/reports">
+    Generate compliance reports
+  </Card>
+</CardGroup>

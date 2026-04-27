@@ -1,0 +1,93 @@
+---
+title: Datadog
+description: Send security metrics and events to Datadog
+icon: "bar-chart"
+---
+
+<Note>Requires an Enterprise plan.</Note>
+
+Send security metrics and events from Takumo to Datadog. Detections, policy violations, and incidents appear as Datadog events that you can alert on, graph, and correlate with your existing observability data.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Create a Datadog API key">
+    In Datadog, go to **Organization Settings > API Keys** and create a new key for Takumo.
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard > Settings > Integrations > Datadog**. Enter your API key and (optionally) your Datadog site.
+  </Step>
+  <Step title="Verify connection">
+    Takumo validates the API key against the Datadog validation endpoint. If the key is valid, the integration shows as connected.
+  </Step>
+</Steps>
+
+---
+
+## Credential fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **API Key** | Password | Yes | Your Datadog API key |
+| **Datadog Site** | Text | No | Defaults to `datadoghq.com`. Set to `datadoghq.eu` for EU region, or your custom site domain |
+
+---
+
+## Health check
+
+Takumo verifies the connection by sending a `GET` request to:
+
+```
+https://api.{site}/api/v1/validate
+```
+
+The API key is sent as a bearer token. A `200` response with `valid: true` confirms the integration is healthy.
+
+If no site is provided, `datadoghq.com` is used.
+
+---
+
+## What gets sent
+
+| Event type | Datadog type | Description |
+|-----------|-------------|-------------|
+| Secret detection | Event | A secret or credential found in code |
+| Policy violation | Event | A custom rule triggered on a commit or PR |
+| Sentinel finding | Event | AI review flagged a security issue |
+| Incident | Event | A critical issue was escalated |
+
+Events are tagged with `source:takumo`, severity level, and detection category for easy filtering and alerting.
+
+---
+
+## Datadog sites
+
+| Region | Site value |
+|--------|-----------|
+| US1 (default) | `datadoghq.com` |
+| EU | `datadoghq.eu` |
+| US3 | `us3.datadoghq.com` |
+| US5 | `us5.datadoghq.com` |
+| AP1 | `ap1.datadoghq.com` |
+| Gov | `ddog-gov.com` |
+
+Set the **Datadog Site** field to match your region. If left blank, US1 (`datadoghq.com`) is used.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Splunk" icon="activity" href="/integrations/splunk">
+    Stream events to Splunk via HEC
+  </Card>
+  <Card title="Elasticsearch" icon="search" href="/integrations/elasticsearch">
+    Index events into Elasticsearch
+  </Card>
+  <Card title="Custom Webhook" icon="webhook" href="/integrations/custom-webhook">
+    Forward events to any HTTP endpoint
+  </Card>
+  <Card title="Streaming" icon="radio" href="/concepts/streaming">
+    Build custom integrations with event streaming
+  </Card>
+</CardGroup>

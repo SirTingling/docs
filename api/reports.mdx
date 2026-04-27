@@ -1,0 +1,278 @@
+---
+title: Reports
+description: Generate and retrieve security reports
+icon: "file-text"
+---
+
+Generate security reports on demand, download generated reports, and manage recurring report schedules.
+
+**Base URL:** `https://cloud.takumo.io/api/v1/reports`
+
+---
+
+## GET /reports
+
+List generated reports (metadata only, no binary data). Uses offset-based pagination.
+
+**Scope:** `reports:read`
+
+```bash
+curl "https://cloud.takumo.io/api/v1/reports?limit=20&offset=0" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | number | `20` | Results per page (max 100) |
+| `offset` | number | `0` | Number of results to skip |
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "cm_rpt123",
+      "reportType": "executive",
+      "format": "csv",
+      "periodStart": "2026-03-01T00:00:00.000Z",
+      "periodEnd": "2026-04-01T00:00:00.000Z",
+      "triggerType": "api",
+      "fileSize": 14582,
+      "createdAt": "2026-04-15T09:30:00.000Z"
+    }
+  ],
+  "total": 42,
+  "hasMore": true
+}
+```
+
+---
+
+## POST /reports/generate
+
+Generate a report and return it as a file download. The report is generated synchronously -- the response body is the file itself (CSV, JSON, or PDF).
+
+**Scope:** `reports:write`
+
+**Plan gate:** Requires a paid plan. PDF format requires Enterprise.
+
+```bash
+curl -X POST "https://cloud.takumo.io/api/v1/reports/generate" \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{"type": "issues", "format": "csv", "from": "2026-03-01", "to": "2026-04-01"}' \
+  -o report.csv
+```
+
+### Request body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | `executive`, `issues`, or `compliance` |
+| `format` | string | Yes | `csv`, `json`, or `pdf` |
+| `from` | string | Yes | Period start date (ISO 8601) |
+| `to` | string | Yes | Period end date (ISO 8601) |
+
+### Response
+
+Binary file download with appropriate `Content-Type` and `Content-Disposition` headers.
+
+| Format | Content-Type |
+|--------|-------------|
+| `csv` | `text/csv` |
+| `json` | `application/json` |
+| `pdf` | `application/pdf` |
+
+The filename follows the pattern: `takumo-{org-slug}-{type}-{from}-to-{to}.{ext}`
+
+### Error responses
+
+| Status | Condition |
+|--------|-----------|
+| `400` | Invalid type, format, missing dates, or invalid date range |
+| `403` | Plan does not support report export or requested format |
+| `429` | Export rate limit exceeded (max 3 per minute per API key) |
+
+---
+
+## GET /reports/:id
+
+Download a specific generated report. Returns the file as a binary download.
+
+**Scope:** `reports:read`
+
+```bash
+curl "https://cloud.takumo.io/api/v1/reports/cm_rpt123" \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -o report.csv
+```
+
+### Response
+
+Binary file download. Returns `404` if not found, `410` if the report data has expired (reports are retained for 90 days).
+
+### Error responses
+
+| Status | Condition |
+|--------|-----------|
+| `404` | Report not found |
+| `410` | Report data expired (older than 90 days) |
+| `429` | Download rate limit exceeded (max 3 per minute per API key) |
+
+---
+
+## GET /reports/schedules
+
+List all report schedules for your organization.
+
+**Scope:** `reports:read`
+
+```bash
+curl "https://cloud.takumo.io/api/v1/reports/schedules" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "cm_sched123",
+      "reportType": "executive",
+      "format": "csv",
+      "frequency": "weekly",
+      "dayOfWeek": "monday",
+      "recipients": ["security@company.com"],
+      "enabled": true,
+      "nextRunAt": "2026-04-28T00:00:00.000Z",
+      "lastRunAt": "2026-04-21T00:00:00.000Z",
+      "failCount": 0,
+      "createdAt": "2026-04-01T09:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## POST /reports/schedules
+
+Create a recurring report schedule.
+
+**Scope:** `reports:write`
+
+**Plan gate:** Requires Pro or Enterprise plan.
+
+```bash
+curl -X POST "https://cloud.takumo.io/api/v1/reports/schedules" \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reportType": "executive",
+    "format": "csv",
+    "frequency": "weekly",
+    "dayOfWeek": "monday",
+    "recipients": ["security@company.com"]
+  }'
+```
+
+### Request body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `reportType` | string | Yes | `executive`, `issues`, or `compliance` |
+| `format` | string | Yes | `csv`, `json`, or `pdf` |
+| `frequency` | string | Yes | `weekly`, `monthly`, or `quarterly` |
+| `dayOfWeek` | string | No | Day of week for weekly schedules |
+| `recipients` | array | Yes | Email addresses (max 10) |
+
+### Response `201`
+
+```json
+{
+  "id": "cm_sched456",
+  "reportType": "executive",
+  "format": "csv",
+  "frequency": "weekly",
+  "dayOfWeek": "monday",
+  "recipients": ["security@company.com"],
+  "enabled": true,
+  "nextRunAt": "2026-04-28T00:00:00.000Z",
+  "lastRunAt": null,
+  "failCount": 0,
+  "createdAt": "2026-04-26T14:30:00.000Z"
+}
+```
+
+---
+
+## PATCH /reports/schedules/:id
+
+Update an existing report schedule. Only the fields you include will be changed.
+
+**Scope:** `reports:write`
+
+```bash
+curl -X PATCH "https://cloud.takumo.io/api/v1/reports/schedules/cm_sched123" \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{"frequency": "monthly", "enabled": true}'
+```
+
+### Updatable fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `reportType` | string | `executive`, `issues`, or `compliance` |
+| `format` | string | `csv`, `json`, or `pdf` |
+| `frequency` | string | `weekly`, `monthly`, or `quarterly`. Changing frequency recomputes `nextRunAt`. |
+| `dayOfWeek` | string | Day of week for weekly schedules |
+| `recipients` | array | Email addresses (max 10) |
+| `enabled` | boolean | Enable or disable the schedule. Re-enabling resets `failCount` to 0. |
+
+### Response
+
+```json
+{
+  "id": "cm_sched123",
+  "reportType": "executive",
+  "format": "csv",
+  "frequency": "monthly",
+  "dayOfWeek": "monday",
+  "recipients": ["security@company.com"],
+  "enabled": true,
+  "nextRunAt": "2026-05-01T00:00:00.000Z",
+  "lastRunAt": "2026-04-21T00:00:00.000Z",
+  "failCount": 0,
+  "createdAt": "2026-04-01T09:00:00.000Z"
+}
+```
+
+Returns `404` if the schedule does not exist or belongs to a different organization.
+
+---
+
+## DELETE /reports/schedules/:id
+
+Delete a report schedule permanently.
+
+**Scope:** `reports:write`
+
+```bash
+curl -X DELETE "https://cloud.takumo.io/api/v1/reports/schedules/cm_sched123" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+### Response
+
+```json
+{
+  "ok": true
+}
+```
+
+Returns `404` if the schedule does not exist or belongs to a different organization.

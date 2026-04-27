@@ -1,0 +1,116 @@
+---
+title: Incidents
+description: Security incident management
+icon: "bell"
+---
+
+Manage security incidents triggered by violations that Sentinel detects in CI/CD pipelines, PRs, and automated scans.
+
+**Base URL:** `https://cloud.takumo.io/api/v1/incidents`
+
+<Note>
+There is no `GET /incidents` list endpoint. Incidents are viewed through the [Violations API](/api/violations). The endpoints below operate on individual violations by ID.
+</Note>
+
+---
+
+## POST /incidents/:violationId/acknowledge
+
+Acknowledge an incident. If the violation was already acknowledged, the response includes `alreadyAcknowledged: true` with the original acknowledgment details.
+
+**Scope:** No specific scope required (any valid API key).
+
+```bash
+curl -X POST "https://cloud.takumo.io/api/v1/incidents/viol_abc123/acknowledge" \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{"source": "api"}'
+```
+
+### Request body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `source` | string | No | Acknowledgment source identifier (default `api`). Can be `dashboard`, `extension`, `cli`, etc. |
+
+### Response
+
+```json
+{
+  "data": {
+    "id": "viol_abc123",
+    "acknowledgedAt": "2026-04-26T14:35:00.000Z",
+    "acknowledgedBy": "apikey_def456",
+    "acknowledgedSource": "api"
+  }
+}
+```
+
+### Already acknowledged
+
+If the violation was previously acknowledged, the response includes an extra flag:
+
+```json
+{
+  "data": {
+    "id": "viol_abc123",
+    "acknowledgedAt": "2026-04-26T14:30:00.000Z",
+    "acknowledgedBy": "apikey_def456",
+    "acknowledgedSource": "dashboard",
+    "alreadyAcknowledged": true
+  }
+}
+```
+
+Returns `404` if the violation does not exist, belongs to a different organization, or has been deleted.
+
+---
+
+## POST /incidents/:violationId/actions
+
+Execute an action on a violation. The action is recorded as a `violationEvent` and audit-logged.
+
+**Scope:** No specific scope required (any valid API key).
+
+```bash
+curl -X POST "https://cloud.takumo.io/api/v1/incidents/viol_abc123/actions" \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "snooze", "params": {"duration_hours": 48}}'
+```
+
+### Request body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `action` | string | Yes | One of the valid actions listed below |
+| `params` | object | No | Action-specific parameters |
+
+### Available actions
+
+| Action | Description | Params |
+|--------|-------------|--------|
+| `rotate_secret` | Trigger secret rotation workflow | — |
+| `revert_commit` | Initiate a revert of the triggering commit | — |
+| `notify_team` | Send alert to configured notification channel | — |
+| `snooze` | Suppress the alert temporarily | `duration_hours` (default 24) |
+
+### Response
+
+```json
+{
+  "data": {
+    "violationId": "viol_abc123",
+    "action": "snooze",
+    "status": "executed",
+    "executedAt": "2026-04-26T14:35:00.000Z"
+  }
+}
+```
+
+### Error responses
+
+| Status | Condition |
+|--------|-----------|
+| `400` | Invalid action name |
+| `404` | Violation not found or deleted |

@@ -1,0 +1,94 @@
+---
+title: Violations
+description: Policy violation events and history
+icon: "ban"
+---
+
+The Violations page shows every time a governance policy was triggered. Violations are separate from Issues — an Issue is a security finding, a Violation is a policy enforcement event.
+
+---
+
+## What triggers a violation
+
+A violation is created when:
+
+- Sentinel evaluates code and a **policy rule** fires in **block** or **warn** mode
+- A scan detects a pattern that matches an active policy condition
+- An API request is rejected due to policy constraints
+
+Each violation records the policy that fired, the enforcement mode, and the context.
+
+---
+
+## Violation list
+
+| Column | Description |
+|--------|-------------|
+| **Policy** | Which policy was triggered |
+| **Rule** | Specific rule within the policy |
+| **Enforcement** | Block, Warn, or Monitor |
+| **Repository** | Source repo |
+| **File** | File path and line number |
+| **Actor** | Who triggered it (user or API key) |
+| **Timestamp** | When it occurred |
+
+---
+
+## Filtering
+
+Filter by:
+
+- **Policy** — Select specific policies
+- **Enforcement mode** — Block, Warn, Monitor
+- **Repository** — One or all repos
+- **Date range** — Start and end dates
+- **Actor** — Specific user or API key
+
+Results use cursor pagination for efficient access to large violation histories.
+
+---
+
+## Violation detail
+
+Click a violation to see:
+
+- **Full context** — The code that triggered the violation
+- **Policy configuration** — The rule definition and thresholds
+- **Enforcement result** — What happened (code blocked, warning issued, or silently logged)
+- **Related detections** — If the violation was caused by a secret or vulnerability detection
+- **Actions taken** — Acknowledgements, remediation status
+
+---
+
+## Responding to violations
+
+| Action | Description |
+|--------|-------------|
+| **Acknowledge** | Mark it as seen. Stops repeat notifications. |
+| **Remediate** | Link to a PR or commit that fixes the underlying issue. |
+| **Dismiss** | Mark as accepted risk or false positive. Requires a reason. |
+| **Escalate** | Create a Jira ticket or GitHub issue from the violation. |
+
+---
+
+## Violations vs Issues
+
+| | Violations | Issues |
+|-|-----------|--------|
+| **What** | Policy enforcement events | Security findings |
+| **Created by** | Policy engine | Detection pipeline |
+| **Can recur** | Yes, same policy fires again | Grouped by (category, file, repo) |
+| **Lifecycle** | Event-based (point in time) | Stateful (open → resolved) |
+
+Both appear in notifications. Configure delivery preferences in [Settings > Notifications](/dashboard/notifications).
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Policies" icon="scroll" href="/concepts/policies">
+    How policies work
+  </Card>
+  <Card title="Rules" icon="pencil-ruler" href="/dashboard/rules">
+    Custom Sentinel rules
+  </Card>
+</CardGroup>

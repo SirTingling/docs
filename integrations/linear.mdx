@@ -1,0 +1,109 @@
+---
+title: Linear
+description: Sync findings to Linear issues with team assignment
+icon: "circle-dot"
+---
+
+Connect Linear to automatically create issues when Takumo detects security findings. Issues are assigned to the right team and labeled by severity.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Create a Linear API key">
+    In Linear, click your profile icon and go to **Settings > Account > Security & access**. Under "Personal API keys", click [New API key](https://linear.app/settings/account/security).
+  </Step>
+  <Step title="Generate the key">
+    Name it (e.g. "Takumo"), set permissions to **Full access**, and click **Create**. Copy the key (starts with `lin_api_`).
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard > Settings > Integrations > Linear**. Paste the API key in the connection form.
+  </Step>
+</Steps>
+
+---
+
+## What Takumo does
+
+When Takumo detects a finding that meets your notification threshold:
+
+1. Maps the finding to a Linear issue:
+   - **Title** -- Finding title with severity and category
+   - **Description** -- Full details in Markdown, including file location, detection context, and remediation guidance
+   - **Priority** -- Mapped from Takumo severity (Critical -> Urgent, High -> High, Medium -> Medium, Low -> Low)
+   - **Labels** -- `takumo`, severity level, category
+   - **Team** -- Assigned based on your team mapping configuration
+
+2. Creates the issue via Linear's GraphQL API
+
+3. Stores the issue reference on the Takumo finding for tracking
+
+---
+
+## Bidirectional status sync
+
+| Direction | What syncs |
+|-----------|-----------|
+| **Takumo -> Linear** | Finding created -> Linear issue created. Finding resolved -> Linear issue status updated. |
+| **Linear -> Takumo** | Linear issue state change (via webhook) -> Takumo finding status updated. |
+
+Linear workflow states are matched automatically. If your team uses custom states, Takumo maps them to the closest standard lifecycle stage (Backlog, In Progress, Done, Canceled).
+
+---
+
+## Team assignment
+
+Configure team mapping in **Dashboard > Settings > Integrations > Linear** after connecting:
+
+| Mapping rule | Example |
+|-------------|---------|
+| **By repository** | Findings in `frontend/*` repos go to the Frontend team |
+| **By severity** | Critical findings go to the Security team |
+| **Default team** | All unmatched findings go to a designated team |
+
+---
+
+## Health check
+
+Takumo verifies connectivity by sending a GraphQL query to `https://api.linear.app/graphql`:
+
+```json
+{
+  "query": "{ viewer { id } }"
+}
+```
+
+The request uses the `Authorization` header with your API key. If the query succeeds, the integration shows as connected.
+
+---
+
+## Credential details
+
+| Field | Value |
+|-------|-------|
+| **Type** | Personal API Key |
+| **Prefix** | `lin_api_...` |
+| **Required permissions** | Full access |
+| **Auth method** | Bearer token (`Authorization: <key>`) |
+
+Credentials are stored encrypted. The API key is never displayed after initial setup.
+
+---
+
+## Limitations
+
+- **Personal API keys only** -- OAuth app authorization is not currently supported.
+- **One workspace per connection** -- Linear API keys are scoped to a single workspace. Connect multiple integrations for multiple workspaces.
+- **No attachment sync** -- Code snippets are included in the issue description, not as attachments.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Jira" icon="ticket" href="/integrations/jira">
+    Jira ticket integration
+  </Card>
+  <Card title="Issues" icon="circle-alert" href="/dashboard/issues">
+    Issues dashboard
+  </Card>
+</CardGroup>

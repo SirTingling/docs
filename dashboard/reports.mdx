@@ -1,0 +1,90 @@
+---
+title: Reports
+description: Generate and schedule security reports
+icon: "file-text"
+---
+
+Generate on-demand reports or schedule recurring ones. Reports aggregate your security data into exportable documents for stakeholders, auditors, and compliance teams.
+
+---
+
+## Report types
+
+| Type | What it includes |
+|------|-----------------|
+| **Security summary** | Detection counts, severity breakdown, trend charts, top affected repos |
+| **Compliance snapshot** | Framework-specific control status (SOC 2, PCI-DSS, HIPAA, ISO 27001) |
+| **Issue detail** | Full list of open issues with remediation guidance |
+| **Usage report** | Scan volumes, credit consumption, API usage by key and member |
+
+---
+
+## Generating a report
+
+<Steps>
+  <Step title="Go to Reports">
+    Navigate to **Dashboard > Reports**.
+  </Step>
+  <Step title="Click Generate Report">
+    Select the report type and date range.
+  </Step>
+  <Step title="Download">
+    Reports are generated asynchronously. When ready, download as PDF or CSV.
+  </Step>
+</Steps>
+
+Report generation consumes 2 credits.
+
+---
+
+## Scheduled reports
+
+Set up recurring reports that are generated automatically and emailed to recipients.
+
+| Field | Description |
+|-------|-------------|
+| **Type** | Report type (from the table above) |
+| **Schedule** | Daily, weekly, or monthly |
+| **Recipients** | Email addresses (comma-separated) |
+| **Format** | PDF or CSV |
+
+Scheduled reports run at the start of each period (midnight UTC for daily, Monday for weekly, first of the month for monthly).
+
+### Managing schedules
+
+- **Create** — Click **New Schedule**, fill in the fields, save
+- **Edit** — Click an existing schedule to modify recipients or frequency
+- **Pause** — Toggle the schedule off without deleting it
+- **Delete** — Remove the schedule permanently
+
+---
+
+## API access
+
+Reports are also available via the API:
+
+```bash
+# List reports
+curl -H "Authorization: Bearer $TAKUMO_API_KEY" \
+  https://cloud.takumo.io/api/v1/reports
+
+# Generate a report
+curl -X POST \
+  -H "Authorization: Bearer $TAKUMO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"security_summary","dateRange":"30d"}' \
+  https://cloud.takumo.io/api/v1/reports/generate
+```
+
+Requires `reports:read` scope on the API key.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Compliance" icon="shield-check" href="/dashboard/compliance">
+    Compliance tracking
+  </Card>
+  <Card title="API Keys" icon="key" href="/dashboard/api-keys">
+    Create scoped API keys
+  </Card>
+</CardGroup>

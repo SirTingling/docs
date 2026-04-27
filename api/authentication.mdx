@@ -54,21 +54,32 @@ Keys are 64-character hex strings following the prefix.
 
 ## Key scopes
 
-Each key has a set of scopes that control what it can do. A request that requires a scope the key doesn't have returns `403 FORBIDDEN`.
+Each key has a set of scopes that control what it can do. A request that requires a scope the key doesn't have returns `403 forbidden`.
 
 | Scope | What it controls |
 |-------|-----------------|
-| `shield:read` | Read scan results and detection history |
-| `shield:write` | Run scans, tokenize, and rehydrate |
-| `audit:read` | Read audit log entries |
-| `fleet:read` | View gateway fleet status |
-| `fleet:write` | Register and manage gateways |
-| `policy:read` | Read policy configurations |
-| `policy:write` | Create and update policies |
-| `org:read` | Read organization settings |
-| `org:write` | Update organization settings, manage members |
+| `org.read` | View organization settings |
+| `org.settings.edit` | Update organization settings |
+| `members.read` | View team members |
+| `members.invite` | Invite new members |
+| `apikeys.read` | List API keys |
+| `apikeys.create` | Create new API keys |
+| `apikeys.revoke` | Revoke existing keys |
+| `policies.read` | View security policies |
+| `policies.create` | Create policies |
+| `policies.edit` | Edit policies |
+| `issues.read` | View detected issues |
+| `issues.triage` | Triage and manage issues |
+| `fleet.read` | View gateway fleet status |
+| `fleet.manage` | Register and manage gateways |
+| `audit.read` | Read audit log entries |
+| `audit.export` | Export audit data |
+| `integrations.read` | View integrations |
+| `integrations.manage` | Configure integrations |
+| `streaming.read` | View streaming configuration |
+| `streaming.write` | Manage streaming destinations |
 
-Assign the minimum scopes needed. A key used only for secret scanning needs `shield:write` and nothing else.
+Assign the minimum scopes needed. Permissions use dot notation. See [API Keys](/dashboard/api-keys) for the full list of all 60 permissions.
 
 ## Rate limit headers
 
@@ -100,14 +111,14 @@ For zero-downtime rotation:
 3. Verify requests succeed with the new key.
 4. Revoke the old key.
 
-Revocation takes effect within seconds. A revoked key returns `401 UNAUTHORIZED` immediately. There is no undo.
+Revocation takes effect within seconds. A revoked key returns `401 unauthorized` immediately. There is no undo.
 
 ## Error responses
 
 | Status | Code | When |
 |--------|------|------|
-| `401` | `UNAUTHORIZED` | Missing key, invalid key, expired key, revoked key |
-| `403` | `FORBIDDEN` | Key lacks required scope, feature not available on your plan |
-| `429` | `RATE_LIMITED` | Too many requests in the current window |
+| `401` | `unauthorized` | Missing key, invalid key, expired key, revoked key |
+| `403` | `forbidden` | Key lacks required scope, feature not available on your plan |
+| `429` | `rate_limited` | Too many requests in the current window |
 
 See [Errors](/api/errors) for the full error response format.

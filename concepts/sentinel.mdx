@@ -8,10 +8,6 @@ icon: "eye"
 
 Sentinel is the inbound protection layer. It validates AI-generated code before it reaches your codebase.
 
-<Note>
-Sentinel is in active development. Security scanning and vulnerability detection are available in the dashboard. The standalone API is coming.
-</Note>
-
 ## The problem
 
 AI generates code fast. That code can contain:
@@ -42,48 +38,131 @@ You catch these in code review. Sometimes. Sentinel catches them every time.
 - Patterns to enforce (your team's standards)
 - Patterns to forbid (banned APIs, deprecated functions)
 - Framework-specific best practices
+- Create rules from selected code in the extension
 
 ## How it works
 
-Sentinel runs after the AI responds, before the code reaches your editor:
+Sentinel runs in three places:
+
+### In the gateway
+
+After the AI responds, before the code reaches your editor:
 
 1. AI generates code
 2. The gateway intercepts the response
 3. Sentinel scans for vulnerabilities, license issues, and policy violations
 4. Clean code passes through. Flagged code is annotated with the issue.
 
+### In the extension
+
+Real-time scanning as you code:
+
+1. You save a file (or type, if on-type scanning is enabled)
+2. The daemon runs Sentinel rules against your code
+3. Issues appear as inline VS Code diagnostics
+4. Quick-fix code actions offer remediation
+
+### In CI/CD
+
+On pull requests via GitHub integration:
+
+1. A PR is opened or updated
+2. The Takumo GitHub App receives the webhook
+3. Sentinel scans the diff
+4. Detections appear as check run annotations on the PR
+
+## Enforcement modes
+
 The enforcement mode depends on your policy configuration:
-- **Block** — flagged code is rejected
-- **Warn** — code passes through with warnings attached
-- **Monitor** — code passes through, issue is logged to the audit trail
+
+| Mode | Behavior |
+|------|----------|
+| **Block** | Flagged code is rejected. The request fails with detection details. |
+| **Warn** | Code passes through with warnings attached. Logged to audit trail. |
+| **Monitor** | Code passes through silently. Issue is logged. No notification. |
+
+## Scan API
+
+```typescript
+// POST /scan
+const response = await fetch('http://localhost:19532/scan', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    content: code,
+    filename: 'handler.ts',
+    language: 'typescript'
+  })
+});
+
+const result = await response.json();
+// {
+//   scan_id: "scan_abc123",
+//   passed: false,
+//   issues: [
+//     {
+//       rule_id: "sql-injection",
+//       severity: "critical",
+//       message: "Unsanitized user input in SQL query",
+//       line: 12,
+//       column: 8,
+//       fix_suggestion: "Use parameterized queries"
+//     }
+//   ],
+//   engine_duration_ms: 15
+// }
+```
 
 ## In the dashboard
 
-The dashboard shows Sentinel detections under the vulnerability breakdown. You can see:
+The dashboard shows Sentinel detections with:
 - Detection type and severity
 - Affected code location
 - Suggested remediation
 - Trend data over time
+- Filter by repo, severity, and rule
 
-## Standalone API
+## Custom rules
 
-The Sentinel API will allow you to validate code outside the gateway flow:
+Create rules that match your team's patterns. Rules use regex or content matching with severity, category, and fix suggestions.
 
-```typescript
-const result = await sentinel.validate(aiGeneratedCode, {
-  rules: ["security", "license"],
-  licensePolicy: "permissive-only",
-  customRules: "./takumo-rules.yaml"
-});
-
-if (!result.passed) {
-  for (const issue of result.issues) {
-    console.log(`${issue.severity}: ${issue.message}`);
-    console.log(`  Line ${issue.line}: ${issue.snippet}`);
-  }
+```json
+{
+  "name": "no-console-log",
+  "pattern": { "type": "regex", "value": "console\\.log\\(" },
+  "severity": "warning",
+  "category": "code-quality",
+  "message": "Remove console.log before merging",
+  "fixSuggestion": "Use your logging library instead"
 }
 ```
 
-<Note>
-The standalone Sentinel API is in development. Security scanning is available today through the gateway and dashboard.
-</Note>
+Rules created in the dashboard or extension sync to all team members automatically.
+
+<CardGroup cols={2}>
+  <Card title="Custom Rules" icon="pencil-ruler" href="/studio/custom-rules">
+    Create rules from your editor
+  </Card>
+  <Card title="Dashboard Rules" icon="pencil-ruler" href="/dashboard/rules">
+    Manage rules in the dashboard
+  </Card>
+</CardGroup>
+
+---
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Scan API" icon="code" href="/api/scan">
+    Scan code programmatically
+  </Card>
+  <Card title="Policies" icon="file-check" href="/concepts/policies">
+    Configure enforcement rules
+  </Card>
+  <Card title="Studio Scanning" icon="scan" href="/studio/scanning">
+    Real-time scanning in your editor
+  </Card>
+  <Card title="GitHub Integration" icon="github" href="/integrations/github">
+    Sentinel on pull requests
+  </Card>
+</CardGroup>

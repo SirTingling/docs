@@ -41,13 +41,13 @@ Control who has access to your organization and what they can do.
 
 **Owner** -- Everything. Create and delete the organization, transfer ownership, manage billing, assign any role. There is exactly one Owner per organization.
 
-**Admin** -- Everything except delete the organization, transfer ownership, and manage billing. Admins handle day-to-day operations: managing members, configuring policies, creating API keys.
+**Admin** -- Everything except deleting the organization, transferring ownership, managing billing, and configuring audit webhooks. Admins handle day-to-day operations: managing members, configuring policies, creating API keys, and full streaming control.
 
-**Security Lead** -- Security settings, policies, audit log, and fleet management. Cannot manage members or billing. Built for the person responsible for your security posture without giving them team management powers.
+**Security Lead** -- Security settings (MFA, SSO, domains, IP allowlist, sessions), policies, audit log, fleet, compliance, Brain intelligence, repositories, reports, and streaming (`streaming.read` + `streaming.write`). Cannot manage members, billing, SCIM, or integrations. Built for the person responsible for your security posture without giving them team management powers.
 
-**Billing Admin** -- Billing and plan management. Read-only access to the audit log. Built for finance teams who need to manage subscriptions without touching security configuration.
+**Billing Admin** -- Billing and plan management. Read-only access to the organization, members list, audit log, and notifications. No access to streaming, policies, fleet, security settings, or any other feature. Built for finance teams who need to manage subscriptions without touching security configuration.
 
-**Member** -- Create API keys, create policies, triage issues. Cannot manage team members or change settings. The default role for developers who need to use Takumo daily.
+**Member** -- Create API keys, triage issues, and view policies, compliance, and streaming data. Cannot create or edit policies, manage team members, or change settings. The default role for developers who need to use Takumo daily.
 
 **Viewer** -- Read-only access to everything. Cannot create, edit, or delete anything. Good for stakeholders who need visibility without the ability to change anything.
 

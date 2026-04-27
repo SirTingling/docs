@@ -1,0 +1,87 @@
+---
+title: GitHub Issues
+description: Create GitHub issues directly from scan findings
+icon: "circle-dot"
+---
+
+Connect GitHub Issues to automatically create issues in your repositories when Takumo detects security findings. If you already have the GitHub App connected for source code scanning, this is a separate integration specifically for issue tracking.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Generate a Personal Access Token">
+    Go to [GitHub token settings](https://github.com/settings/tokens/new) and generate a new classic token. Select the **repo** scope (needed to create and manage issues).
+  </Step>
+  <Step title="Copy the token">
+    Copy the token (starts with `ghp_`). Store it somewhere safe — GitHub only shows it once.
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard → Settings → Integrations → GitHub Issues**. Paste the token and click **Connect**.
+  </Step>
+  <Step title="Select a repository">
+    Choose which repository receives Takumo issues. You can also configure default labels.
+  </Step>
+</Steps>
+
+---
+
+## How issues are created
+
+When Takumo detects an issue that meets your notification threshold:
+
+1. Maps the issue to a GitHub issue format:
+   - **Title** — Issue title with severity and category
+   - **Body** — Full details in Markdown, including file location, detection context, and remediation guidance
+   - **Labels** — `takumo`, severity level, category
+   - **Assignees** — Mapped from CODEOWNERS if available
+
+2. Creates the issue via the GitHub REST API
+
+3. Stores the issue reference on the Takumo issue for bidirectional tracking
+
+---
+
+## Health check
+
+Takumo verifies the connection by calling `GET https://api.github.com/user` with your token. If the token is invalid or expired, the integration is marked as disconnected.
+
+---
+
+## Credentials reference
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Personal Access Token** | Yes | Classic token with `repo` scope |
+
+---
+
+## GitHub App vs. GitHub Issues integration
+
+| | GitHub App | GitHub Issues |
+|---|-----------|---------------|
+| **Purpose** | Source code scanning, PR checks, Brain indexing | Issue tracking from findings |
+| **Auth** | GitHub App installation | Personal Access Token |
+| **Scope** | Repository content, PRs, webhooks | Issues only |
+
+You can use both simultaneously. The GitHub App handles code scanning; the GitHub Issues integration handles ticket creation.
+
+---
+
+## Limitations
+
+- **Classic PAT only** — Fine-grained tokens are not yet supported for issue creation.
+- **One repository per org** — All Takumo issues go to a single GitHub repository. Use GitHub Actions or issue templates for further routing.
+- **No bidirectional sync** — Closing the GitHub issue does not automatically resolve the Takumo issue (webhook support planned).
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Jira" icon="ticket" href="/integrations/jira">
+    Create Jira tickets from findings
+  </Card>
+  <Card title="GitHub" icon="github" href="/integrations/github">
+    GitHub App for source code scanning
+  </Card>
+</CardGroup>

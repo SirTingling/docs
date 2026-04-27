@@ -1,0 +1,55 @@
+---
+title: Policies
+description: Organization policy management
+icon: "shield-check"
+---
+
+Retrieve organization policies. Policies are configured in the dashboard and synced to gateways and daemons.
+
+## GET /policies
+
+```bash
+curl http://localhost:19532/policies
+```
+
+### Response
+
+```json
+{
+  "policies": [
+    {
+      "id": "pol_abc123",
+      "name": "block-production-secrets",
+      "description": "Block all production credential patterns",
+      "type": "security",
+      "status": "active",
+      "enforcementMode": "block",
+      "rules": [...],
+      "enabled": true
+    }
+  ]
+}
+```
+
+### Policy object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier |
+| `name` | string | Policy name |
+| `description` | string | What the policy does |
+| `type` | string | `security`, `license`, or `custom` |
+| `status` | string | `active`, `draft`, or `archived` |
+| `enforcementMode` | string | `block`, `warn`, or `monitor` |
+| `rules` | array | Policy rules |
+| `enabled` | boolean | Whether the policy is active |
+
+### Enforcement modes
+
+| Mode | Behavior |
+|------|----------|
+| `block` | Request rejected. Detection details returned. |
+| `warn` | Request passes. Warning logged and notification sent. |
+| `monitor` | Request passes. Detection logged silently. |
+
+<Note>Policies are managed in the dashboard. The API is read-only — use the dashboard to create and update policies.</Note>

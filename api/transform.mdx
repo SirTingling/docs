@@ -1,0 +1,122 @@
+---
+title: Transform
+description: AI-powered code transformation
+icon: "wand"
+---
+
+AI-powered code rewriting. Send code with security issues, get back a fixed version that passes Sentinel validation.
+
+<Note>
+This endpoint is served by the **Aegis Shield daemon** (`localhost:19532`), not the Cloud API. The daemon orchestrates the transform: it scans the original code locally, sends the rewrite request through the Shield gateway to Claude, then re-scans and validates the output before returning it. Transforms consume 7 credits per successful rewrite.
+</Note>
+
+## POST /transform
+
+<CodeGroup>
+```bash curl
+curl -X POST http://localhost:19532/transform \
+  -H "Content-Type: application/json" \
+  -d '{
+    "original_code": "const q = `SELECT * FROM users WHERE id = ${req.params.id}`;",
+    "surrounding_context": "// Express route handler",
+    "file_path": "routes/users.ts",
+    "language": "typescript",
+    "repo_id": "repo_abc123"
+  }'
+```
+
+```typescript TypeScript
+const result = await fetch("http://localhost:19532/transform", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    original_code: "const q = `SELECT * FROM users WHERE id = ${req.params.id}`;",
+    surrounding_context: "// Express route handler",
+    file_path: "routes/users.ts",
+    language: "typescript",
+    repo_id: "repo_abc123"
+  })
+}).then(r => r.json());
+```
+</CodeGroup>
+
+### How it works
+
+The daemon runs a 10-step pipeline for each transform:
+
+1. Validate input fields
+2. Authenticate (requires an active API key)
+3. Fetch Brain sentinel-context for the repo (fail-open if offline)
+4. Local Sentinel scan of the original code
+5. Build the transform prompt (system + user)
+6. Proxy to the Shield gateway `/v1/messages` (Claude)
+7. Extract the fenced code block from Claude's response
+8. Re-scan and detect the output locally
+9. Apply 4 validation rules (no regressions, no new secrets, etc.)
+10. Fire-and-forget credit audit (7 credits)
+
+### Request body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `original_code` | string | Yes | Code to transform |
+| `surrounding_context` | string | Yes | Code around the selection for context |
+| `file_path` | string | Yes | File path |
+| `language` | string | Yes | Language identifier |
+| `repo_id` | string | No | Repository identifier for Brain context |
+
+### Response
+
+```json
+{
+  "transform_id": "tfm_abc123",
+  "transformed_code": "const q = await db.query('SELECT * FROM users WHERE id = $1', [req.params.id]);",
+  "original_issues": [
+    {
+      "rule_id": "sql-injection",
+      "severity": "critical",
+      "message": "Unsanitized user input in SQL query"
+    }
+  ],
+  "validation": {
+    "passed": true,
+    "remaining_issues": [],
+    "new_detections": []
+  },
+  "credits_used": 7,
+  "duration_ms": 2340
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `transform_id` | string | Unique transform identifier |
+| `transformed_code` | string | The rewritten code |
+| `original_issues` | array | Sentinel issues found in the original code |
+| `validation` | object | Post-transform validation result |
+| `credits_used` | number | Credits consumed (7 per successful transform) |
+| `duration_ms` | number | Total round-trip time in milliseconds |
+
+### Validation object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `passed` | boolean | Whether the transformed code passes Sentinel |
+| `reason` | string | Explanation if validation failed |
+| `remaining_issues` | array | Issues that persist after transform |
+| `new_detections` | array | New secrets introduced by the transform |
+
+### Gateway note
+
+The transform endpoint is exposed by the **daemon**, not the gateway directly. The gateway's proxy routes (`/v1/messages`, `/v1/chat/completions`) handle the underlying LLM call, but the full transform orchestration (scan, prompt, validate, audit) runs in the daemon process.
+
+<CardGroup cols={2}>
+  <Card title="Studio Transforms" icon="wand" href="/studio/transforms">
+    Using transforms in the VS Code extension.
+  </Card>
+  <Card title="Sentinel Concepts" icon="shield" href="/concepts/sentinel">
+    How Sentinel validates transformed output.
+  </Card>
+</CardGroup>

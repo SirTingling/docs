@@ -1,0 +1,115 @@
+---
+title: Detect
+description: Detect secrets in code
+icon: "search"
+---
+
+Find secrets in code. Returns detection details with category, confidence, and line range.
+
+<Note>
+This endpoint is served by the **Aegis Shield Gateway** (`gateway.takumo.io`), not the Cloud API. The gateway runs the aegis-core detection engine directly. The same endpoint is also available locally via the [daemon](/concepts/daemon).
+</Note>
+
+## POST /detect
+
+Send code to the gateway and get back secret detection results.
+
+<CodeGroup>
+```bash curl
+curl -X POST https://gateway.takumo.io/detect \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "const key = \"AKIAIOSFODNN7EXAMPLE\";",
+    "filename": "config.ts"
+  }'
+```
+
+```typescript TypeScript
+const response = await fetch("https://gateway.takumo.io/detect", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer <api_key>",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    content: 'const key = "AKIAIOSFODNN7EXAMPLE";',
+    filename: "config.ts"
+  })
+});
+const result = await response.json();
+```
+
+```python Python
+import requests
+
+result = requests.post(
+    "https://gateway.takumo.io/detect",
+    headers={"Authorization": "Bearer <api_key>"},
+    json={
+        "content": 'const key = "AKIAIOSFODNN7EXAMPLE";',
+        "filename": "config.ts"
+    }
+).json()
+```
+</CodeGroup>
+
+### Request body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `content` | string | Yes | Code to scan for secrets |
+| `filename` | string | No | File name (helps with detection context) |
+
+### Response
+
+```json
+{
+  "detections": [
+    {
+      "category": "aws_access_key",
+      "confidence": 0.95,
+      "description": "AWS access key detected",
+      "start_line": 1,
+      "end_line": 1
+    }
+  ],
+  "count": 1
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `detections` | array | List of detected secrets |
+| `count` | number | Total detections |
+
+### Detection object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `category` | string | Secret type (e.g., `aws_access_key`, `database_url`, `jwt`) |
+| `confidence` | number | 0.0 to 1.0 confidence score |
+| `description` | string | Human-readable description |
+| `start_line` | number | Start line (1-indexed) |
+| `end_line` | number | End line (1-indexed) |
+
+## Local daemon
+
+The daemon exposes the same endpoint locally on port `19532`. No authentication is required for local requests.
+
+```bash
+curl -X POST http://localhost:19532/detect \
+  -H "Content-Type: application/json" \
+  -d '{"content": "const key = \"AKIAIOSFODNN7EXAMPLE\";", "filename": "config.ts"}'
+```
+
+The daemon runs the aegis-core detection engine offline -- it does not require network access to the gateway. Detection results from both the gateway and daemon use the same response format.
+
+<CardGroup cols={2}>
+  <Card title="Aegis Shield" icon="shield" href="/concepts/aegis-shield">
+    How outbound secret detection works.
+  </Card>
+  <Card title="Daemon" icon="laptop" href="/concepts/daemon">
+    Running detections locally via the daemon.
+  </Card>
+</CardGroup>

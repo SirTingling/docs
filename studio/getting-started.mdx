@@ -1,0 +1,108 @@
+---
+title: Getting Started
+description: Your first 5 minutes with Takumo
+icon: "rocket"
+---
+
+# Getting Started
+
+From install to your first scan in under 5 minutes.
+
+---
+
+<Steps>
+  <Step title="Install the extension" icon="download">
+    Search "Takumo" in the Extensions panel and click Install. The daemon starts automatically.
+
+    [Installation guide →](/studio/installation)
+  </Step>
+
+  <Step title="Check the status bar" icon="check">
+    Look at the bottom of VS Code. You should see **Takumo: Demo** (if not signed in) or **Takumo: Connected** (if signed in).
+
+    Demo mode is fully functional for scanning and secret detection. Sign in later for AI transforms, Brain context, and team features.
+  </Step>
+
+  <Step title="Open a file and save" icon="file">
+    Open any source file and press `Cmd+S`. Takumo scans it immediately.
+
+    If there are issues, you'll see:
+    - Inline squiggles on affected lines
+    - Entries in the Problems panel (`Cmd+Shift+M`)
+    - A notification if secrets are detected
+  </Step>
+
+  <Step title="Try a test file" icon="code">
+    Create a quick test to see Takumo in action:
+
+    ```typescript
+    // test-takumo.ts (example values)
+    const config = {
+      db: "postgres://admin:supersecret@prod.internal:5432/app",
+      key: "AKIAIOSFODNN7EXAMPLE",
+      stripe: "sk_test_abc123EXAMPLE"
+    };
+
+    function handleInput(userInput: string) {
+      const query = `SELECT * FROM users WHERE id = ${userInput}`;
+      eval(userInput);
+    }
+    ```
+
+    Save it. You should see 5+ diagnostics: 3 secrets and 2 security issues (SQL injection, eval usage).
+  </Step>
+
+  <Step title="Use quick fixes" icon="zap">
+    Hover over a squiggle and click the lightbulb (or press `Cmd+.`). Takumo offers:
+
+    - **Replace with environment variable** (for secrets)
+    - **Suppress for this line** (for scan rules)
+  </Step>
+
+  <Step title="Open the side panel" icon="layout">
+    Click the Takumo icon in the activity bar (left sidebar). The panel shows:
+
+    - Daemon connection status
+    - Current scan results
+    - Account info (or "Sign in" button)
+    - Security score
+  </Step>
+</Steps>
+
+---
+
+## Sign in (optional)
+
+Demo mode covers scanning and secret detection. For the full feature set, sign in:
+
+1. Press `Cmd+Shift+P` → "Takumo: Sign In with Browser"
+2. A browser tab opens with a code like `ABCD-1234`
+3. Sign in on cloud.takumo.io and approve the device
+4. The extension detects authorization automatically
+
+Signing in unlocks:
+- AI-powered code transforms
+- Brain workspace intelligence
+- Custom Sentinel rules
+- Org policies and forced settings
+- Incident alerts
+- Audit trail
+
+---
+
+## What's next
+
+<CardGroup cols={2}>
+  <Card title="Scanning" icon="scan" href="/studio/scanning">
+    Configure scan triggers and understand diagnostics
+  </Card>
+  <Card title="Secret Detection" icon="key" href="/studio/secrets">
+    30+ patterns with language-aware quick fixes
+  </Card>
+  <Card title="AI Transforms" icon="wand" href="/studio/transforms">
+    Fix security issues with AI-powered rewrites
+  </Card>
+  <Card title="Commands" icon="terminal" href="/studio/commands">
+    All 21 commands at a glance
+  </Card>
+</CardGroup>

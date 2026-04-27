@@ -1,0 +1,141 @@
+---
+title: Integrations
+description: Connect your tools to Takumo
+icon: "plug"
+---
+
+Takumo integrates with your source control, CI/CD, messaging, issue tracking, SIEM, and secrets management tools. Connect them in **Dashboard → Settings → Integrations**.
+
+---
+
+## Source control
+
+| Provider | What Takumo does |
+|----------|-----------------|
+| **[GitHub](/integrations/github)** | PR policy checks, Sentinel AI reviews, check runs, security alert ingestion, CI/CD pipeline analysis, push-triggered Brain indexing |
+| **[GitLab](/integrations/gitlab)** | MR policy checks, Sentinel AI reviews, security feature detection, CI analysis, push-triggered Brain indexing |
+| **[Bitbucket](/integrations/bitbucket)** | PR build statuses, Sentinel AI reviews, push-triggered sync. Cloud and Server/Data Center supported |
+
+All three providers support:
+- **Sentinel on pull/merge requests** — AI code review with inline annotations
+- **Policy enforcement** — Block or warn based on custom rules
+- **Repository sync** — Branch protection, CODEOWNERS, security features
+- **Brain indexing** — Push events trigger incremental re-indexing
+
+---
+
+## CI/CD
+
+| Provider | What Takumo does |
+|----------|-----------------|
+| **[GitHub Actions](/integrations/github-actions)** | Workflow security analysis, credential detection in workflow files |
+| **[Jenkins](/integrations/jenkins)** | Pipeline security analysis, credential detection in Jenkinsfiles, webhook-based scanning |
+| **[GitLab CI](/integrations/gitlab-ci)** | Pipeline stage analysis, security job detection in `.gitlab-ci.yml` |
+| **CircleCI** | _Coming soon_ |
+
+CI/CD analysis is also built into the GitHub, GitLab, and Bitbucket source code integrations for their native pipeline systems.
+
+---
+
+## Alerting
+
+| Provider | What Takumo does |
+|----------|-----------------|
+| **[Slack](/integrations/slack)** | Sends violation alerts to a channel via incoming webhook |
+| **[Microsoft Teams](/integrations/ms-teams)** | Posts security alerts to Teams channels via webhook connector |
+
+---
+
+## Issue tracking
+
+| Provider | What Takumo does |
+|----------|-----------------|
+| **[Jira](/integrations/jira)** | Creates tickets from security issues, bidirectional status sync |
+| **[Linear](/integrations/linear)** | Syncs findings to Linear issues with team assignment |
+| **[PagerDuty](/integrations/pagerduty)** | Creates incidents from findings with bidirectional status sync |
+| **[GitHub Issues](/integrations/github-issues)** | Creates GitHub issues directly from scan findings |
+| **[GitLab Issues](/integrations/gitlab-issues)** | Creates GitLab issues directly from scan findings |
+| **[Bitbucket Issues](/integrations/bitbucket-issues)** | Creates Bitbucket issues from scan findings |
+
+---
+
+## SIEM & monitoring
+
+<Note>Splunk, Datadog, and Elasticsearch integrations require an Enterprise plan.</Note>
+
+| Provider | What Takumo does |
+|----------|-----------------|
+| **[Splunk](/integrations/splunk)** | Streams security events to Splunk via HTTP Event Collector |
+| **[Datadog](/integrations/datadog)** | Sends security metrics and events to Datadog |
+| **[Elasticsearch](/integrations/elasticsearch)** | Indexes security events into Elasticsearch or OpenSearch |
+| **[Custom Webhook](/integrations/custom-webhook)** | Forwards events to any HTTP endpoint with optional HMAC signing |
+
+---
+
+## Secrets management
+
+<Note>Secrets management integrations require an Enterprise plan.</Note>
+
+| Provider | What Takumo does |
+|----------|-----------------|
+| **[HashiCorp Vault](/integrations/hashicorp-vault)** | Correlates leaked secrets with Vault-managed credentials for instant rotation |
+| **[AWS Secrets Manager](/integrations/aws-secrets-manager)** | Maps detected AWS secrets to their Secrets Manager entries |
+
+---
+
+## Event streaming
+
+For custom integrations beyond the built-in providers, use the [Stream pipeline](/concepts/streaming). Create webhook destinations that receive events for any detection, policy violation, or status change.
+
+---
+
+## How integration auth works
+
+| Provider | Auth method |
+|----------|------------|
+| GitHub | GitHub App (installation token) |
+| GitLab | Personal Access Token (PAT) |
+| Bitbucket Cloud | Email + API Token (Basic Auth) |
+| Bitbucket Server | Username + App Password |
+| GitHub Actions | Personal Access Token |
+| Jenkins | URL + Username + API token |
+| GitLab CI | Personal Access Token |
+| Slack | Incoming webhook URL |
+| Microsoft Teams | Incoming webhook URL |
+| Jira | Domain + Email + API token (Basic Auth) |
+| Linear | API key |
+| PagerDuty | REST API token + Email |
+| GitHub Issues | Personal Access Token |
+| GitLab Issues | Personal Access Token |
+| Bitbucket Issues | Email + API Token (Basic Auth) |
+| Splunk | HEC endpoint + HEC token |
+| Datadog | API key |
+| Elasticsearch | Cluster URL + API key |
+| Custom Webhook | URL + optional signing secret |
+| HashiCorp Vault | AppRole or Token |
+| AWS Secrets Manager | STS AssumeRole or static access key |
+
+Credentials are stored encrypted. Integration tokens are never exposed in the dashboard after initial setup.
+
+---
+
+<CardGroup cols={3}>
+  <Card title="GitHub" icon="github" href="/integrations/github">
+    GitHub App integration
+  </Card>
+  <Card title="GitLab" icon="gitlab" href="/integrations/gitlab">
+    GitLab PAT integration
+  </Card>
+  <Card title="Bitbucket" icon="code" href="/integrations/bitbucket">
+    Bitbucket Cloud and Server
+  </Card>
+  <Card title="Jenkins" icon="hammer" href="/integrations/jenkins">
+    Pipeline security analysis
+  </Card>
+  <Card title="Slack" icon="message-square" href="/integrations/slack">
+    Violation alerts
+  </Card>
+  <Card title="Jira" icon="ticket" href="/integrations/jira">
+    Ticket creation and sync
+  </Card>
+</CardGroup>

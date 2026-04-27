@@ -9,17 +9,59 @@ The Takumo dashboard at [cloud.takumo.io](https://cloud.takumo.io) is where you 
 ## Main Sections
 
 <CardGroup cols={2}>
-  <Card title="API Keys" icon="key" href="/dashboard/api-keys">
-    Create and manage keys for your AI tools. Each key has scoped permissions that control exactly what it can do.
+  <Card title="Issues" icon="alert-triangle" href="/dashboard/issues">
+    Security issues across all repos. Triage, assign, and track resolution.
   </Card>
-  <Card title="Activity" icon="list" href="/dashboard/audit-log">
-    Real-time feed of detections and events. See every scan, every blocked secret, every policy evaluation as it happens.
+  <Card title="Violations" icon="ban" href="/dashboard/violations">
+    Policy enforcement events. See what was blocked, warned, or logged.
+  </Card>
+  <Card title="Sentinel" icon="eye" href="/dashboard/sentinel">
+    Vulnerability breakdown by type and severity. Detection details, suggested remediation, and trend data.
+  </Card>
+  <Card title="Repositories" icon="folder-git-2" href="/dashboard/repositories">
+    Repository inventory with security posture scores and Brain indexing status.
+  </Card>
+  <Card title="Pipelines" icon="git-branch" href="/dashboard/pipelines">
+    CI/CD pipeline security analysis for GitHub Actions, GitLab CI, Jenkins, and Bitbucket.
+  </Card>
+  <Card title="Brain" icon="brain" href="/dashboard/brain">
+    AI pattern analysis, posture scoring, and code intelligence dashboard.
+  </Card>
+  <Card title="Compliance" icon="shield-check" href="/dashboard/compliance">
+    Framework tracking — SOC 2, PCI-DSS, HIPAA, ISO 27001.
+  </Card>
+  <Card title="Reports" icon="file-text" href="/dashboard/reports">
+    Generate and schedule security reports for stakeholders and auditors.
+  </Card>
+  <Card title="Usage" icon="bar-chart-3" href="/dashboard/usage">
+    Credit consumption, scan volumes, and API usage analytics.
+  </Card>
+  <Card title="Notifications" icon="bell" href="/dashboard/notifications">
+    Incident alerts, policy violations, and team changes. Configure delivery channels.
+  </Card>
+  <Card title="Streaming" icon="radio" href="/dashboard/streaming">
+    Event pipeline management. Destinations, subscriptions, DLQ, and receipts.
+  </Card>
+  <Card title="Rules" icon="pencil-ruler" href="/dashboard/rules">
+    Custom Sentinel rules. Create, test, publish, and manage rules.
+  </Card>
+  <Card title="API Keys" icon="key" href="/dashboard/api-keys">
+    Create and manage keys with scoped permissions.
   </Card>
   <Card title="Fleet" icon="server" href="/dashboard/fleet">
-    Monitor connected gateway instances. Track health, manage join keys, and see connection state for on-prem deployments.
+    Monitor gateway instances, join keys, and connection state.
+  </Card>
+  <Card title="Members" icon="users" href="/dashboard/members">
+    Team management, roles, and invitations.
+  </Card>
+  <Card title="SSO" icon="fingerprint" href="/dashboard/sso">
+    SAML 2.0, OIDC, and SCIM provisioning for Enterprise.
+  </Card>
+  <Card title="Activity" icon="scroll" href="/dashboard/audit-log">
+    Audit log of every action — member changes, key operations, policy updates.
   </Card>
   <Card title="Settings" icon="wrench" href="/dashboard/settings">
-    Organization configuration, security controls, billing, and team management.
+    Organization configuration, security controls, billing.
   </Card>
 </CardGroup>
 
@@ -29,22 +71,34 @@ The dashboard overview gives you an at-a-glance picture of your organization's s
 
 **Key metrics** are displayed at the top:
 
-- **Total scans** -- cumulative number of code scans processed
-- **Secrets detected** -- total secrets caught before they leaked
-- **Active API keys** -- how many keys are currently in use
+- **Total scans** — cumulative number of code scans processed
+- **Secrets detected** — total secrets caught before they leaked
+- **Sentinel issues** — security vulnerabilities and policy violations found
+- **Active API keys** — how many keys are currently in use
 
-**Scan statistics breakdown** shows the distribution of scan types across your organization -- Shield scans, Sentinel reviews, code reviews, and policy evaluations.
+**Scan statistics breakdown** shows the distribution of scan types across your organization — Shield scans, Sentinel reviews, code reviews, and policy evaluations.
 
 **Policy compliance status** tells you how your organization is tracking against configured governance policies. Green means compliant. Yellow means warnings. Red means violations that need attention.
 
 **Recent activity feed** surfaces the latest detections, key creations, member changes, and policy updates in chronological order.
 
-**Threat trend visualization** charts detection volume over time so you can spot patterns -- a spike in secret detections after onboarding a new team, a drop after tightening policies.
+**Threat trend visualization** charts detection volume over time so you can spot patterns — a spike in secret detections after onboarding a new team, a drop after tightening policies.
 
 ## Organizations
 
 Each organization has its own dashboard, API keys, team, and billing. If you belong to multiple organizations, switch between them from the sidebar.
 
-Your current organization context is always visible in the sidebar. All data -- keys, scans, policies, audit logs -- is scoped to the active organization.
+Your current organization context is always visible in the sidebar. All data — keys, scans, policies, audit logs — is scoped to the active organization.
+
+## Roles
+
+| Role | What it can do |
+|------|---------------|
+| **Owner** | Full access. Billing, members, settings, API keys, policies, streaming. Can delete the organization and transfer ownership. |
+| **Admin** | Everything except deleting the organization, transferring ownership, and managing billing. Handles day-to-day operations. |
+| **Security Lead** | Security settings, policies, audit log, fleet, compliance, and streaming (`streaming.read`, `streaming.write`). Cannot manage members or billing. |
+| **Billing Admin** | Billing and plan management. Read-only access to the organization, members list, audit log, and notifications. No access to streaming, policies, or fleet. |
+| **Member** | View dashboard, create API keys, triage issues, read streaming data. Cannot manage policies, members, or settings. |
+| **Viewer** | Read-only access across the dashboard. Cannot create, edit, or delete anything. |
 
 <Tip>Bookmark cloud.takumo.io/dashboard for quick access. The dashboard remembers your last active organization.</Tip>

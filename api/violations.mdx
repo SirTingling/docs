@@ -1,0 +1,103 @@
+---
+title: Violations
+description: Query policy violation events
+icon: "ban"
+---
+
+List policy violations -- events where governance rules were triggered by code scans, PR reviews, or other activity.
+
+<Note>Requires Enterprise plan and `scan:read` scope on the API key.</Note>
+
+## GET /violations
+
+<CodeGroup>
+```bash curl
+curl "https://cloud.takumo.io/api/v1/violations?severity=critical&status=open" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://cloud.takumo.io/api/v1/violations?severity=critical&status=open",
+  { headers: { "Authorization": "Bearer tk_live_your_api_key" } }
+);
+const result = await response.json();
+```
+</CodeGroup>
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `severity` | string | No | Filter by severity |
+| `status` | string | No | Filter by status |
+| `repoName` | string | No | Filter by repository name (case-insensitive substring match) |
+| `policyId` | string | No | Filter by policy ID |
+| `since` | string | No | Only violations triggered after this date (ISO 8601) |
+| `unacknowledged` | string | No | Set to `true` to return only unacknowledged violations |
+| `cursor` | string | No | Pagination cursor (pass `nextCursor` from a previous response) |
+| `limit` | number | No | Results per page (default 50, max 100) |
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "cm2x7viol123def456",
+      "summary": "Hardcoded AWS access key detected in production code",
+      "type": "secret_leak",
+      "status": "open",
+      "severity": "critical",
+      "policyId": "cm2x7pol789abc",
+      "ruleName": "SEC-001",
+      "ruleDescription": "No hardcoded secrets in production code",
+      "repoName": "org/api-service",
+      "trigger": {
+        "type": "pull_request",
+        "ref": "PR #42",
+        "branch": "feature/auth-config",
+        "url": "https://github.com/org/api-service/pull/42"
+      },
+      "actor": {
+        "name": "Jane Developer",
+        "email": "jane@company.com"
+      },
+      "actionTaken": "blocked",
+      "triggeredAt": "2026-04-15T14:30:00.000Z",
+      "createdAt": "2026-04-15T14:30:00.000Z",
+      "updatedAt": "2026-04-15T14:30:00.000Z"
+    }
+  ],
+  "pagination": {
+    "hasMore": true,
+    "nextCursor": "cm2x7viol123def456"
+  }
+}
+```
+
+### Violation object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique violation ID |
+| `summary` | string | Human-readable description of the violation |
+| `type` | string | Violation type |
+| `status` | string | Current status |
+| `severity` | string | Severity level |
+| `policyId` | string | ID of the policy that was triggered |
+| `ruleName` | string | Specific rule that matched |
+| `ruleDescription` | string | Human-readable rule description |
+| `repoName` | string | Repository name |
+| `trigger` | object | What triggered the violation |
+| `trigger.type` | string | Trigger type (e.g. `pull_request`, `push`, `scan`) |
+| `trigger.ref` | string | Reference that triggered it (PR number, commit SHA, etc.) |
+| `trigger.branch` | string | Branch name |
+| `trigger.url` | string \| null | Link to the triggering event |
+| `actor` | object | Who triggered it |
+| `actor.name` | string | Actor's display name |
+| `actor.email` | string | Actor's email |
+| `actionTaken` | string | What enforcement action was taken (e.g. `blocked`, `warned`) |
+| `triggeredAt` | string | When the violation was triggered (ISO 8601) |
+| `createdAt` | string | Record creation timestamp |
+| `updatedAt` | string | Last update timestamp |

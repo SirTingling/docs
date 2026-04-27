@@ -1,0 +1,82 @@
+---
+title: Jenkins
+description: Pipeline security analysis for Jenkins
+icon: "hammer"
+---
+
+Connect Jenkins to scan pipeline configurations for security risks — hardcoded secrets, insecure plugins, overly permissive permissions.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Configure webhook in Jenkins">
+    In Jenkins, go to **Manage Jenkins > Configure System > Notification Endpoints** (or use the Generic Webhook Trigger Plugin). Set the webhook URL to:
+
+    ```
+    https://cloud.takumo.io/api/integrations/jenkins/webhook
+    ```
+  </Step>
+  <Step title="Add API credentials">
+    In Takumo, go to **Dashboard > Settings > Integrations > Jenkins**. Enter your Jenkins instance URL and an API token.
+  </Step>
+  <Step title="Select pipelines">
+    Choose which Jenkins jobs or pipelines Takumo should analyze.
+  </Step>
+</Steps>
+
+---
+
+## What Takumo analyzes
+
+| Check | Severity | Description |
+|-------|----------|-------------|
+| Hardcoded credentials | Critical | Secrets in `Jenkinsfile` or pipeline scripts |
+| Insecure script approvals | High | Over-permissive script security sandbox exceptions |
+| Missing credentials binding | Medium | Using plain text instead of Jenkins credentials plugin |
+| Untrusted shared libraries | Medium | Loading pipeline libraries from unverified sources |
+| Missing build artifact signing | Low | Artifacts uploaded without integrity verification |
+
+---
+
+## Webhook events
+
+Jenkins sends build events to Takumo via webhook. Supported events:
+
+| Event | When it fires |
+|-------|--------------|
+| `jenkins.build.started` | Pipeline run begins |
+| `jenkins.build.completed` | Pipeline run finishes (success or failure) |
+| `jenkins.pipeline.changed` | Jenkinsfile or pipeline configuration modified |
+
+---
+
+## Pipeline analysis
+
+When Takumo receives a webhook event:
+
+1. Fetches the `Jenkinsfile` and pipeline configuration via Jenkins API
+2. Parses pipeline steps, credentials usage, and plugin calls
+3. Runs security analysis against known risk patterns
+4. Creates findings in the [Pipelines dashboard](/dashboard/pipelines)
+5. For critical findings, creates an [Issue](/dashboard/issues) and triggers notifications
+
+---
+
+## Limitations
+
+- **Jenkins 2.x+ only** — Pipeline support requires Jenkins 2.x with Pipeline plugin
+- **Read-only** — Takumo analyzes pipelines but does not create auto-remediation PRs for Jenkins (no native PR model)
+- **No Blue Ocean integration** — Works with classic Jenkins UI and Pipeline DSL
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Pipelines" icon="git-branch" href="/dashboard/pipelines">
+    Pipeline security dashboard
+  </Card>
+  <Card title="GitHub" icon="github" href="/integrations/github">
+    GitHub Actions integration
+  </Card>
+</CardGroup>

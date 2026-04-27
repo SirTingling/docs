@@ -1,0 +1,76 @@
+---
+title: PagerDuty
+description: Create PagerDuty incidents from findings with bidirectional status sync
+icon: "siren"
+---
+
+Connect PagerDuty to create incidents when Takumo detects security issues. Status syncs bidirectionally — resolve in PagerDuty, and Takumo updates the issue.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Create a REST API key">
+    Go to [PagerDuty API Access settings](https://app.pagerduty.com/api-keys). Click **Create New API Key**, give it a description (e.g. "Takumo"), and select **Read/Write** access.
+  </Step>
+  <Step title="Copy the API key and your user email">
+    Copy the API key (starts with `u+`) and note the email address of a valid PagerDuty user. The email is required by the PagerDuty API for incident creation.
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard → Settings → Integrations → PagerDuty**. Enter the REST API key and your PagerDuty user email, then click **Connect**.
+  </Step>
+</Steps>
+
+---
+
+## How incidents are created
+
+When Takumo detects an issue that meets your notification threshold:
+
+1. Maps the issue to a PagerDuty incident format:
+   - **Title** — Issue title with severity and category
+   - **Description** — Full details including file location, detection context, and remediation guidance
+   - **Urgency** — Mapped from Takumo severity (Critical/High → high, Medium/Low → low)
+   - **Service** — Routed to the PagerDuty service you configure
+
+2. Creates the incident via the PagerDuty REST API
+
+3. Stores the incident reference on the Takumo issue for bidirectional tracking
+
+---
+
+## Bidirectional status sync
+
+| Direction | What syncs |
+|-----------|-----------|
+| **Takumo → PagerDuty** | Issue created → PagerDuty incident created. Issue resolved → incident resolved. |
+| **PagerDuty → Takumo** | Incident acknowledged/resolved (via webhook) → Takumo issue status updated. |
+
+---
+
+## Credentials reference
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **REST API Token** | Yes | General access REST API key from PagerDuty API Access settings |
+| **PagerDuty User Email** | Yes | Email of a valid PagerDuty user (required by the API for incident creation) |
+
+---
+
+## Limitations
+
+- **PagerDuty REST API only** — Events API v2 (for alerts) is not used. Takumo creates full incidents.
+- **One service per org** — All Takumo incidents go to a single PagerDuty service. Use PagerDuty event rules for further routing.
+- **Read/Write key required** — Read-only keys cannot create incidents.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Jira" icon="ticket" href="/integrations/jira">
+    Create Jira tickets from findings
+  </Card>
+  <Card title="Notifications" icon="bell" href="/dashboard/notifications">
+    Configure alert delivery
+  </Card>
+</CardGroup>

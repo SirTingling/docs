@@ -1,0 +1,71 @@
+---
+title: Streaming
+description: Event pipeline management
+icon: "radio"
+---
+
+Manage your event pipeline from the dashboard. Create destinations, set up subscriptions, monitor the dead letter queue, and track delivery receipts.
+
+<Note>Requires `streaming.read` permission to view, `streaming.write` to manage, `streaming.admin` for full control. Billing Admins have no streaming access.</Note>
+
+## Pages
+
+### Overview
+
+Pipeline health at a glance:
+- Active destinations count
+- Active subscriptions count
+- Events delivered (last 24h)
+- Failed deliveries (DLQ size)
+
+### Destinations
+
+Where events are delivered. Create and manage:
+
+| Type | Configuration |
+|------|--------------|
+| **Webhook** | URL, headers, authentication |
+| **Slack** | Workspace, channel |
+| **Email** | Recipients, template |
+| **Custom** | Any HTTP endpoint with custom headers |
+
+Credentials are AES-256-GCM encrypted at rest. Click **Test** to send a sample event.
+
+### Subscriptions
+
+Filters that route events to destinations. Each subscription:
+- Targets one destination
+- Filters by event type (`secret.detected`, `policy.violated`, `scan.complete`)
+- Filters by severity
+- Filters by repository (all or specific)
+
+One destination can have multiple subscriptions. Enable/disable without deleting.
+
+### Dead Letter Queue
+
+Failed deliveries land here. For each failed event:
+- Failure reason and HTTP response code
+- Original event payload
+- Retry count
+- **Retry** button for individual events
+- **Bulk retry** for clearing the queue
+
+### Receipts
+
+Every delivery attempt is tracked:
+- Delivery status (success, failed, pending)
+- HTTP response code
+- Timestamp
+- Duration
+- Retry count
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Streaming Concept" icon="radio" href="/concepts/streaming">
+    How the event pipeline works
+  </Card>
+  <Card title="Webhooks" icon="zap" href="/api/webhooks">
+    Webhook signature verification
+  </Card>
+</CardGroup>

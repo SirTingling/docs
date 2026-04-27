@@ -7,6 +7,91 @@ icon: "clock"
 # Changelog
 
 <AccordionGroup>
+  <Accordion title="v1.3.0 — Documentation Overhaul">
+    Complete rewrite of the documentation site. 113 pages across 8 tabs, all verified against source code.
+
+    - 80+ new pages: API endpoints, dashboard guides, integrations, Studio, deployment, concepts
+    - All API endpoint docs rewritten to match actual route handlers and response shapes
+    - 20 integration provider pages with setup guides sourced from the integration catalog
+    - Full deployment guides for on-prem, streaming, Brain, and Vault with accurate Helm values
+    - Studio extension docs covering scanning, transforms, Brain context, custom rules, and daemon management
+    - All 63 permissions documented in dot notation matching the permission system
+    - Error codes, plan limits, rate limiters, and credit costs verified against source
+    - 20 detection patterns documented against the engine with pattern IDs and token labels
+    - Roadmap updated: Vault service and Jira sync are now shipped
+  </Accordion>
+
+  <Accordion title="v1.2.0 — Takumo Stream">
+    Event pipeline for real-time routing and delivery. Destinations, subscriptions, dead letter queue, and receipt tracking.
+
+    - Stream Ingest service receives events via HTTP/gRPC, writes to NATS JetStream
+    - Stream Router routes events to destinations based on subscription filters
+    - Dashboard pages for destinations, subscriptions, DLQ, and receipts
+    - AES-256-GCM encrypted credentials for destination configs
+    - Dead letter queue with automatic retry and manual reprocessing
+    - Delivery receipts with status tracking
+    - 3 new permissions: `streaming.read`, `streaming.write`, `streaming.admin`
+  </Accordion>
+
+  <Accordion title="v1.1.0 — Brain Intelligence">
+    Workspace-aware code intelligence. 4 services that index your repos and serve contextual information to the extension and gateway.
+
+    - Brain Indexer scans repos, extracts functions, patterns, and boundaries
+    - Brain Embedding generates vector embeddings for semantic search
+    - Brain Pattern detects repeated coding patterns across your codebase
+    - Brain Query serves contextual queries from extensions and the gateway
+    - "Show Brain Context" command in the extension
+    - Relevant functions, established patterns, architecture boundaries, dependency context
+  </Accordion>
+
+  <Accordion title="v1.0.0 — Cloud Worker + Sentinel CI/CD">
+    Sentinel now runs on pull requests. The Cloud Worker consumes detection events and bridges GitHub, GitLab, and Bitbucket.
+
+    - GitHub App integration — Sentinel scans PR diffs, posts check run annotations
+    - Cloud Worker consumes NATS detection events for durable processing
+    - Bitbucket webhook sync
+    - Catch-up cron for missed events
+    - Dead letter events for failed processing
+    - Webhook relay at webhook.takumo.io/github fans out to all environments
+  </Accordion>
+
+  <Accordion title="v0.9.0 — Vault Service">
+    Cryptographic fingerprinting and salt management for deterministic tokenization.
+
+    - 9 gRPC+HTTP RPCs: fingerprint CRUD, salt management, rotation, verification
+    - Salt rotation for forward secrecy
+    - Fingerprints identify secrets without storing them
+    - 30 unit tests, 19 integration tests
+  </Accordion>
+
+  <Accordion title="v0.8.0 — Extension v0.5.x">
+    Major extension update with org policies, circuit breakers, and runtime daemon validation.
+
+    - Org policies auto-fetched on sign-in and daemon startup
+    - Daemon v0.3.0: circuit breaker (gateway + cloud), retry with full jitter, Prometheus metrics
+    - Runtime daemon version validation — stale daemons from previous sessions are detected and restarted
+    - Transform preview opens VS Code's native inline diff view
+    - All daemon HTTP calls retry up to 3 times with exponential backoff
+    - Device flow sign-in with browser-based authentication
+  </Accordion>
+
+  <Accordion title="v0.7.0 — Extension v0.4.x">
+    Enterprise daemon distribution and demo mode. Platform-specific VSIXs for VS Code Marketplace.
+
+    - Enterprise daemon distribution with platform-specific VSIXs (macOS Intel/ARM, Linux x64/ARM, Windows)
+    - Universal VSIX with auto-download for Cursor, Windsurf, and sideloaded installs
+    - 4-tier binary resolution: settings override, bundled, auto-downloaded, system PATH
+    - SHA256 checksum verification for all daemon binaries
+    - Cloud download proxy for private repo access
+    - Demo mode that auto-activates on first install (no account required)
+    - Real-time incident alerts via WebSocket
+    - AI code transforms with inline diff preview
+    - Brain workspace intelligence
+    - Device flow authentication
+    - Custom Sentinel rules from selected code
+    - 64 unit tests across 8 core modules
+  </Accordion>
+
   <Accordion title="v0.6.0 — Cloud Coordinator">
     Gateway Coordinator connects your gateways to the dashboard over gRPC. You can now see all running instances, their health, and manage join keys from a single page.
 
@@ -80,7 +165,6 @@ icon: "clock"
 
 What's coming next:
 
-- Sentinel API for standalone inbound code validation
 - OpenAI model routing through the gateway
-- User-defined custom detection patterns
-- CI/CD integration with pre-commit hooks and pipeline scanning
+- Extended Brain indexing for monorepo support
+- CI/CD pre-commit hooks with Sentinel scanning

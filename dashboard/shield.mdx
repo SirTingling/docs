@@ -1,0 +1,66 @@
+---
+title: Shield
+description: Outbound protection overview and stats
+icon: "shield"
+---
+
+The Shield page shows how Aegis Shield is performing across your organization — scans processed, secrets caught, tokenization stats, and protection trends.
+
+---
+
+## Overview metrics
+
+| Metric | Description |
+|--------|-------------|
+| **Total scans** | Code snippets processed through Shield |
+| **Secrets detected** | Unique secrets found and tokenized |
+| **Tokenization rate** | Percentage of requests that contained at least one secret |
+| **Rehydration success** | Percentage of tokens successfully restored in responses |
+
+---
+
+## Detection breakdown
+
+A chart shows detection volume by category over time:
+
+- **API keys** — AWS, Stripe, GitHub, generic API keys
+- **Connection strings** — Database URLs, Redis URIs
+- **Tokens** — JWTs, bearer tokens, session tokens
+- **Passwords** �� Hardcoded passwords in variable assignments
+- **Hostnames** — Internal hostnames and private URLs
+
+Each category links to the full [Supported Patterns](/patterns/supported) reference.
+
+---
+
+## Protection timeline
+
+The timeline chart visualizes Shield activity over 7, 30, or 90 days:
+
+- **Scans per day** — Volume of code passing through Shield
+- **Secrets per day** — Detection volume trend
+- **Top sources** — Which AI tools generate the most traffic (Cursor, Copilot, Claude Code, etc.)
+
+---
+
+## How Shield data is collected
+
+Shield metrics come from the gateway. Every request that passes through the Takumo gateway (SaaS or on-prem) reports:
+
+1. Number of secrets detected in the outbound request
+2. Categories of secrets found
+3. Number of tokens rehydrated in the inbound response
+4. Latency added by tokenization/rehydration
+
+No secret values are ever transmitted — only metadata (category, count, timing).
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Aegis Shield" icon="shield" href="/concepts/aegis-shield">
+    How outbound tokenization works
+  </Card>
+  <Card title="AI Tools" icon="zap" href="/ai-tools/overview">
+    Connect your AI tools to the gateway
+  </Card>
+</CardGroup>

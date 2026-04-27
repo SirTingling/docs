@@ -40,13 +40,21 @@ For organizations that need full control over where their data flows. Deploy the
       --from-literal=database-url-direct="postgres://user:pass@host:5432/takumo"
     ```
 
-    Create the JWT signing and verification keys:
+    Create the JWT signing and verification keys for the coordinator:
 
     ```bash
     kubectl create secret generic coordinator-jwt-signing \
       --namespace takumo \
       --from-file=signing.pem=./signing.pem \
       --from-file=verification.pem=./verification.pem
+    ```
+
+    Create the JWT public key for the gateway (this is the same `verification.pem` file, stored under the key `public.pem`):
+
+    ```bash
+    kubectl create secret generic aegis-jwt-key \
+      --namespace takumo \
+      --from-file=public.pem=./verification.pem
     ```
 
     Create the image pull secret for `ghcr.io`:
@@ -63,16 +71,21 @@ For organizations that need full control over where their data flows. Deploy the
   <Step title="Deploy the coordinator">
     The coordinator uses the `manual` secrets provider for on-prem, meaning it expects you to create Kubernetes secrets yourself (done in the previous step).
 
+    Deploy initially with the join key disabled (you'll create it in a later step):
+
     ```bash
     helm install gateway-coordinator takumo/gateway-coordinator \
       --namespace takumo \
-      --values https://charts.takumo.io/gateway-coordinator/values-onprem.yaml
+      --values https://charts.takumo.io/gateway-coordinator/values-onprem.yaml \
+      --set secrets.joinKey.enabled=false
     ```
 
     This sets:
     - `secrets.provider: manual`
     - `secrets.database.enabled: true` with secret name `coordinator-database`
     - `secrets.jwtSigning.enabled: true` with secret name `coordinator-jwt-signing`
+
+    <Note>The base chart defaults to `cloud-database` for the database secret name. The on-prem values overlay changes this to `coordinator-database` to match the secret created above.</Note>
 
     Verify the coordinator is running:
 
@@ -102,11 +115,15 @@ For organizations that need full control over where their data flows. Deploy the
     Go to **Settings > Gateway** in the dashboard and click **Create Join Key**. Give it a name (e.g., `production-cluster`). Copy the key immediately.
   </Step>
 
-  <Step title="Configure the gateway with the join key">
-    Create the join key secret:
+  <Step title="Configure the gateway and coordinator with the join key">
+    Create the join key secrets for both the gateway and the coordinator:
 
     ```bash
     kubectl create secret generic aegis-join-key \
+      --namespace takumo \
+      --from-literal=join-key="your-join-key-here"
+
+    kubectl create secret generic coordinator-join-key \
       --namespace takumo \
       --from-literal=join-key="your-join-key-here"
     ```
@@ -119,6 +136,15 @@ For organizations that need full control over where their data flows. Deploy the
       --reuse-values \
       --set secrets.joinKey.enabled=true \
       --set secrets.joinKey.secretName=aegis-join-key
+    ```
+
+    Upgrade the coordinator to use it:
+
+    ```bash
+    helm upgrade gateway-coordinator takumo/gateway-coordinator \
+      --namespace takumo \
+      --reuse-values \
+      --set secrets.joinKey.enabled=true
     ```
   </Step>
 

@@ -1,0 +1,73 @@
+---
+title: Limits
+description: Plan limits and current consumption
+icon: "gauge"
+---
+
+The Limits page shows your organization's current consumption against plan quotas — how many scans, credits, API keys, members, and repos you've used.
+
+---
+
+## Current usage vs limits
+
+| Resource | What it tracks |
+|----------|---------------|
+| **Scans** | Scans processed this billing cycle vs. plan maximum |
+| **Credits** | Credits consumed vs. plan allocation |
+| **API keys** | Active keys vs. plan maximum |
+| **Members** | Team members vs. plan maximum |
+| **Repositories** | Connected repos vs. plan maximum |
+
+Each resource shows a progress bar with current usage, the limit, and percentage consumed.
+
+---
+
+## Plan limits by tier
+
+| Resource | Free | Developer | Pro | Enterprise |
+|----------|------|-----------|-----|------------|
+| Credits/month | 1,000 | 5,000 | 5,000/seat | Unlimited |
+| Secret scans/month | 1,000 | 5,000 | 10,000 | Unlimited |
+| Vulnerability scans/month | 500 | 2,500 | 5,000 | Unlimited |
+| Auto-fix/month | 500 | 2,500 | 5,000 | Unlimited |
+| API requests/month | 10,000 | 50,000 | 100,000 | Unlimited |
+| API keys | 3 | 10 | 20 | Unlimited |
+| Members | 5 | 5 | 25 | Unlimited |
+| Repositories | 3 | 10 | Unlimited | Unlimited |
+| Pipelines | 5 | 25 | 100 | Unlimited |
+| Integrations | 3 | 10 | 25 | Unlimited |
+| Concurrent scans | 2 | 3 | 5 | 50 |
+| Policies | 5 | 15 | 25 | Unlimited |
+
+---
+
+## What happens at the limit
+
+| Resource | Behavior |
+|----------|----------|
+| **Scans** | New scans are rejected with `429 Rate Limited`. Existing data remains accessible. |
+| **Credits** | Credit-consuming operations (scans, reviews, fix suggestions) are rejected. Existing data remains accessible. |
+| **API keys** | Cannot create new keys. Existing keys continue to work. |
+| **Members** | Cannot invite new members. Existing members retain access. |
+| **Repositories** | Cannot connect new repos. Existing repos continue to be monitored. |
+
+A warning banner appears when you reach 80% of any limit. At 100%, the affected feature stops and a notification is sent to the Owner and Billing Admin.
+
+---
+
+## Upgrading
+
+Click **Upgrade Plan** on the limits page to increase quotas. Changes take effect immediately — no waiting for the next billing cycle.
+
+See [Plan Comparison](/reference/plan-comparison) for a full feature comparison.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Usage" icon="bar-chart-3" href="/dashboard/usage">
+    Detailed usage analytics
+  </Card>
+  <Card title="Billing" icon="receipt" href="/dashboard/billing">
+    Manage your subscription
+  </Card>
+</CardGroup>

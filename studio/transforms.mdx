@@ -1,0 +1,94 @@
+---
+title: AI Transforms
+description: AI-powered code rewriting
+icon: "wand"
+---
+
+# AI Transforms
+
+Select code with security issues. Takumo rewrites it using AI. Preview the diff. Apply or dismiss.
+
+<Note>Transforms require authentication. Not available in demo mode.</Note>
+
+---
+
+## How it works
+
+<Steps>
+  <Step title="Select code">
+    Highlight code that has Sentinel diagnostics.
+  </Step>
+  <Step title="Run transform">
+    `Cmd+Shift+P` → **Takumo: Transform Selection**. Or right-click → **Transform Selection**.
+  </Step>
+  <Step title="AI rewrites">
+    The daemon sends your code to Aegis Shield. AI rewrites it to fix security issues. A validation scan runs on the output.
+  </Step>
+  <Step title="Preview diff">
+    VS Code's native inline diff view opens. You see exactly what changed.
+  </Step>
+  <Step title="Apply or dismiss">
+    **Apply** replaces your code. **Dismiss** discards the transform. Both are one click.
+  </Step>
+</Steps>
+
+---
+
+## Transform modes
+
+| Mode | Setting value | Behavior |
+|------|-------------|----------|
+| Manual | `"manual"` | Only runs via command palette or context menu |
+| Auto | `"auto"` | Fires automatically when an AI paste produces Sentinel issues |
+
+```json
+{
+  "takumo.transformMode": "manual"
+}
+```
+
+---
+
+## What you see
+
+The transform response includes:
+
+| Field | Description |
+|-------|-------------|
+| `transformed_code` | The rewritten code |
+| `original_issues` | Issues in the original code |
+| `validation.passed` | Whether the rewrite passes Sentinel |
+| `validation.remaining_issues` | Issues that persist after rewrite |
+| `credits_used` | Credits consumed |
+| `duration_ms` | Transform time |
+
+---
+
+## Transform model
+
+The AI model used for rewrites is configurable:
+
+```json
+{
+  "takumo.transformModel": "claude-sonnet-4-5"
+}
+```
+
+This is forwarded to Aegis Shield, which calls the specified model.
+
+---
+
+## Transform history
+
+The extension keeps up to 25 recent transforms in memory. View them in the side panel's transform history section.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Scanning" icon="scan" href="/studio/scanning">
+    How issues are detected before transforms
+  </Card>
+  <Card title="Transform API" icon="code" href="/api/transform">
+    Use transforms programmatically
+  </Card>
+</CardGroup>

@@ -1,0 +1,64 @@
+---
+title: Demo Mode
+description: Try Takumo without an account
+icon: "play"
+---
+
+# Demo Mode
+
+Demo mode lets you try Takumo without creating an account. Real-time scanning and secret detection work out of the box with built-in rules.
+
+---
+
+## How it activates
+
+Demo mode turns on automatically when:
+- No API key is configured
+- You haven't signed in via device flow
+- First install, fresh workspace
+
+The status bar shows **Takumo: Demo** in indigo (#6366f1) instead of the usual connected state.
+
+---
+
+## What works in demo mode
+
+| Feature | Available |
+|---------|-----------|
+| Real-time scanning | Yes |
+| Secret detection (30+ patterns) | Yes |
+| Inline diagnostics | Yes |
+| Quick-fix code actions | Yes |
+| Paste interception | Yes |
+| Clipboard monitoring | Yes |
+| AI transforms | No — requires auth |
+| Brain context | No — requires auth |
+| Custom rules | No — requires auth |
+| Org policies | No — requires auth |
+| Incident alerts | No — requires auth |
+| Audit trail | No — requires auth |
+
+---
+
+## Sign In to Unlock
+
+Throughout the extension, you'll see "Sign In to Unlock" CTAs where auth-gated features would appear. Click any of them to start the device flow.
+
+A feature comparison banner in the side panel shows demo vs full capabilities.
+
+---
+
+## Manual control
+
+Toggle demo mode explicitly:
+
+- **Command:** `Takumo: Toggle Demo Mode`
+- **Setting:** `takumo.demoMode: true`
+
+Even after signing in, you can switch to demo mode to test with built-in rules only.
+
+---
+
+<Card title="Getting Started" icon="rocket" href="/studio/getting-started">
+  Your first 5 minutes — works in demo mode
+</Card>

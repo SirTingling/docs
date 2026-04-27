@@ -1,0 +1,51 @@
+---
+title: Notifications
+description: Alerts and notification preferences
+icon: "bell"
+---
+
+The notification center surfaces incidents, policy violations, member changes, and billing alerts. Configure which events trigger notifications and how they're delivered.
+
+## Notification types
+
+| Type | Description |
+|------|-------------|
+| **Incident alert** | Security violation detected in a scan or PR |
+| **Policy violation** | A governance policy was triggered |
+| **Member change** | Someone joined or left the organization |
+| **Billing alert** | Credit threshold reached or plan change |
+
+## Delivery channels
+
+| Channel | Description |
+|---------|-------------|
+| **In-app** | Notification bell in the dashboard (always on) |
+| **Email** | Sent to your registered email address |
+| **Webhook** | HTTP POST to your configured endpoint |
+| **Extension** | VS Code notification via the daemon WebSocket |
+
+## Preferences
+
+Navigate to **Settings > Notifications** to configure:
+
+- Which event types trigger notifications
+- Which channels each event type uses
+- Email frequency (immediate, daily digest, weekly digest)
+- Severity threshold (e.g., only critical incidents via email)
+
+## Real-time
+
+Dashboard notifications arrive in real-time via WebSocket. No page refresh needed. The notification bell shows unread count.
+
+In the extension, incident alerts arrive as VS Code notifications with action buttons (acknowledge, view details).
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="zap" href="/api/webhooks">
+    Webhook delivery and signature verification
+  </Card>
+  <Card title="Incidents" icon="bell" href="/studio/incidents">
+    Incidents in the extension
+  </Card>
+</CardGroup>

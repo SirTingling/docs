@@ -6,17 +6,23 @@ icon: "zap"
 
 Webhooks deliver event notifications to your URL in real-time. Configure them in **Settings > Notifications** in the dashboard.
 
-<Note>Webhooks are available on Enterprise plans. See [Plan Comparison](/reference/plan-comparison) for details.</Note>
+<Note>Webhook delivery is handled by the **Stream Router** service, not the Cloud API directly. The Cloud API records events and publishes them to the NATS stream pipeline. The Stream Router picks them up, signs them, and delivers them to your configured endpoints with retries. See [Streaming](/dashboard/streaming) for pipeline details.</Note>
 
 ## Supported events
 
 | Event | Description |
 |-------|-------------|
 | `secret.detected` | A secret was found and tokenized in an outbound request |
-| `policy.violated` | A policy rule was triggered during a scan |
+| `policy.violated` | A policy rule was triggered during a Sentinel review |
 | `key.revoked` | An API key was revoked |
-| `member.joined` | A new member joined the organization |
+| `key.created` | A new API key was created |
+| `member.invited` | New member(s) invited to the organization |
 | `member.removed` | A member was removed from the organization |
+| `member.role_changed` | A member's role was changed |
+| `integration.connected` | An integration was connected |
+| `integration.disconnected` | An integration was disconnected |
+| `rule.published` | A security rule was published |
+| `digest.sent` | A weekly digest email was sent |
 
 ## Payload format
 
@@ -31,8 +37,7 @@ Every webhook delivery sends a JSON POST request to your endpoint:
     "request_id": "req_d4e5f6",
     "secret_type": "aws_access_key",
     "action": "tokenized"
-  },
-  "signature": "sha256=abc123..."
+  }
 }
 ```
 
@@ -62,9 +67,10 @@ The `data` field varies by event type.
   "timestamp": "2026-03-13T16:01:00Z",
   "organization_id": "org_a1b2c3",
   "data": {
-    "request_id": "req_g7h8i9",
-    "policy_id": "pol_j1k2l3",
-    "policy_name": "block-production-secrets",
+    "rule_name": "block-production-secrets",
+    "rule_description": "Blocks production credentials from being shared",
+    "severity": "critical",
+    "repository": "acme/backend",
     "action": "blocked"
   }
 }
@@ -85,17 +91,16 @@ The `data` field varies by event type.
 }
 ```
 
-### member.joined
+### member.invited
 
 ```json
 {
-  "event": "member.joined",
+  "event": "member.invited",
   "timestamp": "2026-03-13T16:03:00Z",
   "organization_id": "org_a1b2c3",
   "data": {
-    "user_id": "user_p7q8r9",
-    "email": "dev@example.com",
-    "role": "MEMBER"
+    "count": 2,
+    "emails": ["dev@example.com", "lead@example.com"]
   }
 }
 ```
@@ -109,15 +114,14 @@ The `data` field varies by event type.
   "organization_id": "org_a1b2c3",
   "data": {
     "user_id": "user_p7q8r9",
-    "email": "dev@example.com",
-    "removed_by": "user_s1t2u3"
+    "email": "dev@example.com"
   }
 }
 ```
 
 ## Verifying signatures
 
-Every webhook includes a signature in the `X-Takumo-Signature` header. Verify it to confirm the payload came from Takumo and wasn't tampered with.
+Every webhook includes a signature in the `X-Takumo-Signature` header. Verify it to confirm the payload came from Takumo and was not tampered with.
 
 The signature is an HMAC-SHA256 of the raw request body, using your webhook secret as the key.
 
@@ -187,6 +191,16 @@ def handle_webhook():
 
 <Warning>Always use constant-time comparison (like `timingSafeEqual` or `hmac.compare_digest`) when verifying signatures. Standard string comparison is vulnerable to timing attacks.</Warning>
 
+## Delivery architecture
+
+Webhook delivery follows this pipeline:
+
+1. The Cloud API (or worker) records an event and publishes it to NATS JetStream.
+2. The **Stream Router** consumes events from NATS, matches them against your configured subscription filters, signs the payload with your webhook secret, and delivers the POST request.
+3. Failed deliveries are retried with exponential backoff. After all retries are exhausted, the event lands in the Dead Letter Queue (DLQ).
+
+You can manage destinations, subscriptions, and view the DLQ in the [Streaming dashboard](/dashboard/streaming).
+
 ## Retry policy
 
 Failed deliveries are retried with exponential backoff:
@@ -197,7 +211,7 @@ Failed deliveries are retried with exponential backoff:
 | 2nd retry | 10 seconds |
 | 3rd retry | 60 seconds |
 
-After 3 failed attempts, the delivery is marked as failed. Failed deliveries are visible in the dashboard under **Settings > Notifications > Delivery Log**.
+After 3 failed attempts, the delivery is moved to the Dead Letter Queue. Failed deliveries are visible in the dashboard under **Streaming > DLQ**.
 
 A delivery is considered failed if:
 
@@ -209,7 +223,18 @@ A delivery is considered failed if:
 
 - **Respond quickly.** Return a `200` status code within 5 seconds. Do heavy processing asynchronously after acknowledging receipt.
 - **Verify every signature.** Never process a webhook without checking `X-Takumo-Signature`.
-- **Handle duplicates.** In rare cases, the same event may be delivered more than once. Use `request_id` or `timestamp` to deduplicate.
+- **Handle duplicates.** In rare cases, the same event may be delivered more than once. Use the event timestamp and type to deduplicate.
 - **Use HTTPS.** Webhook URLs must use HTTPS. HTTP endpoints are rejected during configuration.
 
 <Tip>Use a service like webhook.site to test your webhook endpoint before configuring it in production.</Tip>
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Streaming" icon="radio" href="/dashboard/streaming">
+    Manage destinations and subscriptions
+  </Card>
+  <Card title="Notifications" icon="bell" href="/api/notifications">
+    In-app notification API
+  </Card>
+</CardGroup>

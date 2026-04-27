@@ -1,0 +1,102 @@
+---
+title: Elasticsearch
+description: Index security events into Elasticsearch or OpenSearch
+icon: "search"
+---
+
+<Note>Requires an Enterprise plan.</Note>
+
+Index security events from Takumo into Elasticsearch or OpenSearch. Detections, policy violations, and incidents are written to your cluster for search, visualization, and alerting.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Prepare your cluster">
+    Ensure your Elasticsearch (or OpenSearch) cluster is reachable from the internet or your network, and that an API key with write permissions is available. For unauthenticated clusters, no API key is needed.
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard > Settings > Integrations > Elasticsearch**. Enter your cluster URL and (optionally) an API key.
+  </Step>
+  <Step title="Verify connection">
+    Takumo sends a health check to `{clusterUrl}/_cluster/health`. If the cluster responds, the integration shows as connected.
+  </Step>
+</Steps>
+
+---
+
+## Credential fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **Cluster URL** | URL | Yes | Your Elasticsearch or OpenSearch endpoint (e.g. `https://elasticsearch.example.com:9200`) |
+| **API Key** | Password | No | Base64-encoded API key. Leave blank for unauthenticated clusters |
+
+---
+
+## Health check
+
+Takumo verifies the connection by sending a `GET` request to:
+
+```
+{clusterUrl}/_cluster/health
+```
+
+If an API key is provided, it is sent as a bearer token in the `Authorization` header. A successful response confirms the cluster is reachable and the integration is healthy.
+
+---
+
+## OpenSearch compatibility
+
+This integration works with both Elasticsearch and OpenSearch. The same credential fields and health check apply. Takumo uses the standard `_cluster/health` and `_bulk` APIs, which are compatible with both.
+
+---
+
+## Index structure
+
+Takumo writes events to a date-based index pattern:
+
+```
+takumo-events-YYYY.MM.DD
+```
+
+Each document includes:
+
+| Field | Description |
+|-------|-------------|
+| `@timestamp` | ISO 8601 timestamp of the event |
+| `event_type` | `secret_detection`, `policy_violation`, `sentinel_finding`, or `incident` |
+| `severity` | `critical`, `high`, `medium`, or `low` |
+| `repository` | Repository where the event was detected |
+| `file_path` | File path (if applicable) |
+| `rule` | Rule or pattern that triggered the event |
+| `details` | Full event payload |
+
+---
+
+## What gets indexed
+
+| Event type | Description |
+|-----------|-------------|
+| Secret detection | A secret or credential found in code |
+| Policy violation | A custom rule triggered on a commit or PR |
+| Sentinel finding | AI review flagged a security issue |
+| Incident | A critical issue was escalated |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Splunk" icon="activity" href="/integrations/splunk">
+    Stream events to Splunk via HEC
+  </Card>
+  <Card title="Datadog" icon="bar-chart" href="/integrations/datadog">
+    Send metrics and events to Datadog
+  </Card>
+  <Card title="Custom Webhook" icon="webhook" href="/integrations/custom-webhook">
+    Forward events to any HTTP endpoint
+  </Card>
+  <Card title="Streaming" icon="radio" href="/concepts/streaming">
+    Build custom integrations with event streaming
+  </Card>
+</CardGroup>

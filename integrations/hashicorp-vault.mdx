@@ -1,0 +1,145 @@
+---
+title: HashiCorp Vault
+description: Correlate leaked secrets with Vault-managed credentials for instant rotation
+icon: "lock"
+---
+
+<Note>Requires an Enterprise plan.</Note>
+
+Connect HashiCorp Vault to correlate leaked secrets with Vault-managed credentials. When Takumo detects a secret in your code, it checks whether the credential is managed by Vault -- enabling instant rotation and reducing mean time to remediation.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Enable a KV secrets engine">
+    Enable a KV secrets engine (v1 or v2) on your Vault server if not already present.
+  </Step>
+  <Step title="Configure authentication">
+    Create an AppRole (recommended) or generate a token with read access to the mount path.
+
+    <a href="#authentication">See authentication details below.</a>
+  </Step>
+  <Step title="Note AppRole credentials">
+    For AppRole: note the Role ID and generate a Secret ID. For token auth: copy the Vault token.
+  </Step>
+  <Step title="Connect in Takumo">
+    Enter the Vault address, mount path, and credentials in **Dashboard > Settings > Integrations > HashiCorp Vault**, then click **Connect**.
+  </Step>
+</Steps>
+
+---
+
+## Credential fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **Vault Address** | URL | Yes | Your Vault server address (e.g. `https://vault.example.com:8200`). HTTPS only (localhost allowed for dev) |
+| **Namespace** | Text | No | Vault Enterprise namespace (e.g. `admin/team-a`). Optional |
+| **Mount Path** | Text | Yes | The KV engine mount path, without leading slash (e.g. `secret`) |
+| **KV Version** | Select | Yes | `KV v2 (versioned)` or `KV v1 (legacy)`. Most modern deployments use v2 |
+| **Authentication** | Select | Yes | `AppRole (recommended)` or `Token` |
+
+### AppRole fields (visible when Authentication = AppRole)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **Role ID** | Text | Yes | The AppRole Role ID (e.g. `db02de05-fa39-4855-059b-67221c5c2f63`) |
+| **Secret ID** | Password | Yes | The AppRole Secret ID (e.g. `6a174c20-f6de-a53c-74d2-6018fcceff64`) |
+| **AppRole Mount Path** | Text | No | Defaults to `approle` |
+
+### Token fields (visible when Authentication = Token)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **Vault Token** | Password | Yes | A Vault token (e.g. `hvs.xxxxxxxxxxxxxxxxxxxxxxxx`). Requires read access to secret mounts |
+
+### Optional
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **CA Certificate** | Textarea | No | PEM-encoded certificate for private CAs |
+
+---
+
+## Authentication
+
+### AppRole (recommended)
+
+AppRole is the recommended auth method for machine-to-machine access. It provides short-lived tokens with scoped permissions.
+
+1. Enable AppRole auth if not already present:
+   ```bash
+   vault auth enable approle
+   ```
+
+2. Create a policy with read access to your KV mount:
+   ```bash
+   vault policy write takumo-read - <<EOF
+   path "secret/data/*" {
+     capabilities = ["read", "list"]
+   }
+   path "secret/metadata/*" {
+     capabilities = ["read", "list"]
+   }
+   EOF
+   ```
+
+3. Create an AppRole bound to the policy:
+   ```bash
+   vault write auth/approle/role/takumo \
+     token_policies="takumo-read" \
+     token_ttl=1h \
+     token_max_ttl=4h
+   ```
+
+4. Get the Role ID and generate a Secret ID:
+   ```bash
+   vault read auth/approle/role/takumo/role-id
+   vault write -f auth/approle/role/takumo/secret-id
+   ```
+
+### Token
+
+For simpler setups, you can use a Vault token directly. The token must have read access to the KV mount specified in the connection. Token auth is less secure than AppRole because the token is long-lived and must be rotated manually.
+
+---
+
+## Health check
+
+The HashiCorp Vault integration uses a custom health check (not the generic catalog runner). Takumo authenticates with the provided credentials and attempts to list secrets at the configured mount path. A successful response confirms:
+
+- The Vault server is reachable
+- The credentials are valid
+- The mount path exists and is accessible
+
+---
+
+## How correlation works
+
+When Takumo detects a secret in your code:
+
+1. Extracts the credential fingerprint
+2. Queries the connected Vault instance for matching entries
+3. If a match is found, links the detection to the Vault-managed secret
+4. Provides one-click rotation guidance in the dashboard
+
+This reduces response time from hours of manual investigation to seconds of automated correlation.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="AWS Secrets Manager" icon="cloud" href="/integrations/aws-secrets-manager">
+    Map AWS secrets to Secrets Manager entries
+  </Card>
+  <Card title="Vault Concept" icon="lock" href="/concepts/vault">
+    How Takumo Vault works
+  </Card>
+  <Card title="Vault Deployment" icon="server" href="/deployment/vault">
+    Deploy the Vault service
+  </Card>
+  <Card title="Streaming" icon="radio" href="/concepts/streaming">
+    Build custom integrations with event streaming
+  </Card>
+</CardGroup>

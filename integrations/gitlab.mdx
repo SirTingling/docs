@@ -1,0 +1,105 @@
+---
+title: GitLab
+description: GitLab PAT integration for MR checks and scanning
+icon: "gitlab"
+---
+
+Connect GitLab to run Sentinel on merge requests, sync security features, and trigger Brain indexing. Works with GitLab.com and self-hosted instances.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Enter your Personal Access Token">
+    Go to **Dashboard → Settings → Integrations → GitLab** and click **Connect**. Enter a Personal Access Token (PAT) with `api` scope. For self-hosted instances, also enter your GitLab URL.
+  </Step>
+  <Step title="Select projects">
+    Takumo fetches all projects you have access to (minimum Reporter level). Select which projects to track.
+  </Step>
+  <Step title="Configure webhook">
+    Takumo registers a webhook on each selected project for push and merge request events.
+  </Step>
+</Steps>
+
+### Self-hosted GitLab
+
+For self-hosted instances, enter your GitLab URL before connecting:
+
+```
+https://gitlab.yourcompany.com
+```
+
+Takumo uses the custom API base URL for all API calls. Your GitLab instance must be reachable from Takumo Cloud (or from your on-prem deployment).
+
+---
+
+## What happens on a merge request
+
+When an MR is opened or updated, Takumo:
+
+1. Evaluates custom policies against changed files
+2. Runs Sentinel AI review (if enabled)
+3. Posts a comment on the MR with findings
+4. Updates the MR's external status
+
+The same rate limits and draft/bot skipping logic apply as with GitHub.
+
+---
+
+## Repository sync
+
+Takumo syncs the following for each connected project:
+
+| Feature | What Takumo checks |
+|---------|-------------------|
+| **Branch protection** | Protected branches, required approvals, push rules |
+| **CODEOWNERS** | Parses `CODEOWNERS` file for ownership data |
+| **CI security** | Parses `.gitlab-ci.yml` for SAST, secret detection, dependency scanning jobs |
+| **Security findings** | Vulnerability scanning results (requires GitLab Ultimate) |
+
+---
+
+## CI/CD analysis
+
+Takumo parses your `.gitlab-ci.yml` and detects:
+
+- SAST jobs (e.g., `sast`, `semgrep-sast`)
+- Secret detection jobs
+- Dependency scanning jobs
+- Container scanning jobs
+
+If these are missing, Takumo flags the gap in the repository's compliance score.
+
+---
+
+## Plan limits
+
+The number of GitLab projects you can connect depends on your Takumo plan. Projects are sorted by last activity — most active repos appear first during selection.
+
+---
+
+## Brain indexing
+
+Push events to connected projects trigger incremental Brain re-indexing, the same as GitHub.
+
+---
+
+## Webhook events
+
+| Event | Action |
+|-------|--------|
+| Merge request (open, update) | Policy check + Sentinel review |
+| Push | Brain re-indexing + compliance sync |
+| Pipeline completion | Update CI/CD metrics |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="GitHub Integration" icon="github" href="/integrations/github">
+    GitHub App setup
+  </Card>
+  <Card title="Bitbucket Integration" icon="code" href="/integrations/bitbucket">
+    Bitbucket Cloud and Server
+  </Card>
+</CardGroup>

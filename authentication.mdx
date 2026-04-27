@@ -6,9 +6,13 @@ icon: "key"
 
 # Authentication
 
-Every request to Takumo needs an API key. Keys authenticate your tools and track usage per organization.
+Every request to Takumo needs authentication. Two methods: API keys for programmatic access, device flow for editors.
 
-## Getting your first key
+## API keys
+
+Keys authenticate your tools and track usage per organization.
+
+### Getting your first key
 
 <Steps>
   <Step title="Sign in">
@@ -21,14 +25,14 @@ Every request to Takumo needs an API key. Keys authenticate your tools and track
     Click **Create Key**. Give it a name that tells you where it's used (`cursor-laptop`, `ci-pipeline`, `team-shared`).
   </Step>
   <Step title="Select scopes">
-    Choose what the key can do. Start with `shield:write` for basic secret protection.
+    Choose what the key can do. Start with `security.read` and `issues.read` for basic secret detection.
   </Step>
   <Step title="Copy the key">
     Copy the key immediately. It's shown once. You won't see it again.
   </Step>
 </Steps>
 
-## Setting the key
+### Setting the key
 
 ```bash
 export TAKUMO_API_KEY="tk_live_a1b2c3d4e5f6..."
@@ -47,23 +51,40 @@ API keys are 64-character hex strings with a prefix for identification:
 | `tk_live_` | Production |
 | `tk_test_` | Test / development |
 
-## Key scopes
+### Key scopes
 
-Scopes control what an API key can do. Assign the minimum scopes needed.
+Scopes control what an API key can do. Assign the minimum scopes needed. Permissions use dot notation.
 
 | Scope | What it controls |
 |-------|-----------------|
-| `shield:read` | Read scan results and detection history |
-| `shield:write` | Run scans, tokenize, and rehydrate |
-| `audit:read` | Read audit log entries |
-| `fleet:read` | View gateway fleet status |
-| `fleet:write` | Register and manage gateways |
-| `policy:read` | Read policy configurations |
-| `policy:write` | Create and update policies |
-| `org:read` | Read organization settings |
-| `org:write` | Update organization settings, manage members |
+| `org.read` | View organization settings |
+| `org.settings.edit` | Update organization settings |
+| `members.read` | View team members |
+| `members.invite` | Invite new members |
+| `members.remove` | Remove members |
+| `apikeys.read` | List API keys |
+| `apikeys.create` | Create new API keys |
+| `apikeys.revoke` | Revoke existing keys |
+| `policies.read` | View security policies |
+| `policies.create` | Create policies |
+| `policies.edit` | Edit policies |
+| `policies.delete` | Delete policies |
+| `issues.read` | View detected issues |
+| `issues.triage` | Triage and manage issues |
+| `violations.read` | View violations |
+| `fleet.read` | View gateway fleet status |
+| `fleet.manage` | Register and manage gateways |
+| `audit.read` | Read audit log entries |
+| `audit.export` | Export audit data |
+| `integrations.read` | View integrations |
+| `integrations.manage` | Configure integrations |
+| `billing.read` | View billing information |
+| `streaming.read` | View streaming configuration |
+| `streaming.write` | Manage streaming destinations |
 
-## Rotation
+See [API Keys](/dashboard/api-keys) for the full list of all 60 permissions across 18 categories.
+
+### Rotation
 
 Create a new key. Update your tools to use the new key. Revoke the old one. No grace period needed if you switch atomically.
 
@@ -74,13 +95,13 @@ For zero-downtime rotation:
 3. Verify requests succeed with the new key
 4. Revoke the old key
 
-## Revocation
+### Revocation
 
 Revocation takes effect within seconds. A revoked key returns `401 Unauthorized` immediately. There is no undo.
 
 To revoke a key: **Settings > API Keys > click the key > Revoke**.
 
-## Security
+### Security
 
 Keys are SHA-256 hashed before storage. Takumo never stores your key in plaintext. Constant-time comparison prevents timing attacks.
 
@@ -89,6 +110,81 @@ The raw key exists only at creation time. After you close the creation dialog, t
 <Warning>
 Your API key is shown once at creation. Copy it immediately. If you lose it, create a new one.
 </Warning>
+
+---
+
+## Device flow
+
+The device flow is for editors and CLI tools that can't easily receive browser redirects. The Takumo extension uses this by default.
+
+### How it works
+
+<Steps>
+  <Step title="Start the flow">
+    The extension (or CLI) calls `POST /auth/device/start` and gets a user code.
+  </Step>
+  <Step title="Open the browser">
+    You're shown a URL and a code like `BCDF-GHJK`. Click the URL or open it manually.
+  </Step>
+  <Step title="Approve in browser">
+    Sign in on cloud.takumo.io and enter the code. Approve the device.
+  </Step>
+  <Step title="Device is authenticated">
+    The extension polls `GET /auth/device/status` and detects authorization. You're signed in.
+  </Step>
+</Steps>
+
+### In the extension
+
+Run **Takumo: Sign In with Browser** from the command palette. The extension handles everything — opens the browser, shows the code, polls for completion.
+
+### Flow details
+
+```typescript
+// 1. Start the flow
+const start = await fetch('http://localhost:19532/auth/device/start', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ client_id: 'takumo-daemon' })
+});
+
+const {
+  device_code,
+  user_code,
+  verification_uri,
+  verification_uri_complete,
+  expires_in,
+  interval,
+} = await start.json();
+// device_code: "a1b2c3d4..." (64-char hex — secret, never shown to user)
+// user_code: "BCDF-GHJK"
+// verification_uri: "https://cloud.takumo.io/auth/device"
+// verification_uri_complete: "https://cloud.takumo.io/auth/device?code=BCDF-GHJK"
+// expires_in: 900 (15 minutes)
+// interval: 5 (poll every 5 seconds)
+
+// 2. User opens the URL and approves...
+
+// 3. Poll for status
+const status = await fetch('http://localhost:19532/auth/device/status');
+const { active, status: flowStatus, expires_in: remaining } = await status.json();
+// active: true while a flow is in progress
+// status: "pending" | "authorized" | "expired" | "denied"
+// expires_in: seconds remaining
+
+// 4. Cancel if needed
+await fetch('http://localhost:19532/auth/device/cancel', { method: 'POST' });
+```
+
+The `client_id` field is required. The only accepted value is `"takumo-daemon"`.
+
+The flow auto-expires after 15 minutes. If the user doesn't approve in time, the extension shows a retry button. The daemon polls the Cloud token endpoint every `interval` seconds (default 5). If the server responds with `slow_down`, the interval increases by 5 seconds per RFC 8628.
+
+<Note>
+Device flow authentication stores credentials securely in your OS keychain via VS Code's SecretStorage API. The API key is never written to disk in plaintext.
+</Note>
+
+---
 
 ## Plan limits
 
@@ -103,6 +199,11 @@ See [Plan Comparison](/reference/plan-comparison) for full details.
 
 ---
 
-<Card title="Next: Your First Request" icon="arrow-right" href="/first-request">
-  Send code through Takumo and see what happens
-</Card>
+<CardGroup cols={2}>
+  <Card title="Your First Request" icon="play" href="/first-request">
+    Send code through Takumo and see what happens
+  </Card>
+  <Card title="Install the Extension" icon="download" href="/studio/installation">
+    Set up Takumo in your editor
+  </Card>
+</CardGroup>

@@ -11,29 +11,38 @@ Every error response follows the same format. Parse it once, handle it everywher
 ```json
 {
   "error": {
-    "code": "RATE_LIMITED",
-    "message": "Rate limit exceeded. Try again in 30 seconds.",
-    "request_id": "req_a1b2c3d4"
+    "type": "rate_limited",
+    "message": "Rate limit exceeded. Try again in 30 seconds."
   }
 }
 ```
 
-- `code` -- Machine-readable string. Use this in your error handling logic.
+- `type` -- Machine-readable snake_case string. Use this in your error handling logic.
 - `message` -- Human-readable explanation. Suitable for logging but not for display to end users.
-- `request_id` -- Unique identifier that maps to the audit trail. Include it when contacting support.
+
+The request ID is returned in the `x-aegis-request-id` response header, not in the JSON body. Include it when contacting support.
 
 ## Status codes
 
-| Status | Code | When |
+| Status | Type | When |
 |--------|------|------|
-| `400` | `BAD_REQUEST` | Malformed JSON, missing required fields, invalid parameters |
-| `401` | `UNAUTHORIZED` | Missing API key, invalid key, expired key, revoked key |
-| `403` | `FORBIDDEN` | Key lacks required scope, feature not available on your plan |
-| `404` | `NOT_FOUND` | Endpoint doesn't exist, resource not found |
-| `429` | `RATE_LIMITED` | Too many requests. Respect the `Retry-After` header |
-| `500` | `INTERNAL_ERROR` | Server error. These are our fault -- contact support with the `request_id` |
-| `502` | `BAD_GATEWAY` | The upstream AI provider returned an error |
-| `503` | `SERVICE_UNAVAILABLE` | Gateway overloaded, coordinator unreachable, maintenance |
+| `400` | `invalid_request` | Malformed JSON, missing required fields, invalid parameters |
+| `400` | `tenant_required` | Request missing organization context |
+| `400` | `unsupported_provider` | AI provider not supported |
+| `401` | `unauthorized` | Missing API key, invalid key |
+| `401` | `token_expired` | API key or JWT has expired |
+| `401` | `token_revoked` | API key has been revoked |
+| `403` | `forbidden` | Key lacks required scope, feature not available on your plan |
+| `404` | `not_found` | Endpoint doesn't exist, resource not found |
+| `413` | `payload_too_large` | Request body exceeds maximum size |
+| `422` | `governance_violation` | Sentinel blocked the AI response (policy violation) |
+| `429` | `rate_limited` | Too many requests. Respect the `Retry-After` header |
+| `500` | `internal_error` | Server error. These are our fault — contact support with the `x-aegis-request-id` header |
+| `502` | `upstream_error` | The upstream AI provider returned an error |
+| `503` | `too_many_concurrent` | Too many concurrent requests. Check `Retry-After` header |
+| `503` | `circuit_open` | Circuit breaker tripped for upstream provider. Retry after cooldown |
+| `503` | `cloud_unavailable` | Coordinator or cloud service temporarily unreachable |
+| `504` | `upstream_timeout` | The upstream AI provider timed out |
 
 ## Handling errors in code
 
@@ -51,24 +60,37 @@ const response = await fetch("https://gateway.takumo.io/v1/tokenize", {
 
 if (!response.ok) {
   const { error } = await response.json();
+  const requestId = response.headers.get("x-aegis-request-id");
 
-  switch (error.code) {
-    case "UNAUTHORIZED":
+  switch (error.type) {
+    case "unauthorized":
+    case "token_expired":
+    case "token_revoked":
       // Key is invalid or revoked. Check your configuration.
       break;
-    case "RATE_LIMITED":
+    case "rate_limited":
       const retryAfter = Number(response.headers.get("Retry-After"));
       await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
       // Retry the request
       break;
-    case "BAD_GATEWAY":
+    case "too_many_concurrent":
+    case "circuit_open":
+    case "cloud_unavailable":
+      // Temporary overload. Wait and retry.
+      const svcRetry = Number(response.headers.get("Retry-After"));
+      await new Promise(resolve => setTimeout(resolve, svcRetry * 1000));
+      break;
+    case "upstream_error":
       // AI provider issue, not Takumo. Check provider status page.
       break;
+    case "governance_violation":
+      // Sentinel blocked the AI response. Review the detection.
+      break;
     default:
-      console.error(`Takumo error: ${error.code} - ${error.message}`);
+      console.error(`Takumo error: ${error.type} - ${error.message}`);
   }
 
-  throw new Error(`${error.code}: ${error.message} (${error.request_id})`);
+  throw new Error(`${error.type}: ${error.message} (${requestId})`);
 }
 ```
 
@@ -87,15 +109,16 @@ response = requests.post(
 
 if not response.ok:
     error = response.json()["error"]
+    request_id = response.headers.get("x-aegis-request-id")
 
-    if error["code"] == "RATE_LIMITED":
+    if error["type"] == "rate_limited":
         retry_after = int(response.headers.get("Retry-After", 30))
         time.sleep(retry_after)
         # Retry the request
-    elif error["code"] == "UNAUTHORIZED":
+    elif error["type"] in ("unauthorized", "token_expired", "token_revoked"):
         raise ValueError("Invalid API key")
     else:
-        raise RuntimeError(f"{error['code']}: {error['message']}")
+        raise RuntimeError(f"{error['type']}: {error['message']} ({request_id})")
 ```
 
 ```go Go
@@ -108,12 +131,12 @@ defer resp.Body.Close()
 if resp.StatusCode != http.StatusOK {
     var result struct {
         Error struct {
-            Code      string `json:"code"`
-            Message   string `json:"message"`
-            RequestID string `json:"request_id"`
+            Type    string `json:"type"`
+            Message string `json:"message"`
         } `json:"error"`
     }
     json.NewDecoder(resp.Body).Decode(&result)
+    requestID := resp.Header.Get("x-aegis-request-id")
 
     if resp.StatusCode == 429 {
         retryAfter, _ := strconv.Atoi(resp.Header.Get("Retry-After"))
@@ -121,7 +144,7 @@ if resp.StatusCode != http.StatusOK {
         // Retry
     }
 
-    return fmt.Errorf("%s: %s (%s)", result.Error.Code, result.Error.Message, result.Error.RequestID)
+    return fmt.Errorf("%s: %s (%s)", result.Error.Type, result.Error.Message, requestID)
 }
 ```
 
@@ -129,35 +152,33 @@ if resp.StatusCode != http.StatusOK {
 
 ## Common error scenarios
 
-### 400 BAD_REQUEST
+### 400 invalid_request
 
 ```json
 {
   "error": {
-    "code": "BAD_REQUEST",
-    "message": "Missing required field: content",
-    "request_id": "req_x1y2z3"
+    "type": "invalid_request",
+    "message": "Missing required field: content"
   }
 }
 ```
 
 Check that your request body is valid JSON with all required fields.
 
-### 401 UNAUTHORIZED
+### 401 unauthorized
 
 ```json
 {
   "error": {
-    "code": "UNAUTHORIZED",
-    "message": "Invalid or expired API key",
-    "request_id": "req_x1y2z3"
+    "type": "unauthorized",
+    "message": "Invalid or expired API key"
   }
 }
 ```
 
 Verify your API key is correct and hasn't been revoked. Keys use the `tk_live_` or `tk_test_` prefix.
 
-### 429 RATE_LIMITED
+### 429 rate_limited
 
 ```
 HTTP/1.1 429 Too Many Requests
@@ -165,32 +186,31 @@ Retry-After: 30
 X-RateLimit-Limit: 60
 X-RateLimit-Remaining: 0
 X-RateLimit-Reset: 1710360000
+x-aegis-request-id: req_a1b2c3d4
 ```
 
 ```json
 {
   "error": {
-    "code": "RATE_LIMITED",
-    "message": "Rate limit exceeded. Try again in 30 seconds.",
-    "request_id": "req_x1y2z3"
+    "type": "rate_limited",
+    "message": "Rate limit exceeded. Try again in 30 seconds."
   }
 }
 ```
 
 Wait for the number of seconds in `Retry-After`. Do not retry in a tight loop. See [Rate Limits](/api/rate-limits) for per-plan limits.
 
-### 502 BAD_GATEWAY
+### 502 upstream_error
 
 ```json
 {
   "error": {
-    "code": "BAD_GATEWAY",
-    "message": "Upstream provider returned 500",
-    "request_id": "req_x1y2z3"
+    "type": "upstream_error",
+    "message": "Upstream provider returned 500"
   }
 }
 ```
 
 This means the AI provider (Anthropic, OpenAI, etc.) had an error. Check the provider's status page. This is not a Takumo issue.
 
-<Tip>Always include the `request_id` when contacting support. It maps directly to the audit trail and helps us diagnose the issue quickly.</Tip>
+<Tip>Always include the `x-aegis-request-id` response header value when contacting support. It maps directly to the audit trail and helps us diagnose the issue quickly.</Tip>

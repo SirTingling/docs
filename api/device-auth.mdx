@@ -1,0 +1,290 @@
+---
+title: Device Authentication
+description: RFC 8628 device authorization grant for editors and CLI tools
+icon: "smartphone"
+---
+
+Device flow authentication for editors and CLI tools that cannot receive browser redirects. Implements [RFC 8628](https://datatracker.ietf.org/doc/html/rfc8628) (OAuth 2.0 Device Authorization Grant).
+
+## Flow overview
+
+<Steps>
+  <Step title="Request a device code">
+    The client sends `POST /api/v1/auth/device/code` with `client_id: "takumo-daemon"` and receives a `device_code`, `user_code`, and `verification_uri`.
+  </Step>
+  <Step title="User opens the verification URL">
+    The user opens `verification_uri_complete` in a browser, signs in if needed, and sees the code pre-filled.
+  </Step>
+  <Step title="Poll for a token">
+    The client polls `POST /api/v1/auth/device/token` with the `device_code` every `interval` seconds. The server responds with `authorization_pending` until the user acts.
+  </Step>
+  <Step title="User approves or denies">
+    In the browser, the user calls `POST /api/v1/auth/device/authorize` (approve) or `POST /api/v1/auth/device/deny` (deny). Both require an active session.
+  </Step>
+  <Step title="Client receives the token">
+    On the next poll, the token endpoint returns an `access_token` (an API key). The key is encrypted at rest and can only be retrieved once.
+  </Step>
+</Steps>
+
+---
+
+## POST /api/v1/auth/device/code
+
+Start a new device authorization flow. Returns a user code and verification URL.
+
+**Auth:** None (rate-limited by IP address)
+
+**Rate limit:** `authRateLimiter` -- 10 requests per 60s per IP
+
+### Request body
+
+```json
+{
+  "client_id": "takumo-daemon"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `client_id` | `string` | Yes | Must be `"takumo-daemon"` |
+
+### Response
+
+```json
+{
+  "device_code": "a1b2c3d4e5f6...",
+  "user_code": "ABCD-1234",
+  "verification_uri": "https://cloud.takumo.io/auth/device",
+  "verification_uri_complete": "https://cloud.takumo.io/auth/device?code=ABCD-1234",
+  "expires_in": 900,
+  "interval": 5
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `device_code` | `string` | Opaque code the client uses to poll for a token |
+| `user_code` | `string` | Short code the user enters in the browser |
+| `verification_uri` | `string` | Base URL the user should open |
+| `verification_uri_complete` | `string` | URL with the user code pre-filled |
+| `expires_in` | `number` | Seconds until the flow expires (**900 = 15 minutes**) |
+| `interval` | `number` | Minimum seconds between poll requests (starts at 5) |
+
+### Example
+
+```bash
+curl -X POST https://cloud.takumo.io/api/v1/auth/device/code \
+  -H "Content-Type: application/json" \
+  -d '{"client_id": "takumo-daemon"}'
+```
+
+---
+
+## POST /api/v1/auth/device/token
+
+Poll for the authorization result. The client calls this repeatedly at the `interval` until it receives a token, an error, or the flow expires.
+
+**Auth:** None
+
+### Request body
+
+```json
+{
+  "client_id": "takumo-daemon",
+  "device_code": "a1b2c3d4e5f6...",
+  "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `client_id` | `string` | Yes | Must match the code request |
+| `device_code` | `string` | Yes | The `device_code` from the code response |
+| `grant_type` | `string` | Yes | Must be `"urn:ietf:params:oauth:grant-type:device_code"` |
+
+### Success response
+
+When the user has approved the request:
+
+```json
+{
+  "access_token": "a1b2c3d4e5f6...",
+  "token_type": "bearer"
+}
+```
+
+The `access_token` is a Takumo API key. It can only be retrieved **once** -- subsequent polls for the same device code return `expired_token`.
+
+### Error responses (RFC 8628 compliant)
+
+All error responses return HTTP `400` with an `error` field:
+
+| `error` value | Meaning | Client action |
+|---------------|---------|---------------|
+| `authorization_pending` | User has not yet approved or denied | Continue polling at the current interval |
+| `slow_down` | Client is polling too fast | Increase interval by 5 seconds, then continue |
+| `access_denied` | User denied the request | Stop polling, show error |
+| `expired_token` | Flow expired (15 minutes) or token already retrieved | Stop polling, restart the flow |
+| `invalid_grant` | Unknown device code | Stop polling, restart the flow |
+| `unsupported_grant_type` | Wrong `grant_type` value | Fix the request |
+
+```json
+{
+  "error": "authorization_pending"
+}
+```
+
+<Note>Per RFC 8628 section 3.5, the server increments the required polling interval by 5 seconds each time it returns `slow_down`. The client must respect the new interval.</Note>
+
+### Example
+
+```bash
+curl -X POST https://cloud.takumo.io/api/v1/auth/device/token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "takumo-daemon",
+    "device_code": "a1b2c3d4e5f6...",
+    "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
+  }'
+```
+
+---
+
+## POST /api/v1/auth/device/authorize
+
+Approve a pending device authorization request. Creates an API key for the specified organization and associates it with the device flow.
+
+**Auth:** Session cookie (the user must be signed in to the dashboard)
+
+### Request body
+
+```json
+{
+  "user_code": "ABCD-1234",
+  "organization_id": "org_a1b2c3d4e5"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `user_code` | `string` | Yes | The user code displayed to the user |
+| `organization_id` | `string` | Yes | The org to create the API key in |
+
+### Response
+
+```json
+{
+  "success": true
+}
+```
+
+### Errors
+
+| Status | Error | Meaning |
+|--------|-------|---------|
+| `400` | `Missing required fields: user_code, organization_id` | Missing body fields |
+| `400` | `Invalid or expired code` | Code not found, already used, or expired |
+| `401` | `Authentication required` | No active session |
+| `403` | `Not a member of this organization` | User is not an active member of the specified org |
+
+### Side effects
+
+- Creates an API key named `Device Flow -- {user_code}` with no scope restrictions.
+- Sends a `team` notification to the organization: "{user name} connected Takumo Studio".
+- Logs an audit event: `device_flow.authorized`.
+
+---
+
+## POST /api/v1/auth/device/deny
+
+Deny a pending device authorization request.
+
+**Auth:** Session cookie
+
+### Request body
+
+```json
+{
+  "user_code": "ABCD-1234"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `user_code` | `string` | Yes | The user code to deny |
+
+### Response
+
+```json
+{
+  "success": true
+}
+```
+
+### Errors
+
+| Status | Error | Meaning |
+|--------|-------|---------|
+| `400` | `Missing required field: user_code` | Missing body field |
+| `400` | `Invalid or expired code` | Code not found, already used, or expired |
+| `401` | `Authentication required` | No active session |
+
+### Side effects
+
+- Logs an audit event: `device_flow.denied`.
+
+---
+
+## Full example
+
+```typescript
+const BASE = "https://cloud.takumo.io";
+
+// 1. Start the flow
+const codeRes = await fetch(`${BASE}/api/v1/auth/device/code`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ client_id: "takumo-daemon" }),
+}).then((r) => r.json());
+
+console.log(`Open: ${codeRes.verification_uri_complete}`);
+console.log(`Code: ${codeRes.user_code}`);
+
+// 2. Poll for a token
+let interval = codeRes.interval * 1000;
+
+const poll = setInterval(async () => {
+  const tokenRes = await fetch(`${BASE}/api/v1/auth/device/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: "takumo-daemon",
+      device_code: codeRes.device_code,
+      grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+    }),
+  }).then((r) => r.json());
+
+  if (tokenRes.access_token) {
+    clearInterval(poll);
+    console.log("Signed in! API key:", tokenRes.access_token);
+    return;
+  }
+
+  switch (tokenRes.error) {
+    case "authorization_pending":
+      break; // keep polling
+    case "slow_down":
+      interval += 5000; // increase interval per RFC 8628
+      clearInterval(poll);
+      // restart with new interval (simplified -- real code would re-setInterval)
+      break;
+    case "access_denied":
+    case "expired_token":
+      clearInterval(poll);
+      console.log(`Flow ended: ${tokenRes.error}`);
+      break;
+  }
+}, interval);
+```
+
+<Tip>The VS Code extension handles all of this automatically. Run **Takumo: Sign In with Browser** to open the verification URL, display the code, and poll for completion.</Tip>

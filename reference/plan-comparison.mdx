@@ -21,8 +21,11 @@ Takumo has four plans. Here's what each one includes.
 | Team members | 5 | 5 | 25 | Unlimited |
 | API keys | 3 | 10 | 20 | Unlimited |
 | Repositories | 3 | 10 | Unlimited | Unlimited |
+| Pipelines | 5 | 25 | 100 | Unlimited |
+| Integrations | 3 | 10 | 25 | Unlimited |
 | Included credits | 1,000 | 5,000 | 5,000/seat | Unlimited |
 | Concurrent scans | 2 | 3 | 5 | 50 |
+| Daily AI reviews | 10 | 50 | 200 | Unlimited |
 | Data export | 1 GB/day | 5 GB/day | 10 GB/day | Unlimited |
 | Policies | 5 | 15 | 25 | Unlimited |
 
@@ -31,12 +34,21 @@ Takumo has four plans. Here's what each one includes.
 | Feature | Free | Developer | Pro | Enterprise |
 |---------|------|-----------|-----|------------|
 | Aegis Shield | Yes | Yes | Yes | Yes |
+| Sentinel review | - | Yes | Yes | Yes |
 | Model routing | Haiku only | Haiku, Sonnet | All models | All models |
 | API access | - | Yes | Yes | Yes |
+| Issue tracker | - | Yes | Yes | Yes |
+| Issue tracker auto-sync | - | - | Yes | Yes |
+| Slack notifications | - | Yes | Yes | Yes |
+| CI/CD pipelines | - | Yes | Yes | Yes |
+| Weekly digest | - | Yes | Yes | Yes |
+| Report export | - | CSV | CSV, JSON, XLSX | CSV, PDF, JSON, XLSX |
+| Report scheduling | - | - | Yes | Yes |
 | Audit log | - | Yes (30d) | Yes (90d) | Yes (365d) |
 | MFA enforcement | - | - | Yes | Yes |
 | Domain verification | - | - | Yes | Yes |
 | Fleet management | - | - | Yes | Yes |
+| API key rotation policy | - | - | - | Yes |
 | SSO / SAML | - | - | - | Yes |
 | SCIM provisioning | - | - | - | Yes |
 | IP allowlist | - | - | - | Yes |
@@ -55,7 +67,18 @@ Takumo has four plans. Here's what each one includes.
 | Policy evaluations/mo | 5,000 | 20,000 | Unlimited | Unlimited |
 | Auto-fix/mo | 500 | 2,500 | 5,000 | Unlimited |
 | API requests/mo | 10,000 | 50,000 | 100,000 | Unlimited |
-| Webhook deliveries/mo | 100 | 500 | 2,000 | Unlimited |
+| Webhook deliveries/mo | 5,000 | 25,000 | 50,000 | Unlimited |
+
+## Per-minute rate limits
+
+| Operation | Free | Developer | Pro | Enterprise |
+|-----------|------|-----------|-----|------------|
+| Secret scans | 10/min | 20/min | 30/min | 100/min |
+| Vulnerability scans | 5/min | 5/min | 10/min | 50/min |
+| Policy evaluations | 20/min | 40/min | 60/min | 200/min |
+| Auto-fix | 5/min | 10/min | 20/min | 50/min |
+| API requests | 30/min | 60/min | 120/min | 500/min |
+| Webhook deliveries | 10/min | 20/min | 30/min | 100/min |
 
 ## Credit costs
 
@@ -76,4 +99,4 @@ Developer and Pro plans charge **$0.02 per credit** over the included amount. Yo
 
 Enterprise plans include unlimited credits. No overage charges.
 
-Free plans are hard-capped. When you hit the limit, requests return `403 FORBIDDEN` with the code `PLAN_LIMIT_REACHED` until the next billing cycle.
+Free plans are hard-capped. When you hit the limit, requests return `403 forbidden` until the next billing cycle.
