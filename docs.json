@@ -98,7 +98,7 @@
           },
           {
             "group": "Concepts",
-            "icon": "lightbulb",
+            "icon": "eye",
             "pages": [
               "concepts/how-it-works",
               "concepts/aegis-shield",
@@ -115,7 +115,7 @@
           },
           {
             "group": "Reference",
-            "icon": "bookmark",
+            "icon": "book-open",
             "pages": [
               "patterns/supported",
               "reference/plan-comparison",
@@ -129,7 +129,7 @@
       },
       {
         "tab": "Studio",
-        "icon": "monitor",
+        "icon": "terminal",
         "groups": [
           {
             "group": "Guide",
@@ -147,7 +147,7 @@
           },
           {
             "group": "Advanced",
-            "icon": "settings",
+            "icon": "wrench",
             "pages": [
               "studio/daemon",
               "studio/custom-rules",
@@ -160,7 +160,7 @@
       },
       {
         "tab": "Dashboard",
-        "icon": "layout-dashboard",
+        "icon": "server",
         "groups": [
           {
             "group": "Guide",
@@ -204,7 +204,7 @@
         "groups": [
           {
             "group": "Providers",
-            "icon": "link",
+            "icon": "plug",
             "pages": [
               "integrations/overview",
               "integrations/github",
@@ -303,7 +303,7 @@
           },
           {
             "group": "Endpoints",
-            "icon": "route",
+            "icon": "code",
             "pages": [
               "api/scan",
               "api/detect",
@@ -362,5 +362,7 @@
 
   "contextual": {
     "options": ["copy", "view", "claude", "chatgpt", "cursor"]
-  }
+  },
+
+  "redirects": []
 }
