@@ -103,6 +103,12 @@
               "concepts/how-it-works",
               "concepts/aegis-shield",
               "concepts/sentinel",
+              "concepts/brain",
+              "concepts/streaming",
+              "concepts/vault",
+              "concepts/daemon",
+              "concepts/coordinator",
+              "concepts/worker",
               "concepts/security",
               "concepts/policies"
             ]
@@ -122,21 +128,105 @@
         ]
       },
       {
+        "tab": "Studio",
+        "icon": "monitor",
+        "groups": [
+          {
+            "group": "Guide",
+            "icon": "book-open",
+            "pages": [
+              "studio/overview",
+              "studio/installation",
+              "studio/getting-started",
+              "studio/scanning",
+              "studio/secrets",
+              "studio/transforms",
+              "studio/brain-context",
+              "studio/incidents"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "icon": "settings",
+            "pages": [
+              "studio/daemon",
+              "studio/custom-rules",
+              "studio/demo-mode",
+              "studio/commands",
+              "studio/settings"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Dashboard",
-        "icon": "server",
+        "icon": "layout-dashboard",
         "groups": [
           {
             "group": "Guide",
             "icon": "book-open",
             "pages": [
               "dashboard/overview",
+              "dashboard/shield",
+              "dashboard/activity",
+              "dashboard/issues",
+              "dashboard/violations",
+              "dashboard/sentinel",
+              "dashboard/rules",
+              "dashboard/workbench",
+              "dashboard/repositories",
+              "dashboard/pipelines",
+              "dashboard/brain",
+              "dashboard/compliance",
+              "dashboard/reports",
+              "dashboard/usage",
+              "dashboard/limits",
+              "dashboard/notifications",
+              "dashboard/streaming",
+              "dashboard/studio",
+              "dashboard/integrations",
               "dashboard/api-keys",
               "dashboard/fleet",
+              "dashboard/team",
               "dashboard/members",
+              "dashboard/sso",
               "dashboard/audit-log",
               "dashboard/security",
               "dashboard/billing",
               "dashboard/settings"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integrations",
+        "icon": "plug",
+        "groups": [
+          {
+            "group": "Providers",
+            "icon": "link",
+            "pages": [
+              "integrations/overview",
+              "integrations/github",
+              "integrations/gitlab",
+              "integrations/bitbucket",
+              "integrations/github-actions",
+              "integrations/gitlab-ci",
+              "integrations/jenkins",
+              "integrations/slack",
+              "integrations/ms-teams",
+              "integrations/jira",
+              "integrations/linear",
+              "integrations/pagerduty",
+              "integrations/github-issues",
+              "integrations/gitlab-issues",
+              "integrations/bitbucket-issues",
+              "integrations/splunk",
+              "integrations/datadog",
+              "integrations/elasticsearch",
+              "integrations/custom-webhook",
+              "integrations/hashicorp-vault",
+              "integrations/aws-secrets-manager"
             ]
           }
         ]
@@ -153,6 +243,9 @@
               "deployment/saas",
               "deployment/onprem",
               "deployment/configuration",
+              "deployment/streaming",
+              "deployment/brain",
+              "deployment/vault",
               "deployment/monitoring"
             ]
           }
@@ -207,6 +300,28 @@
               "api/rate-limits",
               "api/webhooks"
             ]
+          },
+          {
+            "group": "Endpoints",
+            "icon": "route",
+            "pages": [
+              "api/scan",
+              "api/detect",
+              "api/transform",
+              "api/device-auth",
+              "api/rules",
+              "api/incidents",
+              "api/issues",
+              "api/violations",
+              "api/repositories",
+              "api/compliance",
+              "api/reports",
+              "api/brain",
+              "api/audit-log",
+              "api/policies",
+              "api/notifications",
+              "api/fleet"
+            ]
           }
         ]
       }
@@ -223,6 +338,8 @@
         "items": [
           { "label": "Aegis Shield", "href": "/concepts/aegis-shield" },
           { "label": "Sentinel", "href": "/concepts/sentinel" },
+          { "label": "Studio", "href": "/studio/overview" },
+          { "label": "Brain", "href": "/concepts/brain" },
           { "label": "Pricing", "href": "/reference/plan-comparison" },
           { "label": "Changelog", "href": "/changelog" }
         ]
@@ -232,6 +349,7 @@
         "items": [
           { "label": "Documentation", "href": "/introduction" },
           { "label": "API Reference", "href": "/api/overview" },
+          { "label": "Integrations", "href": "/integrations/overview" },
           { "label": "Dashboard", "href": "https://cloud.takumo.io/dashboard" }
         ]
       }

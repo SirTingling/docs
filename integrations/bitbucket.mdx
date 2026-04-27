@@ -1,0 +1,104 @@
+---
+title: Bitbucket
+description: Bitbucket Cloud and Server integration
+icon: "code"
+---
+
+Connect Bitbucket to run Sentinel on pull requests and sync repository data. Takumo supports both Bitbucket Cloud and Bitbucket Server (Data Center).
+
+---
+
+## Setup
+
+### Bitbucket Cloud
+
+<Steps>
+  <Step title="Enter your credentials">
+    Go to **Dashboard → Settings → Integrations → Bitbucket** and click **Connect**. Enter your email, API token (App Password), and workspace name.
+  </Step>
+  <Step title="Select repositories">
+    Takumo fetches repos from your workspace. Select which ones to track.
+  </Step>
+  <Step title="Webhook registered">
+    Takumo registers a webhook on each selected repo for push and pull request events.
+  </Step>
+</Steps>
+
+### Bitbucket Server / Data Center
+
+<Steps>
+  <Step title="Enter server URL">
+    Go to **Dashboard → Settings → Integrations → Bitbucket Server** and enter your instance URL.
+  </Step>
+  <Step title="Authenticate">
+    Provide a username and App Password. The account needs read access to repos and write access to pull requests (for build statuses and comments).
+  </Step>
+  <Step title="Select projects">
+    Takumo fetches all projects from your instance. Select which ones to track.
+  </Step>
+</Steps>
+
+---
+
+## What happens on a pull request
+
+When a PR is created or updated:
+
+1. Takumo sets a build status on the commit (`INPROGRESS`)
+2. Custom policies are evaluated against changed files
+3. Sentinel AI runs (if enabled)
+4. Build status updates to `SUCCESSFUL` or `FAILED`
+5. Takumo posts or updates a PR comment with findings
+
+Build status key: `takumo-policy-check`. This appears in Bitbucket's merge checks if you've configured required build statuses.
+
+---
+
+## Repository sync
+
+| Feature | Cloud | Server |
+|---------|-------|--------|
+| Branch restrictions | Yes | Yes |
+| Required approvals | Yes | Yes |
+| CODEOWNERS | Yes | No |
+| Security scanning | No (native) | No (native) |
+
+<Note>Bitbucket doesn't have native secret scanning, code scanning, or Dependabot equivalents. Takumo fills this gap with Sentinel scanning on PRs and the gateway's outbound protection.</Note>
+
+---
+
+## Periodic sync
+
+In addition to webhooks, the Cloud Worker runs periodic Bitbucket sync jobs. This catches any webhook misses and keeps compliance data current.
+
+---
+
+## Webhook events
+
+### Cloud
+
+| Event | Action |
+|-------|--------|
+| `pullrequest:created` | Policy check + Sentinel review |
+| `pullrequest:updated` | Policy check + Sentinel review |
+| `repo:push` | Brain re-indexing + compliance sync |
+| `issue:updated` | Ticket sync |
+
+### Server
+
+| Event | Action |
+|-------|--------|
+| `pr:opened` | Policy check + Sentinel review |
+| `pr:from_ref_updated` | Policy check + Sentinel review |
+| `repo:refs_changed` | Brain re-indexing + compliance sync |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="GitHub Integration" icon="github" href="/integrations/github">
+    GitHub App setup
+  </Card>
+  <Card title="GitLab Integration" icon="gitlab" href="/integrations/gitlab">
+    GitLab PAT setup
+  </Card>
+</CardGroup>

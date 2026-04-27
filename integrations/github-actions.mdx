@@ -1,0 +1,90 @@
+---
+title: GitHub Actions
+description: Run Takumo scans as GitHub Actions workflow steps
+icon: "play"
+---
+
+Run Takumo scans as GitHub Actions workflow steps. Takumo discovers your workflows, analyzes them for security risks, and monitors runs for credential exposure.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Create a GitHub personal access token">
+    Go to **GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)** and [create a new token](https://github.com/settings/tokens/new).
+  </Step>
+  <Step title="Select required scopes">
+    Generate a new token with scopes: **repo**, **workflow**, **read:org**. Copy the token (starts with `ghp_`).
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard > Settings > Integrations > GitHub Actions**. Paste the token in the connection form.
+  </Step>
+  <Step title="Automatic discovery">
+    Takumo will automatically discover all GitHub Actions workflows in your repositories.
+  </Step>
+</Steps>
+
+---
+
+## What Takumo does
+
+Takumo analyzes your GitHub Actions workflows for security risks:
+
+| Check | Severity | Description |
+|-------|----------|-------------|
+| Unpinned third-party actions | High | Actions referenced by tag instead of SHA (`uses: actions/checkout@v4` vs `@sha`) |
+| `pull_request_target` triggers | Critical | Dangerous trigger that exposes secrets to fork PRs |
+| `permissions: write-all` | High | Overly broad workflow permissions |
+| Secrets in `run` steps | Critical | Secrets interpolated directly in shell commands |
+| `workflow_dispatch` without validation | Medium | Manual triggers accepting unvalidated input |
+| Missing `permissions` block | Medium | Workflows relying on default (broad) token permissions |
+
+---
+
+## Workflow run monitoring
+
+When connected, Takumo tracks workflow runs and flags security-relevant events:
+
+1. **Credential detection** -- Scans workflow logs for accidentally exposed secrets
+2. **Permission drift** -- Alerts when a workflow's permissions change in a commit
+3. **Action version changes** -- Tracks when third-party actions are updated without SHA pinning
+4. **Failed security jobs** -- Highlights when security-related steps fail in a run
+
+---
+
+## Health check
+
+Takumo verifies connectivity by calling `GET https://api.github.com/user` with your token. If this fails, the integration shows as disconnected in the dashboard.
+
+---
+
+## Credential details
+
+| Field | Value |
+|-------|-------|
+| **Type** | Personal Access Token (classic) |
+| **Prefix** | `ghp_...` |
+| **Required scopes** | `workflow`, `actions:read` |
+| **Auth method** | Bearer token (`Authorization: token <PAT>`) |
+
+Credentials are stored encrypted. The token is never displayed after initial setup.
+
+---
+
+## Limitations
+
+- **Classic tokens only** -- Fine-grained PATs don't yet support the `workflow` scope needed for full analysis.
+- **Read-only** -- Takumo analyzes workflows but does not modify them. Auto-remediation PRs are created via the [GitHub source code integration](/integrations/github) if connected.
+- **GitHub.com and GHES** -- Works with github.com. For GitHub Enterprise Server, ensure the API endpoint is reachable from Takumo.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="GitHub" icon="github" href="/integrations/github">
+    GitHub App for PR checks and scanning
+  </Card>
+  <Card title="Pipelines" icon="git-branch" href="/dashboard/pipelines">
+    Pipeline security dashboard
+  </Card>
+</CardGroup>

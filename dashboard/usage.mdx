@@ -1,0 +1,93 @@
+---
+title: Usage
+description: Monitor credits and API consumption
+icon: "bar-chart-3"
+---
+
+The Usage page shows how your organization consumes Takumo — scans processed, credits used, API calls made, and how close you are to plan limits.
+
+---
+
+## Overview metrics
+
+The top of the page shows:
+
+| Metric | Description |
+|--------|-------------|
+| **Scans this period** | Total code scans (Shield + Sentinel) in the current billing cycle |
+| **Credits used** | Credits consumed by scans, reviews, fix suggestions, and other operations |
+| **Credits remaining** | How many credits are left in your plan |
+| **API calls** | Total API requests made via API keys |
+
+---
+
+## Usage breakdown
+
+A chart shows daily usage over the selected period (7, 30, or 90 days). You can view by:
+
+- **Scan type** — Shield scans, Sentinel reviews, code reviews
+- **Feature** — Transforms, Brain queries, secret detection
+- **API key** — Which key generated the most traffic
+- **Member** — Per-user usage (for session-based scans)
+
+---
+
+## Plan limits
+
+Your current plan defines hard limits:
+
+| Limit | Free | Developer | Pro | Enterprise |
+|-------|------|-----------|-----|------------|
+| Credits/month | 1,000 | 5,000 | 5,000/seat | Unlimited |
+| Secret scans/month | 1,000 | 5,000 | 10,000 | Unlimited |
+| Vulnerability scans/month | 500 | 2,500 | 5,000 | Unlimited |
+| Auto-fix/month | 500 | 2,500 | 5,000 | Unlimited |
+| API requests/month | 10,000 | 50,000 | 100,000 | Unlimited |
+| API keys | 3 | 10 | 20 | Unlimited |
+| Members | 5 | 5 | 25 | Unlimited |
+| Repos | 3 | 10 | Unlimited | Unlimited |
+
+When you approach a limit, a warning banner appears. When you hit it, the relevant feature stops working until the next billing cycle or an upgrade.
+
+---
+
+## Credit system
+
+Credits are consumed by operations:
+
+| Operation | Cost |
+|-----------|------|
+| Shield scan | 1 credit |
+| Real-time scan | 1 credit |
+| Policy evaluation | 1 credit |
+| Sentinel review | 2 credits |
+| Fix suggestion | 3 credits |
+| Code review | 5 credits |
+
+Credits reset at the start of each billing cycle. Unused credits don't roll over. Developer and Pro plans support overage at $0.02 per credit. Free plans are hard-capped.
+
+---
+
+## Rate limits
+
+API rate limits are separate from credit limits:
+
+| Plan | API requests/min | API requests/hr |
+|------|-----------------|----------------|
+| Free | 30 | 500 |
+| Developer | 60 | 2,500 |
+| Pro | 120 | 5,000 |
+| Enterprise | 500 | 20,000 |
+
+Rate limit headers (`X-RateLimit-Remaining`, `X-RateLimit-Reset`, `Retry-After`) are included in every API response. See [Error Codes](/reference/error-codes) for details. For a full breakdown of per-operation rate limits, see [Plan Comparison](/reference/plan-comparison).
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Plan Comparison" icon="credit-card" href="/reference/plan-comparison">
+    Compare plan features
+  </Card>
+  <Card title="Billing" icon="receipt" href="/dashboard/billing">
+    Manage your subscription
+  </Card>
+</CardGroup>

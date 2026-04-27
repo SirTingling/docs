@@ -1,0 +1,95 @@
+---
+title: Compliance
+description: Query compliance framework status
+icon: "shield-check"
+---
+
+Retrieve the latest compliance snapshots for your organization -- the most recent assessment per framework, with control-level details.
+
+<Note>Requires Enterprise plan and `scan:read` scope on the API key.</Note>
+
+## GET /compliance
+
+<CodeGroup>
+```bash curl
+curl "https://cloud.takumo.io/api/v1/compliance?frameworkId=soc2" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://cloud.takumo.io/api/v1/compliance?frameworkId=soc2",
+  { headers: { "Authorization": "Bearer tk_live_your_api_key" } }
+);
+const result = await response.json();
+```
+</CodeGroup>
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `frameworkId` | string | No | Filter by framework ID (e.g. `soc2`, `pci_dss`, `hipaa`, `iso27001`). Omit for all frameworks. |
+
+### Response
+
+Returns the latest snapshot per framework. No pagination -- all matching snapshots are returned in a single response.
+
+```json
+{
+  "data": [
+    {
+      "id": "cm2x7snap123def456",
+      "frameworkId": "soc2",
+      "score": 87,
+      "passingControls": 18,
+      "totalControls": 21,
+      "controlDetails": [
+        {
+          "id": "CC6.1",
+          "name": "Logical access controls",
+          "status": "passed",
+          "evidence": [
+            "RBAC configured with 6 roles",
+            "SSO enforcement enabled",
+            "API keys scoped with least-privilege"
+          ]
+        },
+        {
+          "id": "CC7.2",
+          "name": "System monitoring",
+          "status": "failed",
+          "gaps": [
+            "Slack notification channel not configured"
+          ]
+        }
+      ],
+      "snapshotDate": "2026-04-15T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+### Snapshot object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique snapshot ID |
+| `frameworkId` | string | Framework identifier (e.g. `soc2`, `pci_dss`) |
+| `score` | number | Percentage of controls passing (0-100) |
+| `passingControls` | number | Number of passing controls |
+| `totalControls` | number | Total controls assessed |
+| `controlDetails` | array | Control-by-control breakdown (stored as JSON) |
+| `snapshotDate` | string | When this assessment was taken (ISO 8601) |
+
+### Control detail object
+
+The `controlDetails` array contains objects with the following shape. The exact fields depend on whether the control passed or failed.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Control identifier (e.g. `CC6.1`) |
+| `name` | string | Human-readable control name |
+| `status` | string | `passed` or `failed` |
+| `evidence` | string[] | Evidence supporting a pass (when status is `passed`) |
+| `gaps` | string[] | What's missing (when status is `failed`) |

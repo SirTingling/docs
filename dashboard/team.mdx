@@ -1,0 +1,76 @@
+---
+title: Team
+description: Team overview with member stats and seat usage
+icon: "users"
+---
+
+The Team page gives you a high-level view of your organization's members -- who is active, how many scans each person has run, seat utilization, and pending invitations.
+
+<Note>This is not the same as **Settings > Members**, which is where you invite and manage members. The Team page is a read-oriented overview of your team's activity.</Note>
+
+---
+
+## Stats bar
+
+Four summary metrics appear at the top:
+
+| Metric | Description |
+|--------|-------------|
+| **Total members** | Active members in the organization (excludes deleted members) |
+| **Admins** | Number of active members with the Admin role |
+| **Pending invites** | Outstanding invitations that haven't been accepted or expired |
+| **Active today** | Members whose `lastActiveAt` timestamp falls within today |
+
+The seat gauge shows how many of your plan's member seats are used (active members + pending invitations vs. the plan limit).
+
+---
+
+## Member table
+
+Each row shows:
+
+- **Name and email** with avatar
+- **Role** (Owner, Admin, Security Lead, Billing Admin, Member, Viewer)
+- **Status** (Active, Pending)
+- **Last active** timestamp
+- **Scan count** -- total scans attributed to this member, including scans made via API keys the member created
+
+Scan counts are aggregated from `CreditUsage` records for `shield_scan`, `sentinel_review`, and `policy_eval` operations. API-key-attributed scans (no direct user ID) are resolved back to the key's creator.
+
+---
+
+## Filtering and sorting
+
+- **Search** by name or email
+- **Filter** by role or status
+- **Sort** by name, role, last active date, or scan count
+
+---
+
+## Actions
+
+Depending on your role, you can perform actions directly from the member table:
+
+- **Change role** -- reassign a member's role (subject to anti-escalation rules)
+- **Remove member** -- remove a member from the organization
+- **Resend invitation** -- re-send the invite email for pending members
+- **Revoke invitation** -- cancel a pending invitation
+
+These actions use the same endpoints as **Settings > Members**.
+
+---
+
+## Permissions
+
+The Team page is accessible to all authenticated members. Role changes and member removal require appropriate permissions (see [Team Management](/dashboard/members) for role details).
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Team Management" icon="key" href="/dashboard/members">
+    Invite members and manage roles
+  </Card>
+  <Card title="Usage" icon="bar-chart-3" href="/dashboard/usage">
+    Organization-wide usage metrics
+  </Card>
+</CardGroup>

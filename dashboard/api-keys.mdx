@@ -45,29 +45,63 @@ Scopes are granular. You can combine them to build exactly the access profile yo
 
 <Accordion title="Full scope list">
   **Organization**
-  - `organization.read` -- View organization details
-  - `organization.settings` -- Modify organization settings
-  - `organization.delete` -- Delete the organization
-  - `organization.transfer` -- Transfer ownership
+  - `org.read` -- View organization details
+  - `org.settings.edit` -- Modify organization settings
+  - `org.delete` -- Delete the organization
+  - `org.transfer` -- Transfer ownership
 
   **Members**
   - `members.read` -- View team members
   - `members.invite` -- Invite new members
   - `members.remove` -- Remove members
-  - `members.role_change` -- Change member roles
+  - `members.role.change` -- Change member roles
   - `members.suspend` -- Suspend member accounts
 
+  **Roles**
+  - `roles.read` -- View roles
+  - `roles.custom.create` -- Create custom roles
+  - `roles.custom.edit` -- Edit custom roles
+  - `roles.custom.delete` -- Delete custom roles
+
+  **Security**
+  - `security.read` -- View security settings
+  - `security.mfa.manage` -- Manage MFA enforcement
+  - `security.sso.manage` -- Manage SSO configuration
+  - `security.scim.manage` -- Manage SCIM provisioning
+  - `security.domains.manage` -- Manage domain verification
+  - `security.ip.manage` -- Manage IP allowlists
+  - `security.sessions.manage` -- Manage session settings
+
   **API Keys**
-  - `api_keys.read` -- View API keys
-  - `api_keys.create` -- Create new keys
-  - `api_keys.revoke` -- Revoke existing keys
-  - `api_keys.manage_all` -- Manage keys created by other members
+  - `apikeys.read` -- View API keys
+  - `apikeys.create` -- Create new keys
+  - `apikeys.revoke` -- Revoke existing keys
+  - `apikeys.manage.all` -- Manage keys created by other members
+
+  **Service Accounts**
+  - `serviceaccounts.read` -- View service accounts
+  - `serviceaccounts.create` -- Create service accounts
+  - `serviceaccounts.delete` -- Delete service accounts
 
   **Policies**
   - `policies.read` -- View policies
   - `policies.create` -- Create new policies
   - `policies.edit` -- Edit existing policies
   - `policies.delete` -- Delete policies
+
+  **Issues & Violations**
+  - `issues.read` -- View issues
+  - `issues.triage` -- Triage issues
+  - `violations.read` -- View violations
+  - `violations.manage` -- Manage violations
+
+  **Compliance**
+  - `compliance.read` -- View compliance status
+  - `compliance.export` -- Export compliance data
+
+  **Integrations**
+  - `integrations.read` -- View integrations
+  - `integrations.manage` -- Manage integrations
 
   **Fleet**
   - `fleet.read` -- View gateway instances
@@ -76,14 +110,35 @@ Scopes are granular. You can combine them to build exactly the access profile yo
   **Audit**
   - `audit.read` -- View audit log
   - `audit.export` -- Export audit data
-  - `audit.webhook_manage` -- Configure audit webhooks
+  - `audit.webhook.manage` -- Configure audit webhooks
 
   **Billing**
   - `billing.read` -- View billing information
   - `billing.manage` -- Change plans and payment methods
 
-  **Security, Roles, Compliance, Integrations, Notifications**
-  - Additional scopes are available for fine-grained control over security settings, custom roles, compliance reporting, third-party integrations, and notification preferences.
+  **Notifications**
+  - `notifications.read` -- View notifications
+  - `notifications.manage` -- Manage notification settings
+
+  **Brain Intelligence**
+  - `brain.read` -- View Brain dashboard
+  - `brain.patterns.approve` -- Approve Brain patterns
+  - `brain.analytics.read` -- View Brain analytics
+  - `brain.break_glass.read` -- View break-glass events
+
+  **Repositories**
+  - `repositories.read` -- View repositories
+  - `repositories.manage` -- Manage repository settings
+
+  **Reports**
+  - `reports.read` -- View reports
+  - `reports.manage` -- Manage report configuration
+  - `reports.developer_activity` -- View developer activity reports
+
+  **Streaming**
+  - `streaming.read` -- View streaming pipeline
+  - `streaming.write` -- Manage destinations and subscriptions
+  - `streaming.admin` -- Full streaming control including admin operations
 </Accordion>
 
 ## Managing Keys

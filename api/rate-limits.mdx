@@ -1,14 +1,40 @@
 ---
 title: Rate Limits
-description: Request limits by plan and operation
+description: Request limits and credit costs
 icon: "clock"
 ---
 
-Every API operation has rate limits. Limits are per-organization, not per-key. If two keys belong to the same org, they share the same quota.
+Every API request is rate-limited. Limits are enforced per identifier (user ID, org ID, or IP address depending on the endpoint) using sliding window counters backed by Upstash Redis.
 
-## Per-plan rate limits
+## Rate limiters
 
-These values come directly from the plan configuration. Per-minute limits protect against bursts. Monthly limits cap total usage.
+The Cloud API defines separate limiters for different endpoint categories. Each uses a 60-second sliding window.
+
+| Limiter | Limit | Window | Identifier | Used by |
+|---------|-------|--------|------------|---------|
+| `rateLimiter` | 100 req | 60s | User ID | General API routes (notifications, dashboard endpoints) |
+| `apiKeyRateLimiter` | 1,000 req | 60s | Org ID | API key-authenticated routes (digest, rules, scans) |
+| `authRateLimiter` | 10 req | 60s | IP address | Auth endpoints (login, signup, password reset, device code) |
+| `supportRateLimiter` | 5 req | 60s | User ID | Support request submissions |
+| `salesRateLimiter` | 3 req | 60s | User ID | Sales inquiry submissions |
+| `integrationRequestRateLimiter` | 3 req | 60s | User ID | Integration request form |
+| `sentinelAIRateLimiter` | 5 req | 60s | Org ID | Sentinel AI review calls (LLM gateway) |
+| `reportExportLimiter` | 10 req | 60s | Identifier | Report generation/export |
+| `githubWebhookRateLimiter` | 100 req | 60s | Installation ID | Incoming GitHub webhook processing |
+| `integrationRateLimiter` | 20 req | 60s | User ID | Integration mutations (connect, sync, rotate) |
+
+### Sentinel AI concurrency controls
+
+In addition to the sliding-window rate limiter, Sentinel AI reviews have Redis-backed concurrency and deduplication controls:
+
+- **Concurrency slots**: Per-org limit on simultaneous AI reviews. Configurable per plan via `maxDailyAIReviews`. Slot TTL is 10 minutes as a safety fallback.
+- **PR dedup**: 5-minute cooldown per PR per org. Prevents redundant reviews when multiple pushes happen in quick succession.
+
+Both controls fail open on Redis errors -- a review will proceed rather than block.
+
+## Per-plan operation limits
+
+Each plan defines per-minute, per-hour, and per-month limits for specific operation categories. These are enforced at the application layer on top of the Redis rate limiters above.
 
 ### Secret scans
 
@@ -58,34 +84,31 @@ These values come directly from the plan configuration. Per-minute limits protec
 | Per hour | 200 | 500 | 1,000 | 5,000 |
 | Per month | 5,000 | 25,000 | 50,000 | Unlimited |
 
-## Rate limit headers
+### Additional plan limits
 
-Every response includes these headers:
-
-| Header | Description |
-|--------|-------------|
-| `X-RateLimit-Limit` | Maximum requests allowed in the current window |
-| `X-RateLimit-Remaining` | Requests remaining in the current window |
-| `X-RateLimit-Reset` | Unix timestamp when the window resets |
-| `Retry-After` | Seconds to wait before retrying (only on `429` responses) |
+| Limit | Free | Developer | Pro | Enterprise |
+|-------|------|-----------|-----|------------|
+| Concurrent scans | 2 | 3 | 5 | 50 |
+| Max policies | 5 | 15 | 25 | Unlimited |
+| Data export (GB/day) | 1 | 5 | 10 | Unlimited |
+| Daily AI reviews | 10 | 50 | 200 | Unlimited |
 
 ## Handling rate limits
 
-When you receive a `429`:
+When you exceed a rate limit, the response includes a `Retry-After` header with the number of seconds to wait:
 
 ```
 HTTP/1.1 429 Too Many Requests
-Retry-After: 30
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 0
-X-RateLimit-Reset: 1710360000
+Retry-After: 12
 ```
 
-1. Read the `Retry-After` header.
-2. Wait that many seconds.
-3. Retry the request.
+```json
+{
+  "error": "Rate limit exceeded"
+}
+```
 
-Do not retry in a tight loop. Implement exponential backoff if you are batching requests.
+Implement exponential backoff for batch workloads. Do not retry in a tight loop.
 
 ```typescript
 async function requestWithRetry(url: string, options: RequestInit, maxRetries = 3) {
@@ -102,25 +125,34 @@ async function requestWithRetry(url: string, options: RequestInit, maxRetries = 
 }
 ```
 
-## Overage behavior
-
-- **Free plan**: Hard-capped. When you hit the monthly limit, requests return `403 FORBIDDEN` with code `PLAN_LIMIT_REACHED` until the next billing cycle.
-- **Developer and Pro plans**: Overage is billed at $0.02 per credit. You are not cut off mid-request. Usage is billed at the end of the billing cycle.
-- **Enterprise plans**: Unlimited credits. No overage charges.
-
 ## Credit costs
 
-Every operation consumes credits from your included balance:
+Every operation consumes credits from your plan's included balance:
 
 | Operation | Credits |
 |-----------|---------|
-| Shield scan | 1 |
-| Real-time scan | 1 |
-| Sentinel review | 2 |
-| Fix suggestion | 3 |
-| Code review | 5 |
-| Policy evaluation | 1 |
+| `shield_scan` | 1 |
+| `real_time` | 1 |
+| `policy_eval` | 1 |
+| `sentinel_review` | 2 |
+| `fix_suggest` | 3 |
+| `code_review` | 5 |
 
-See [Plan Comparison](/reference/plan-comparison) for included credit amounts per plan.
+## Overage behavior
 
-<Tip>If you consistently hit rate limits, check your plan's monthly allowance first. Per-minute limits reset quickly, but monthly limits don't. Upgrading your plan is usually more cost-effective than optimizing around limits.</Tip>
+- **Free plan**: Hard-capped. Overage is disabled. When you hit the monthly limit, requests are rejected until the next billing cycle.
+- **Developer and Pro plans**: Overage is enabled at $0.02 per credit. You are not cut off mid-request. Overage is billed at the end of the billing cycle.
+- **Enterprise plans**: Unlimited included credits. Overage is enabled at $0.00 per credit (no charge).
+
+### Included credits per plan
+
+| Plan | Included credits | Per-seat | Overage rate |
+|------|-----------------|----------|--------------|
+| Free | 1,000 | No | None (hard cap) |
+| Developer | 5,000 | No | $0.02/credit |
+| Pro | 5,000 | Yes (per seat) | $0.02/credit |
+| Enterprise | Unlimited | No | $0.00/credit |
+
+Pro plans multiply the credit allowance by seat count. A Pro org with 10 seats gets 50,000 included credits per month.
+
+<Tip>If you consistently hit rate limits, check your plan's monthly allowance first. Per-minute limits reset quickly, but monthly limits do not. Upgrading your plan is usually more cost-effective than optimizing around limits.</Tip>

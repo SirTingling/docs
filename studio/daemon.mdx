@@ -1,0 +1,139 @@
+---
+title: The Daemon
+description: Local scanning engine process
+icon: "cpu"
+---
+
+# The Daemon
+
+The daemon is a local HTTP server that does the actual work. Scanning, secret detection, transforms, auth — handled by a single Rust binary running on your machine.
+
+---
+
+## What it is
+
+A standalone binary (`takumo-daemon`) listening on `127.0.0.1:19532`. The extension talks to it over HTTP and WebSocket.
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/health` | GET | Health check |
+| `/status` | GET | Version, uptime, auth, scanner health |
+| `/scan` | POST | Security scan |
+| `/detect` | POST | Secret detection |
+| `/transform` | POST | AI code transform |
+| `/context` | POST | Brain context query |
+| `/policies` | GET | Org policies |
+| `/auth/*` | Various | Login, logout, device flow |
+| `/rules` | GET/POST | Custom rules |
+| `/incidents` | GET | Policy violation incidents |
+| `/events` | WebSocket | Real-time event stream |
+
+---
+
+## Lifecycle
+
+### Auto-start
+
+The daemon starts automatically when the extension activates:
+
+1. Checks if a daemon is already running (health check)
+2. Validates the running daemon's version against `daemon-version.json`
+3. If outdated, stops the old daemon and starts an updated one
+4. If nothing is running, finds the binary and starts it
+5. Waits up to 5 seconds for availability (polling every 250ms)
+
+### Detached process
+
+The daemon spawns detached and outlives the extension. Close VS Code — the daemon keeps running. Reopen it — the extension finds the existing daemon via health check. No restart needed.
+
+### Stopping
+
+**Takumo: Toggle Daemon** sends SIGTERM with a 3-second grace period, then SIGKILL if needed.
+
+On extension dispose, the daemon is **not** killed. It's designed to keep running.
+
+---
+
+## Binary resolution
+
+4-tier lookup, stops at the first binary found:
+
+| Tier | Source | When |
+|------|--------|------|
+| 1 | `takumo.daemon.binaryPath` setting | Enterprise IT managing versions centrally |
+| 2 | `<extension>/daemon/takumo-daemon` | Platform-specific VSIX from Marketplace |
+| 3 | `<globalStorage>/daemon/takumo-daemon` | Universal VSIX (Cursor, Windsurf) |
+| 4 | `takumo-daemon` on system PATH | Manual install |
+
+---
+
+## Auto-download
+
+When no binary is found, the extension downloads automatically:
+
+<Steps>
+  <Step title="Read manifest">
+    Reads `daemon-version.json` from the extension bundle for version and platform mapping.
+  </Step>
+  <Step title="Download binary">
+    Fetches from `cloud.takumo.io/api/v1/daemon/download`. The cloud proxy handles GitHub auth server-side. No PAT needed.
+  </Step>
+  <Step title="Verify checksum">
+    SHA256 hash of the download is compared against the expected checksum. Mismatch = rejected.
+  </Step>
+  <Step title="Write to disk">
+    Written to temp file first, renamed after checksum passes. Executable permissions set on Unix.
+  </Step>
+</Steps>
+
+Platforms: `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`, `win32-x64`.
+
+---
+
+## Version management
+
+On startup, the extension validates the running daemon's version:
+
+- Calls `GET /status` → gets `version` field
+- Compares against `minimumVersion` from `daemon-version.json`
+- If outdated: stops the old daemon, updates the binary, restarts
+
+For cached binaries, compares `version.txt` marker against the manifest tag. Mismatch triggers re-download.
+
+---
+
+## WebSocket events
+
+Persistent connection to `ws://127.0.0.1:19532/events` with exponential backoff reconnect (1s to 30s).
+
+| Event | When |
+|-------|------|
+| `scan_complete` | Scan finishes |
+| `auth_state_changed` | Login, logout, or revocation |
+| `policy_updated` | Policies refreshed from cloud |
+| `transform_complete` | Transform finishes |
+| `device_flow_update` | Device flow status change |
+| `incident_alert` | New org security violation |
+| `forced_settings_update` | Org admin pushed new settings |
+
+---
+
+## Configuration
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.daemon.autoStart` | boolean | `true` | Start on activation |
+| `takumo.daemon.binaryPath` | string | `""` | Custom binary path |
+| `takumo.daemon.port` | number | `19532` | HTTP/WS port |
+| `takumo.cloud.baseUrl` | string | `https://cloud.takumo.io` | Cloud URL |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Scanning" icon="scan" href="/studio/scanning">
+    How the scanner uses the daemon
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/reference/troubleshooting">
+    Common daemon issues and fixes
+  </Card>
+</CardGroup>

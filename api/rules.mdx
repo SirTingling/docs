@@ -1,0 +1,251 @@
+---
+title: Rules
+description: Custom Sentinel rules API
+icon: "pencil-ruler"
+---
+
+Create and manage custom Sentinel rules programmatically. Rules are created as drafts, then published to activate them across your organization.
+
+**Base URL:** `https://cloud.takumo.io/api/v1/rules`
+
+---
+
+## GET /rules
+
+List all custom rules for your organization. Supports cursor-based pagination and filtering.
+
+**Scope:** No specific scope required (any valid API key).
+
+```bash
+curl "https://cloud.takumo.io/api/v1/rules?status=published&limit=25" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | — | Filter by status: `draft`, `published`, `archived` |
+| `language` | string | — | Filter by target language |
+| `limit` | number | `50` | Results per page (max 100) |
+| `cursor` | string | — | Cursor from a previous response's `pagination.nextCursor` |
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "cm...",
+      "name": "no-eval",
+      "description": "Prevent eval() usage in production code",
+      "language": "typescript",
+      "pattern": { "type": "regex", "value": "eval\\(" },
+      "severity": "critical",
+      "category": "security",
+      "message": "eval() is dangerous and should not be used",
+      "fixSuggestion": "Use JSON.parse() or Function()",
+      "status": "published",
+      "scope": null,
+      "createdById": "user_abc123",
+      "approvedById": "apikey_def456",
+      "createdAt": "2026-04-15T09:30:00.000Z",
+      "updatedAt": "2026-04-15T10:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "hasMore": true,
+    "nextCursor": "cm..."
+  }
+}
+```
+
+---
+
+## GET /rules/:ruleId
+
+Fetch a single custom rule by ID.
+
+**Scope:** No specific scope required.
+
+```bash
+curl "https://cloud.takumo.io/api/v1/rules/cm_abc123" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+### Response
+
+```json
+{
+  "data": {
+    "id": "cm_abc123",
+    "name": "no-eval",
+    "description": "Prevent eval() usage",
+    "language": "typescript",
+    "pattern": { "type": "regex", "value": "eval\\(" },
+    "severity": "critical",
+    "category": "security",
+    "message": "eval() is dangerous",
+    "fixSuggestion": "Use JSON.parse() or Function()",
+    "status": "published",
+    "scope": null,
+    "createdById": "user_abc123",
+    "approvedById": "apikey_def456",
+    "createdAt": "2026-04-15T09:30:00.000Z",
+    "updatedAt": "2026-04-15T10:00:00.000Z"
+  }
+}
+```
+
+Returns `404` if the rule does not exist or belongs to a different organization.
+
+---
+
+## POST /rules
+
+Create a new custom rule. The rule is created in `draft` status.
+
+**Scope:** `policies:write`
+
+```bash
+curl -X POST "https://cloud.takumo.io/api/v1/rules" \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "no-console-log",
+    "language": "typescript",
+    "pattern": { "type": "regex", "value": "console\\.log\\(" },
+    "severity": "warning",
+    "category": "code-quality",
+    "message": "Remove console.log before merging"
+  }'
+```
+
+### Request body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Rule name |
+| `language` | string | Yes | Target language |
+| `pattern` | object | Yes | Match pattern (e.g. `{ "type": "regex", "value": "..." }`) |
+| `message` | string | Yes | Diagnostic message shown on match |
+| `severity` | string | No | `info`, `low`, `medium` (default), `high`, `critical` |
+| `category` | string | No | Rule category (default `security`) |
+| `description` | string | No | Longer description |
+| `fixSuggestion` | string | No | Suggested fix text |
+| `scope` | string | No | Limit rule to specific repos or paths |
+| `createdById` | string | No | User ID of the rule author |
+
+### Response `201`
+
+```json
+{
+  "data": {
+    "id": "cm_new123",
+    "name": "no-console-log",
+    "status": "draft",
+    "..."
+  }
+}
+```
+
+---
+
+## PATCH /rules/:ruleId
+
+Update a draft or published rule. Only the fields you include will be changed.
+
+**Scope:** `policies:write`
+
+```bash
+curl -X PATCH "https://cloud.takumo.io/api/v1/rules/cm_abc123" \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{"severity": "critical", "message": "Updated message"}'
+```
+
+### Updatable fields
+
+`name`, `description`, `language`, `pattern`, `severity`, `category`, `message`, `fixSuggestion`, `scope`
+
+### Response
+
+```json
+{
+  "data": {
+    "id": "cm_abc123",
+    "name": "no-eval",
+    "severity": "critical",
+    "message": "Updated message",
+    "..."
+  }
+}
+```
+
+Returns `404` if the rule does not exist or belongs to a different organization.
+
+---
+
+## DELETE /rules/:ruleId
+
+Archive a rule. This sets `status` to `archived` rather than deleting the record.
+
+**Scope:** `policies:write`
+
+```bash
+curl -X DELETE "https://cloud.takumo.io/api/v1/rules/cm_abc123" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+### Response
+
+```json
+{
+  "success": true
+}
+```
+
+---
+
+## POST /rules/:ruleId/publish
+
+Publish a draft rule, making it active across your organization. Cannot publish an already-published or archived rule.
+
+**Scope:** `policies:write`
+
+```bash
+curl -X POST "https://cloud.takumo.io/api/v1/rules/cm_abc123/publish" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+### Response
+
+```json
+{
+  "data": {
+    "id": "cm_abc123",
+    "name": "no-eval",
+    "status": "published",
+    "approvedById": "apikey_def456",
+    "..."
+  }
+}
+```
+
+### Error responses
+
+| Status | Condition |
+|--------|-----------|
+| `400` | Rule is archived and cannot be published |
+| `404` | Rule not found |
+| `409` | Rule is already published |
+
+---
+
+## Rule lifecycle
+
+| Status | Meaning |
+|--------|---------|
+| `draft` | Created but not active. Can be edited and published. |
+| `published` | Active, enforced by Sentinel across the organization. |
+| `archived` | Deactivated via `DELETE`. No longer enforced. |

@@ -1,0 +1,172 @@
+---
+title: SSO & Provisioning
+description: SAML, OIDC, and SCIM setup guide
+icon: "fingerprint"
+---
+
+Enterprise organizations can enforce single sign-on and automate user provisioning with SAML 2.0, OIDC, and SCIM 2.0.
+
+<Note>SSO and SCIM are Enterprise features.</Note>
+
+---
+
+## SSO providers
+
+Takumo supports two SSO protocols:
+
+| Protocol | Use case |
+|----------|----------|
+| **SAML 2.0** | Okta, Azure AD, OneLogin, PingIdentity, ADFS |
+| **OIDC** | Google Workspace, Auth0, any OIDC-compliant provider |
+
+---
+
+## SAML 2.0 setup
+
+<Steps>
+  <Step title="Get Takumo's SP metadata">
+    Your SP metadata URL is:
+
+    ```
+    https://cloud.takumo.io/saml/{your-org-slug}/metadata
+    ```
+
+    Download this XML and import it into your IdP, or point your IdP at the URL directly.
+  </Step>
+  <Step title="Configure your IdP">
+    In your IdP (Okta, Azure AD, etc.), create a new SAML application:
+
+    - **Entity ID:** `https://cloud.takumo.io/saml/{your-org-slug}`
+    - **ACS URL:** `https://cloud.takumo.io/saml/{your-org-slug}/acs`
+    - **Name ID format:** Email address
+    - **Attribute mapping:** Map `email` and `name` attributes
+  </Step>
+  <Step title="Enter IdP metadata in Takumo">
+    Go to **Dashboard > Settings > Authentication**. Enter your IdP's metadata URL or paste the XML.
+  </Step>
+  <Step title="Test the connection">
+    Click **Test SSO** to verify the round-trip. Fix any attribute mapping issues.
+  </Step>
+  <Step title="Enforce SSO (optional)">
+    Toggle **Require SSO** to block password-based login for your organization. Members must sign in through the IdP.
+  </Step>
+</Steps>
+
+### SAML details
+
+| Field | Value |
+|-------|-------|
+| SP Entity ID | `https://cloud.takumo.io/saml/{orgSlug}` |
+| ACS URL | `https://cloud.takumo.io/saml/{orgSlug}/acs` |
+| Binding | `HTTP-POST` |
+| Name ID Format | `emailAddress` or `persistent` |
+| Signed requests | Yes (`AuthnRequestsSigned: true`) |
+| Want signed assertions | Yes (`WantAssertionsSigned: true`) |
+
+---
+
+## OIDC setup
+
+<Steps>
+  <Step title="Register Takumo in your IdP">
+    Create an OIDC application in your IdP. Set the redirect URI to:
+
+    ```
+    https://cloud.takumo.io/api/auth/sso/callback
+    ```
+  </Step>
+  <Step title="Enter credentials in Takumo">
+    Go to **Dashboard > Settings > Authentication**. Enter:
+    - **Issuer URL** (e.g., `https://accounts.google.com`)
+    - **Client ID**
+    - **Client Secret**
+  </Step>
+  <Step title="Set the email domain">
+    Enter the email domain (e.g., `company.com`). Users with this domain will be redirected to your IdP at login.
+  </Step>
+</Steps>
+
+Takumo automatically discovers endpoints from the issuer's `/.well-known/openid-configuration`.
+
+---
+
+## SSO enforcement
+
+When SSO is enforced:
+
+- Password login is disabled for all members
+- New members must authenticate through the IdP
+- Existing sessions remain valid until expiry
+- The Owner can still log in with password (emergency fallback)
+
+<Warning>Before enforcing SSO, verify that at least one admin can successfully log in through the IdP. If SSO is misconfigured and enforced, the Owner account is the only way to recover access.</Warning>
+
+---
+
+## SCIM 2.0 provisioning
+
+SCIM automates user lifecycle management — when someone is added or removed in your IdP, Takumo mirrors the change automatically.
+
+### Setup
+
+<Steps>
+  <Step title="Generate a SCIM token">
+    Go to **Dashboard > Settings > Authentication > SCIM**. Click **Generate Token**. Copy the bearer token — it's shown once.
+  </Step>
+  <Step title="Configure your IdP">
+    In your IdP's SCIM provisioning settings:
+
+    - **SCIM endpoint:** `https://cloud.takumo.io/api/scim/v2/{your-org-slug}`
+    - **Auth method:** Bearer token
+    - **Token:** The token you generated
+  </Step>
+  <Step title="Enable provisioning">
+    Toggle provisioning on in your IdP. Takumo will start syncing users.
+  </Step>
+</Steps>
+
+### Supported operations
+
+| Operation | SCIM endpoint | Description |
+|-----------|--------------|-------------|
+| List users | `GET /Users` | Fetch all provisioned users |
+| Get user | `GET /Users/:id` | Fetch a specific user |
+| Create user | `POST /Users` | Provision a new user |
+| Update user | `PUT /Users/:id` | Update user attributes |
+| Deactivate user | `DELETE /Users/:id` | Remove user from org |
+| List groups | `GET /Groups` | Fetch all groups |
+
+### User status mapping
+
+| IdP action | Takumo result |
+|-----------|---------------|
+| Create user | Member created with INVITED status, invitation email sent |
+| Activate user | Member status set to ACTIVE |
+| Deactivate user | Member status set to DISABLED |
+| Delete user | Member status set to REMOVED, access revoked |
+
+### Security
+
+- SCIM tokens are hashed with HMAC-SHA256 before storage
+- IP allowlist support — restrict SCIM access to your IdP's IP range
+- All SCIM operations are logged in the audit log
+
+---
+
+## Rate limits
+
+| Endpoint | Limit |
+|----------|-------|
+| SSO initiate | 5 requests/IP/minute |
+| SCIM operations | 100 requests/token/minute |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Members" icon="users" href="/dashboard/members">
+    Manual member management
+  </Card>
+  <Card title="Security" icon="lock" href="/concepts/security">
+    Security architecture
+  </Card>
+</CardGroup>

@@ -1,0 +1,95 @@
+---
+title: Bitbucket Issues
+description: Create Bitbucket issues from scan findings
+icon: "circle-dot"
+---
+
+Connect Bitbucket Issues to automatically create issues in your repositories when Takumo detects security findings. This is a separate integration from the Bitbucket source code connection — it focuses specifically on issue tracking.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Create an API token">
+    Go to [Atlassian Security settings](https://id.atlassian.com/manage-profile/security). Click **Create API token with scopes**, name it, then select **Bitbucket** as the app.
+  </Step>
+  <Step title="Enable required scopes">
+    Enable scopes: `read:repository:bitbucket` and `write:issue:bitbucket`.
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard → Settings → Integrations → Bitbucket Issues**. Enter your Atlassian email, the API token, and your Bitbucket workspace slug, then click **Connect**.
+  </Step>
+  <Step title="Select a repository">
+    Choose which repository receives Takumo issues.
+  </Step>
+</Steps>
+
+<Note>
+Your workspace slug is the value in the URL: `bitbucket.org/{workspace}`.
+</Note>
+
+---
+
+## How issues are created
+
+When Takumo detects an issue that meets your notification threshold:
+
+1. Maps the issue to a Bitbucket issue format:
+   - **Title** — Issue title with severity and category
+   - **Content** — Full details in Markdown, including file location, detection context, and remediation guidance
+   - **Priority** — Mapped from Takumo severity (Critical → blocker, High → critical, Medium → major, Low → minor)
+   - **Kind** — Set to `bug` for security findings
+   - **Component** — Set to `security` if the component exists in the repository
+
+2. Creates the issue via the Bitbucket REST API
+
+3. Stores the issue reference on the Takumo issue for bidirectional tracking
+
+---
+
+## Health check
+
+Takumo verifies the connection by calling `GET https://api.bitbucket.org/2.0/repositories?role=member&pagelen=1` with basic auth (email + API token). If authentication fails, the integration is marked as disconnected.
+
+---
+
+## Credentials reference
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Email** | Yes | Your Atlassian account email |
+| **API Token** | Yes | Token with `write:issue:bitbucket` scope |
+| **Workspace** | Yes | Your Bitbucket workspace slug |
+
+---
+
+## Bitbucket source code vs. Bitbucket Issues integration
+
+| | Bitbucket (Source Code) | Bitbucket Issues |
+|---|------------------------|------------------|
+| **Purpose** | PR checks, repo scanning, Brain indexing | Issue tracking from findings |
+| **Auth** | Email + API token + workspace | Email + API token + workspace |
+| **Scopes** | `read:repository`, `read:pullrequest` | `read:repository`, `write:issue` |
+
+You can use both simultaneously. The source code integration handles scanning; the Bitbucket Issues integration handles ticket creation.
+
+---
+
+## Limitations
+
+- **Bitbucket Cloud only** — Bitbucket Server/Data Center issue tracking is not currently supported via this integration.
+- **Issues must be enabled** — The target repository must have the Bitbucket issue tracker enabled in repository settings.
+- **One repository per org** — All Takumo issues go to a single Bitbucket repository. Use Bitbucket automation for further routing.
+- **No bidirectional sync** — Closing the Bitbucket issue does not automatically resolve the Takumo issue (webhook support planned).
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Jira" icon="ticket" href="/integrations/jira">
+    Create Jira tickets from findings
+  </Card>
+  <Card title="Bitbucket" icon="code" href="/integrations/bitbucket">
+    Bitbucket source code scanning
+  </Card>
+</CardGroup>

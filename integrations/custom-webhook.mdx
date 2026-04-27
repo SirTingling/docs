@@ -1,0 +1,108 @@
+---
+title: Custom Webhook
+description: Forward events to any HTTP endpoint via webhook
+icon: "webhook"
+---
+
+Forward security events to any HTTP endpoint. Use this integration when your destination isn't covered by a built-in provider, or when you need to feed events into a custom pipeline.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Set up your endpoint">
+    Create an HTTP endpoint that accepts POST requests with JSON payloads. The endpoint should return a `2xx` status code on success.
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard > Settings > Integrations > Custom Webhook**. Enter your webhook URL and (optionally) an HMAC signing secret.
+  </Step>
+  <Step title="Verify connection">
+    Takumo sends a `HEAD` request to the webhook URL to verify reachability. No authentication is used for the health check.
+  </Step>
+</Steps>
+
+---
+
+## Credential fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **Webhook URL** | URL | Yes | The HTTP endpoint to receive events (e.g. `https://api.example.com/webhooks/takumo`) |
+| **Signing Secret** | Password | No | Optional HMAC secret used to sign payloads for verification |
+
+---
+
+## Health check
+
+Takumo verifies the connection by sending a `HEAD` request to the webhook URL. No authentication headers are included. A `2xx` response confirms the endpoint is reachable.
+
+---
+
+## Payload signing
+
+If you provide a signing secret, Takumo signs every webhook payload using HMAC-SHA256. The signature is included in the `X-Takumo-Signature` header.
+
+To verify:
+
+1. Read the raw request body
+2. Compute `HMAC-SHA256(secret, body)` using your signing secret
+3. Compare the hex digest with the `X-Takumo-Signature` header value
+
+```python
+import hmac
+import hashlib
+
+def verify_signature(body: bytes, secret: str, signature: str) -> bool:
+    expected = hmac.new(
+        secret.encode(), body, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+
+If no signing secret is configured, the `X-Takumo-Signature` header is omitted.
+
+---
+
+## Payload format
+
+Events are sent as JSON POST requests. Each payload includes:
+
+| Field | Description |
+|-------|-------------|
+| `event_type` | `secret_detection`, `policy_violation`, `sentinel_finding`, or `incident` |
+| `timestamp` | ISO 8601 timestamp |
+| `severity` | `critical`, `high`, `medium`, or `low` |
+| `repository` | Repository where the event was detected |
+| `details` | Full event data |
+| `org_id` | Your Takumo org identifier |
+
+---
+
+## Retry behavior
+
+If the endpoint returns a non-`2xx` status or the request times out, Takumo retries with exponential backoff:
+
+- 1st retry: 30 seconds
+- 2nd retry: 2 minutes
+- 3rd retry: 10 minutes
+- After 3 failures: the event is sent to the dead letter queue
+
+Failed deliveries are visible in **Dashboard > Streaming > Dead Letter Queue**.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Splunk" icon="activity" href="/integrations/splunk">
+    Stream events to Splunk via HEC
+  </Card>
+  <Card title="Datadog" icon="bar-chart" href="/integrations/datadog">
+    Send metrics and events to Datadog
+  </Card>
+  <Card title="Streaming" icon="radio" href="/concepts/streaming">
+    Build custom integrations with event streaming
+  </Card>
+  <Card title="Notifications" icon="bell" href="/dashboard/notifications">
+    Configure notification preferences
+  </Card>
+</CardGroup>

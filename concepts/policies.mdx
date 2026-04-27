@@ -72,10 +72,51 @@ A custom policy rule looks like this:
 
 You can match on:
 
-- **Regex patterns** -- match specific token formats
-- **Variable names** -- flag values assigned to keys like `INTERNAL_SECRET`
-- **File paths** -- only enforce in certain directories or file types
-- **Content context** -- match patterns near specific keywords
+- **Regex patterns** — match specific token formats
+- **Variable names** — flag values assigned to keys like `INTERNAL_SECRET`
+- **File paths** — only enforce in certain directories or file types
+- **Content context** — match patterns near specific keywords
+
+## Custom Sentinel rules
+
+In addition to policies (which govern Aegis Shield outbound tokenization), you can create **Sentinel rules** that scan inbound code for security issues.
+
+Create them in the dashboard or directly from the extension:
+
+```json
+{
+  "name": "no-eval",
+  "pattern": { "type": "regex", "value": "eval\\(" },
+  "severity": "critical",
+  "category": "security",
+  "message": "eval() is dangerous — use a safer alternative",
+  "fixSuggestion": "Use JSON.parse() for data or Function() for dynamic code"
+}
+```
+
+Rules sync automatically to all team members' daemons when published.
+
+<CardGroup cols={2}>
+  <Card title="Create Rules in Editor" icon="pencil-ruler" href="/studio/custom-rules">
+    Select code and create a rule from it
+  </Card>
+  <Card title="Manage Rules in Dashboard" icon="pencil-ruler" href="/dashboard/rules">
+    Full rule lifecycle management
+  </Card>
+</CardGroup>
+
+## Org extension policies
+
+Organizations can enforce extension settings across all team members. This is useful for compliance:
+
+| Setting | What it controls |
+|---------|-----------------|
+| **Forced settings** | Settings that members cannot override (e.g., force `scan.onSave: true`) |
+| **Blocked settings** | Settings members cannot change at all |
+| **Compliance mode** | Enforces a minimum set of security settings |
+| **Minimum version** | Requires a specific extension version or newer |
+
+Forced settings show a lock indicator in the extension's side panel. Members see the setting value but can't change it.
 
 ## Policy scope
 
@@ -90,17 +131,17 @@ Apply policies at different levels:
 Narrower scopes override broader ones. A repo-level policy takes precedence over an org-level policy for the same pattern.
 
 <Note>
-Policies apply at the gateway level. When you update a policy, the gateway picks up the change within seconds via config versioning.
+Policies apply at the gateway level. When you update a policy, the coordinator pushes the change to all connected gateways within 500ms via config versioning. The daemon picks up policy changes on next sync.
 </Note>
 
 ## Policy limits by plan
 
-| Plan | Max Policies |
-|------|-------------|
-| Free | 5 |
-| Developer | 15 |
-| Pro | 25 |
-| Enterprise | Unlimited |
+| Plan | Max Policies | Custom Sentinel Rules |
+|------|-------------|----------------------|
+| Free | 5 | 3 |
+| Developer | 15 | 10 |
+| Pro | 25 | 50 |
+| Enterprise | Unlimited | Unlimited |
 
 ## Example: phased rollout
 

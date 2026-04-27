@@ -1,0 +1,84 @@
+---
+title: Pipelines
+description: CI/CD pipeline security analysis
+icon: "git-branch"
+---
+
+Takumo analyzes your CI/CD pipelines for security risks — exposed secrets in workflow files, insecure actions, overly permissive permissions, and risky build configurations.
+
+---
+
+## Supported platforms
+
+| Platform | How it connects |
+|----------|----------------|
+| **GitHub Actions** | Automatic via GitHub App (if installed) |
+| **GitLab CI** | Via GitLab OAuth integration |
+| **Jenkins** | Via Jenkins webhook |
+| **Bitbucket Pipelines** | Via Bitbucket integration |
+
+---
+
+## What Takumo checks
+
+| Check | Severity | Example |
+|-------|----------|---------|
+| Hardcoded secrets in workflow files | Critical | `password: mysecret` in `.github/workflows/deploy.yml` |
+| Overly permissive permissions | High | `permissions: write-all` on a GitHub Actions workflow |
+| Untrusted third-party actions | High | Using `random-user/action@master` instead of a pinned SHA |
+| Missing security scanning steps | Medium | No SAST or dependency check in the pipeline |
+| Insecure artifact handling | Medium | Uploading build artifacts without integrity checks |
+| Missing branch protection bypass | Low | Workflows that skip required checks |
+
+---
+
+## Pipeline list
+
+The pipeline list shows all discovered pipelines:
+
+| Column | Description |
+|--------|-------------|
+| **Pipeline** | Name or file path (e.g., `.github/workflows/ci.yml`) |
+| **Platform** | GitHub Actions, GitLab CI, Jenkins, Bitbucket |
+| **Repository** | Source repo |
+| **Risk score** | Aggregated security score (0-100, higher is riskier) |
+| **Issues** | Number of open security findings |
+| **Last analyzed** | When the pipeline was last scanned |
+
+---
+
+## Pipeline detail
+
+Click a pipeline to see:
+
+- **Workflow visualization** — Steps and dependencies
+- **Security findings** — Each issue with severity, description, and fix
+- **Run history** — Recent pipeline executions and their security status
+- **Remediation** — Suggested fixes, with auto-remediation PRs where possible
+
+### Auto-remediation
+
+For certain findings, Takumo can open a pull request with the fix:
+
+- Pin third-party actions to SHA instead of branch
+- Add missing `permissions` blocks
+- Replace hardcoded secrets with repository secret references
+
+Auto-remediation PRs are created on a dedicated branch and require review before merging.
+
+---
+
+## Credits
+
+Pipeline analysis consumes 1 credit per pipeline run analyzed.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="GitHub Integration" icon="github" href="/integrations/github">
+    GitHub App setup
+  </Card>
+  <Card title="Sentinel" icon="eye" href="/dashboard/sentinel">
+    Sentinel detections
+  </Card>
+</CardGroup>

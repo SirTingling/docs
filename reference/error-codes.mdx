@@ -13,27 +13,35 @@ Every error response follows the same format. Parse it once, handle it everywher
 ```json
 {
   "error": {
-    "code": "UNAUTHORIZED",
-    "message": "Invalid or expired API key",
-    "request_id": "req_a1b2c3d4"
+    "type": "unauthorized",
+    "message": "Authentication required"
   }
 }
 ```
 
-The `code` field is a machine-readable string. The `message` field is human-readable. The `request_id` maps to the audit trail.
+The `type` field is a stable, machine-readable snake_case string. The `message` field is human-readable. The request ID is returned in the `x-aegis-request-id` response header, not in the JSON body.
 
 ## Status codes
 
-| Status | Code | Description |
+| Status | Type | Description |
 |--------|------|-------------|
-| 400 | `BAD_REQUEST` | Malformed JSON, missing required fields |
-| 401 | `UNAUTHORIZED` | Invalid API key, expired key, revoked key |
-| 403 | `FORBIDDEN` | Insufficient scope, plan limit reached |
-| 404 | `NOT_FOUND` | Resource doesn't exist |
-| 429 | `RATE_LIMITED` | Too many requests. Check `Retry-After` header |
-| 500 | `INTERNAL_ERROR` | Something went wrong on our end. Contact support |
-| 502 | `BAD_GATEWAY` | Upstream AI provider returned an error |
-| 503 | `SERVICE_UNAVAILABLE` | Gateway overloaded or coordinator unreachable |
+| 400 | `invalid_request` | Malformed JSON, missing required fields |
+| 400 | `tenant_required` | Request is missing organization context (API key not linked to an org) |
+| 400 | `unsupported_provider` | The specified AI provider is not supported |
+| 401 | `unauthorized` | Invalid API key, missing credentials |
+| 401 | `token_expired` | API key or JWT has expired |
+| 401 | `token_revoked` | API key has been revoked |
+| 403 | `forbidden` | Insufficient scope, plan limit reached |
+| 404 | `not_found` | Resource doesn't exist |
+| 413 | `payload_too_large` | Request body exceeds maximum size |
+| 422 | `governance_violation` | Sentinel blocked the AI response (policy violation) |
+| 429 | `rate_limited` | Too many requests. Check `Retry-After` header |
+| 500 | `internal_error` | Something went wrong on our end. Contact support |
+| 502 | `upstream_error` | Upstream AI provider returned an error |
+| 503 | `too_many_concurrent` | Too many concurrent requests. Check `Retry-After` header |
+| 503 | `circuit_open` | Circuit breaker tripped for upstream provider. Retry after cooldown |
+| 503 | `cloud_unavailable` | Coordinator or cloud service temporarily unreachable |
+| 504 | `upstream_timeout` | Upstream AI provider timed out |
 
 ## Handling 429 Rate Limited
 
@@ -71,24 +79,36 @@ const response = await fetch("https://gateway.takumo.io/v1/shield", {
 if (!response.ok) {
   const { error } = await response.json();
 
-  switch (error.code) {
-    case "UNAUTHORIZED":
+  switch (error.type) {
+    case "unauthorized":
+    case "token_expired":
+    case "token_revoked":
       // Key is bad. Check config.
       break;
-    case "RATE_LIMITED":
+    case "rate_limited":
       // Wait and retry.
       const retryAfter = response.headers.get("Retry-After");
       await sleep(Number(retryAfter) * 1000);
       break;
-    case "BAD_GATEWAY":
+    case "too_many_concurrent":
+    case "circuit_open":
+    case "cloud_unavailable":
+      // Temporary overload. Wait and retry.
+      const svcRetry = response.headers.get("Retry-After");
+      await sleep(Number(svcRetry) * 1000);
+      break;
+    case "upstream_error":
       // AI provider issue, not Takumo. Check provider status.
       break;
+    case "governance_violation":
+      // Sentinel blocked the AI response. Review scan_id in the error.
+      break;
     default:
-      console.error(`Takumo error: ${error.code} - ${error.message}`);
+      console.error(`Takumo error: ${error.type} - ${error.message}`);
   }
 }
 ```
 
 <Tip>
-Always include the `request_id` when contacting support. It maps directly to the audit trail.
+Always include the `x-aegis-request-id` response header value when contacting support. It maps directly to the audit trail.
 </Tip>

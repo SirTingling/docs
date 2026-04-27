@@ -1,0 +1,61 @@
+---
+title: Vault Service
+description: Cryptographic fingerprinting and salts
+icon: "lock"
+---
+
+# Vault Service
+
+Takumo Vault handles cryptographic fingerprinting and secret salt management. It's what makes deterministic tokenization work — same secret, same token, every time.
+
+---
+
+## What it does
+
+| Function | Description |
+|----------|-------------|
+| **Fingerprinting** | Identify secrets without storing them. A fingerprint is a one-way hash that tells you "this is the same secret" without revealing the value. |
+| **Salt management** | Salts add entropy to token generation. Rotation provides forward secrecy — old tokens can't decode new secrets. |
+| **Verification** | Confirm whether a value matches a known fingerprint without storing either. |
+
+---
+
+## RPCs
+
+9 operations via gRPC and HTTP:
+
+| RPC | Description |
+|-----|-------------|
+| `CreateFingerprint` | Create a fingerprint from a secret value |
+| `GetFingerprint` | Retrieve a fingerprint by ID |
+| `ListFingerprints` | List fingerprints for an organization |
+| `DeleteFingerprint` | Remove a fingerprint |
+| `VerifyFingerprint` | Check if a value matches a fingerprint |
+| `CreateSalt` | Create a new salt for token generation |
+| `GetCurrentSalt` | Get the active salt |
+| `RotateSalt` | Create a new salt and mark the old one as rotated |
+| `ListSaltRotations` | View salt rotation history |
+
+---
+
+## Salt rotation
+
+Salt rotation provides forward secrecy:
+
+1. Current salt is used for all new tokenizations
+2. When rotated, a new salt becomes active
+3. Old salts are kept for rehydrating existing tokens
+4. Old tokens remain valid until their session expires
+
+Rotation is triggered manually or on a schedule configured by org admins.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Security Model" icon="lock" href="/concepts/security">
+    How tokenization security works
+  </Card>
+  <Card title="Deploy Vault" icon="cloud" href="/deployment/configuration">
+    Vault service configuration
+  </Card>
+</CardGroup>

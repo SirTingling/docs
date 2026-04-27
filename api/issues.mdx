@@ -1,0 +1,89 @@
+---
+title: Issues
+description: Query security issues across repos
+icon: "alert-triangle"
+---
+
+List and filter security issues detected across your organization's repositories.
+
+<Note>Requires Enterprise plan and `scan:read` scope on the API key.</Note>
+
+## GET /issues
+
+<CodeGroup>
+```bash curl
+curl "https://cloud.takumo.io/api/v1/issues?severity=critical&status=open" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://cloud.takumo.io/api/v1/issues?severity=critical&status=open",
+  { headers: { "Authorization": "Bearer tk_live_your_api_key" } }
+);
+const result = await response.json();
+```
+</CodeGroup>
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `severity` | string | No | Filter by severity: `critical`, `high`, `medium`, `low` |
+| `status` | string | No | Filter by status: `open`, `acknowledged`, `resolved`, `dismissed` |
+| `type` | string | No | Filter by issue type |
+| `repository` | string | No | Filter by repository name (case-insensitive substring match) |
+| `cursor` | string | No | Pagination cursor (pass `nextCursor` from a previous response) |
+| `limit` | number | No | Results per page (default 50, max 100) |
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "cm2x7abc123def456",
+      "title": "Hardcoded AWS access key in config",
+      "type": "secret_exposure",
+      "severity": "critical",
+      "status": "open",
+      "riskScore": 92,
+      "repository": "org/api-service",
+      "tags": ["aws", "secret", "high-priority"],
+      "assigneeId": null,
+      "snoozedUntil": null,
+      "resolutionType": null,
+      "resolvedAt": null,
+      "slaDueAt": "2026-04-17T14:30:00.000Z",
+      "lastSeenAt": "2026-04-15T09:00:00.000Z",
+      "createdAt": "2026-04-10T14:30:00.000Z",
+      "updatedAt": "2026-04-15T09:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "hasMore": true,
+    "nextCursor": "cm2x7abc123def456"
+  }
+}
+```
+
+### Issue object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique issue ID |
+| `title` | string | Human-readable issue title |
+| `type` | string | Issue type (e.g. `secret_exposure`, `vulnerable_dependency`) |
+| `severity` | string | `critical`, `high`, `medium`, `low` |
+| `status` | string | `open`, `acknowledged`, `resolved`, `dismissed` |
+| `riskScore` | number | Computed risk score |
+| `repository` | string | Repository (org/name format) |
+| `tags` | string[] | Tags applied to the issue |
+| `assigneeId` | string \| null | User ID of the assignee, if any |
+| `snoozedUntil` | string \| null | ISO 8601 timestamp if snoozed |
+| `resolutionType` | string \| null | How the issue was resolved (when resolved) |
+| `resolvedAt` | string \| null | ISO 8601 resolution timestamp |
+| `slaDueAt` | string \| null | ISO 8601 SLA deadline |
+| `lastSeenAt` | string | Most recent detection timestamp |
+| `createdAt` | string | When the issue was first created |
+| `updatedAt` | string | Last update timestamp |

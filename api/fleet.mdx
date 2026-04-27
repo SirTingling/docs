@@ -1,0 +1,76 @@
+---
+title: Fleet
+description: Gateway fleet management
+icon: "server"
+---
+
+Monitor and manage Aegis Shield gateway instances across your infrastructure.
+
+<Warning>
+Fleet management is done through the **Dashboard UI**, not a REST API. There are no `/fleet/*` REST endpoints on the Cloud API. Gateway instances register via the coordinator gRPC service, and fleet data is viewed and managed in the dashboard.
+</Warning>
+
+## How fleet management works
+
+Gateway instances connect to the **Gateway Coordinator** using gRPC, not HTTP. When a gateway starts, it authenticates with a join key and registers itself with the coordinator. The coordinator tracks instance state, version, and last-seen timestamps, then writes that data to the Cloud database where the dashboard reads it.
+
+There are two dashboard pages for fleet management:
+
+| Page | Path | Permission | Purpose |
+|------|------|------------|---------|
+| Fleet overview | Dashboard > Fleet | `fleet.read` | View all gateway instances, states, and stats |
+| Gateway settings | Dashboard > Settings > Gateway | `fleet.manage` | Create and revoke join keys, view config version |
+
+## Fleet data
+
+The Fleet page shows four summary stats and a table of all gateway instances.
+
+### Summary stats
+
+| Stat | Description |
+|------|-------------|
+| **Total Instances** | All gateway instances that have ever registered |
+| **Connected** | Actively communicating with the coordinator |
+| **Stale** | Missed the last health check (default: 120 seconds) |
+| **Disconnected** | Offline for an extended period |
+
+### Instance fields
+
+Each instance row in the fleet table includes:
+
+| Field | Description |
+|-------|-------------|
+| Instance ID | Unique identifier assigned at registration |
+| Version | Aegis Shield version running on the instance |
+| State | `connected`, `stale`, or `disconnected` |
+| Last Seen | Relative timestamp of last coordinator heartbeat |
+| Coordinator | ID of the coordinator the instance is connected to |
+
+## Join keys
+
+Join keys are managed in **Dashboard > Settings > Gateway**. They authenticate gateway instances when they register with the coordinator.
+
+- Join keys are shown **once** at creation. Store them securely.
+- Each key has a name, environment (`production`, `staging`, or `development`), and a `jk_` prefix for identification.
+- Revoking a key prevents new gateway registrations using that key.
+- Creating and revoking keys requires the `fleet.manage` permission.
+
+## Permissions
+
+| Permission | Roles | Access |
+|------------|-------|--------|
+| `fleet.read` | Owner, Admin, Security Admin, Member, Viewer | View fleet page and instance data |
+| `fleet.manage` | Owner, Admin, Security Admin | Create and revoke join keys, manage gateway settings |
+
+<Note>
+Fleet features are only available on plans that include gateway deployment. The fleet page returns a 404 if fleet is not enabled for your organization.
+</Note>
+
+<CardGroup cols={2}>
+  <Card title="Coordinator" icon="network-wired" href="/concepts/coordinator">
+    How the coordinator manages gateway connections.
+  </Card>
+  <Card title="Dashboard Fleet" icon="server" href="/dashboard/fleet">
+    Using the fleet dashboard page.
+  </Card>
+</CardGroup>

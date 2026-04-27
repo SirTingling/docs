@@ -1,0 +1,191 @@
+---
+title: Brain Context
+description: Query AI code intelligence context
+icon: "brain"
+---
+
+Retrieve contextual code intelligence from Brain -- patterns, function signatures, architectural boundaries, and dependency context for a given file in a repository.
+
+**Base URL:** `https://cloud.takumo.io/api/v1/brain`
+
+---
+
+## POST /brain/context
+
+Fetch developer context for a specific file in a repository. Used by extensions and AI tools to enrich prompts with codebase knowledge. Proxies to the Brain Query service internally.
+
+**Scope:** No specific scope required (any valid API key).
+
+<CodeGroup>
+```bash curl
+curl -X POST "https://cloud.takumo.io/api/v1/brain/context" \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo_id": "org/api-service",
+    "file_path": "src/auth.ts",
+    "language": "typescript"
+  }'
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://cloud.takumo.io/api/v1/brain/context",
+  {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer tk_live_your_api_key",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      repo_id: "org/api-service",
+      file_path: "src/auth.ts",
+      language: "typescript",
+    }),
+  }
+);
+const context = await response.json();
+```
+</CodeGroup>
+
+### Request body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `repo_id` | string | Yes | Repository identifier (org/repo format) |
+| `file_path` | string | Yes | File path within the repository |
+| `language` | string | No | Programming language hint (default `""`) |
+
+### Response
+
+```json
+{
+  "relevantFunctions": [
+    {
+      "name": "validateToken",
+      "filePath": "src/auth.ts",
+      "signature": "async validateToken(token: string): Promise<User>",
+      "description": "Validates JWT token and returns user object",
+      "relevanceScore": 0.95
+    }
+  ],
+  "establishedPatterns": [
+    {
+      "patternName": "JWT validation with refresh",
+      "description": "Validates JWT, refreshes if expired, returns user object",
+      "category": "auth",
+      "usageCount": 12
+    }
+  ],
+  "archBoundaries": [
+    {
+      "boundaryType": "domain boundary",
+      "filePath": "src/auth.ts",
+      "description": "Auth module boundary - JWT validation and session management"
+    }
+  ],
+  "dependencyContext": [
+    {
+      "packageName": "jsonwebtoken",
+      "version": "9.0.0",
+      "usageContext": "JWT signing and verification in auth module"
+    }
+  ],
+  "archSummary": "Auth module handling JWT-based authentication with refresh token rotation",
+  "cacheSource": "cache_hit",
+  "queryDurationMs": 42
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `relevantFunctions` | array | Function signatures near the queried file, ranked by relevance |
+| `establishedPatterns` | array | Code patterns detected in the file or related files |
+| `archBoundaries` | array | Architectural module boundaries the file belongs to |
+| `dependencyContext` | array | Package dependencies relevant to the file |
+| `archSummary` | string | Short natural-language summary of the file's architectural role |
+| `cacheSource` | string | Whether the result came from cache or was freshly computed |
+| `queryDurationMs` | number | Time taken by the Brain Query service in milliseconds |
+
+### Error responses
+
+| Status | Condition |
+|--------|-----------|
+| `400` | Missing `repo_id` or `file_path` |
+| `503` | Brain Query service unavailable |
+
+---
+
+## POST /brain/sentinel-context
+
+Fetch context tuned for Sentinel analysis and Phase 4 transform prompts. Wire-compatible with `/brain/context` (same response shape) but optimized for rewrite relevance -- patterns and architectural boundaries rather than code completion.
+
+Used internally by Sentinel when reviewing pull requests.
+
+**Scope:** No specific scope required (any valid API key).
+
+```bash
+curl -X POST "https://cloud.takumo.io/api/v1/brain/sentinel-context" \
+  -H "Authorization: Bearer tk_live_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo_id": "org/api-service",
+    "file_path": "src/auth.ts",
+    "language": "typescript"
+  }'
+```
+
+### Request body
+
+Same as [`POST /brain/context`](#post-braincontext).
+
+### Response
+
+Same shape as [`POST /brain/context`](#post-braincontext) -- a `DeveloperContextResponse` with `relevantFunctions`, `establishedPatterns`, `archBoundaries`, `dependencyContext`, `archSummary`, `cacheSource`, and `queryDurationMs`.
+
+---
+
+## GET /brain/policies
+
+Fetch active policies for AI analysis. Returns all enabled, non-deleted policies for your organization with their enforcement rules.
+
+**Scope:** No specific scope required (any valid API key).
+
+```bash
+curl "https://cloud.takumo.io/api/v1/brain/policies" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+### Response
+
+```json
+{
+  "policies": [
+    {
+      "id": "pol_abc123",
+      "name": "No hardcoded secrets",
+      "description": "Detect and block hardcoded API keys, tokens, and passwords",
+      "type": "security",
+      "status": "active",
+      "enforcementMode": "block",
+      "rules": { "patterns": ["API_KEY=", "SECRET="], "severity": "critical" },
+      "enabled": true
+    }
+  ]
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Policy ID |
+| `name` | string | Policy name |
+| `description` | string or null | Policy description |
+| `type` | string | Policy type (e.g. `security`, `compliance`) |
+| `status` | string | Policy status |
+| `enforcementMode` | string | How the policy is enforced (`block`, `warn`, `audit`) |
+| `rules` | object | Policy rules configuration |
+| `enabled` | boolean | Whether the policy is currently active |

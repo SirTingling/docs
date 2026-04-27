@@ -4,7 +4,7 @@ description: Environment variables and Helm values reference
 icon: "wrench"
 ---
 
-Complete reference for configuring the gateway and coordinator. All values are set via Helm chart values, which generate Kubernetes ConfigMaps with the corresponding environment variables.
+Complete reference for configuring all Takumo services. All values are set via Helm chart values, which generate Kubernetes ConfigMaps with the corresponding environment variables.
 
 ## Gateway (Aegis Shield)
 
@@ -16,11 +16,12 @@ Complete reference for configuring the gateway and coordinator. All values are s
 | `TAKUMO_SHUTDOWN_TIMEOUT` | `server.shutdownTimeout` | `30` | Graceful shutdown timeout in seconds |
 | `TAKUMO_AUTH_MODE` | `auth.mode` | `jwt` | Authentication mode (`jwt` or `none`) |
 | `TAKUMO_AUTH_ISSUER` | `auth.issuer` | `https://cloud.takumo.io` | Expected JWT issuer |
-| `TAKUMO_AUTH_AUDIENCE` | `auth.audience` | `aegis-gateway` | Expected JWT audience |
-| `TAKUMO_AUTH_PUBLIC_KEY_PATH` | `secrets.jwt.key` | - | Path to JWT public key (mounted at `/etc/takumo/keys/`) |
+| `TAKUMO_AUTH_AUDIENCE` | `auth.audience` | `aegis-shield` | Expected JWT audience |
+| `TAKUMO_AUTH_PUBLIC_KEY_PATH` | `secrets.jwt.key` | - | Path to JWT public key (mounted at `/etc/takumo/keys/`). Only set when `secrets.jwt.enabled` is `true`. |
 | `TAKUMO_FAIL_MODE` | `aegis.failMode` | `fail_closed` | Behavior when coordinator is unreachable: `fail_closed` rejects requests, `fail_open` passes them through |
 | `TAKUMO_MAX_VAULT_ENTRIES` | `aegis.maxVaultEntries` | `10000` | Maximum secrets held in the in-memory vault |
 | `TAKUMO_MAX_CONCURRENT_SESSIONS` | `aegis.maxConcurrentSessions` | `5000` | Maximum concurrent active sessions |
+| `TAKUMO_AUDIT_BUFFER_CAPACITY` | `auditBuffer.capacity` | `50000` | In-memory audit event buffer capacity before flush |
 
 ### Cloud and coordinator
 
@@ -44,12 +45,22 @@ Complete reference for configuring the gateway and coordinator. All values are s
 | `TAKUMO_RATE_LIMIT_USER_RPM` | `rateLimit.userRpm` | `60` | User-level requests per minute |
 | `TAKUMO_RATE_LIMIT_POD_ESTIMATE` | `rateLimit.fallbackPodEstimate` | `5` | Assumed pod count when no shared state is available |
 
+<Note>The `rateLimit.rateLimitSalt` value (env var `TAKUMO_RATE_LIMIT_SALT`) is required in production for per-tier rate limit bucketing. Set it via a sealed secret, not in plain values.</Note>
+
+### Redis (distributed rate limiting)
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `TAKUMO_REDIS_URL` | `redis.enabled` | - | Auto-set to the in-cluster Redis URL when `redis.enabled` is `true` |
+| `TAKUMO_REDIS_POOL_SIZE` | `redis.poolSize` | `10` | Connection pool size for the gateway |
+
 ### Logging
 
 | Environment Variable | Helm Value | Default | Description |
 |---------------------|-----------|---------|-------------|
 | `TAKUMO_LOG_FORMAT` | `log.format` | `json` | Log format (`json` or `pretty`) |
 | `RUST_LOG` | `log.level` | `info,takumo=debug` | Rust log level directive |
+| `LOG_SAMPLE_RATE` | `log.sampleRate` | `1.0` | Log sampling rate for INFO/DEBUG (0.0 to 1.0, WARN/ERROR always 100%) |
 
 ## Coordinator
 
@@ -79,6 +90,192 @@ Complete reference for configuring the gateway and coordinator. All values are s
 | `TAKUMO_TELEMETRY_FLUSH_INTERVAL_MS` | `coordinator.telemetryFlushIntervalMs` | `5000` | Maximum time between telemetry flushes in ms |
 | `TAKUMO_MAX_CONNECTIONS_PER_ORG` | `coordinator.maxConnectionsPerOrg` | `100` | Maximum gateway connections per organization |
 
+### NATS (coordinator publishing)
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `TAKUMO_NATS_URL` | `nats.url` | `nats://takumo-stream-nats:4222` | NATS server URL. Only set when `nats.enabled` is `true`. |
+
+<Note>The NATS NKey seed for the coordinator is mounted from a Kubernetes secret (`nats.secretName`), not from the ConfigMap.</Note>
+
+### Logging
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `TAKUMO_LOG_FORMAT` | `log.format` | `json` | Log format (`json` or `pretty`) |
+| `RUST_LOG` | `log.level` | `info,takumo=debug` | Rust log level directive |
+
+## Stream Ingest
+
+### Server
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `HTTP_BIND` | `server.httpPort` | `0.0.0.0:8080` | HTTP listener address |
+| `GRPC_BIND` | `server.grpcPort` | `0.0.0.0:50051` | gRPC listener address |
+
+### Ingest settings
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `DB_MAX_CONNECTIONS` | `ingest.dbMaxConnections` | `20` | Maximum database connection pool size |
+| `DB_ACQUIRE_TIMEOUT_SECS` | `ingest.dbAcquireTimeoutSecs` | `5` | Database connection acquire timeout in seconds |
+| `NATS_URL` | `nats.url` | `nats://takumo-stream-nats:4222` | NATS server URL |
+| `NATS_PUBLISH_TIMEOUT_MS` | `ingest.natsPublishTimeoutMs` | `2000` | NATS publish timeout in milliseconds |
+| `SUBSCRIPTION_CACHE_TTL_SECS` | `ingest.subscriptionCacheTtlSecs` | `300` | Subscription cache TTL in seconds |
+| `MAX_BATCH_SIZE` | `ingest.maxBatchSize` | `1000` | Maximum events per batch |
+| `MAX_METADATA_KEYS` | `ingest.maxMetadataKeys` | `50` | Maximum metadata keys per event |
+| `MAX_METADATA_VALUE_LEN` | `ingest.maxMetadataValueLen` | `4096` | Maximum metadata value length in bytes |
+| `JWT_ISSUER` | `ingest.jwtIssuer` | `https://takumo.io` | Expected JWT issuer |
+| `JWT_AUDIENCE` | `ingest.jwtAudience` | `stream` | Expected JWT audience |
+
+### Logging
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `LOG_FORMAT` | `log.format` | `json` | Log format (`json` or `pretty`) |
+| `RUST_LOG` | `log.level` | `info,takumo=debug` | Rust log level directive |
+
+<Note>The `DATABASE_URL` and `NATS_NKEY_SEED` are mounted from Kubernetes secrets, not from the ConfigMap. Stream Postgres migrations live in `crates/takumo-stream-ingest/sql/V*.sql`. The cloud Prisma client is a read-only consumer — never run `prisma migrate` or `prisma db push` against the stream database.</Note>
+
+## Stream Router
+
+### Server
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `ROUTER_HTTP_ADDR` | `server.httpPort` | `0.0.0.0:9090` | HTTP listener address |
+| `ROUTER_ADMIN_GRPC_ADDR` | `server.adminGrpcPort` | `0.0.0.0:9091` | Admin gRPC port for destination/subscription management |
+
+### NATS
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `NATS_URL` | `nats.url` | `nats://takumo-stream-nats:4222` | NATS server URL |
+| `NATS_PULL_BATCH` | `router.natsPullBatch` | `32` | Messages per NATS pull batch |
+| `NATS_PULL_TIMEOUT_SECS` | `router.natsPullTimeoutSecs` | `5` | NATS pull timeout in seconds |
+| `NATS_ACK_WAIT_SECS` | `router.natsAckWaitSecs` | `30` | NATS acknowledgment wait time in seconds |
+
+### Router behavior
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `MAX_INFLIGHT` | `router.maxInflight` | `256` | Maximum in-flight messages |
+| `SHUTDOWN_GRACE_SECS` | `router.shutdownGraceSecs` | `30` | Graceful shutdown timeout in seconds |
+| `RETRY_MAX_ATTEMPTS` | `router.retryMaxAttempts` | `5` | Maximum delivery retry attempts |
+| `RETRY_BASE_DELAY_MS` | `router.retryBaseDelayMs` | `1000` | Base retry delay in milliseconds |
+| `RETRY_MAX_DELAY_MS` | `router.retryMaxDelayMs` | `60000` | Maximum retry delay in milliseconds |
+
+### Circuit breaker
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `CIRCUIT_BREAKER_THRESHOLD` | `router.circuitBreaker.threshold` | `5` | Failures before circuit opens |
+| `CIRCUIT_BREAKER_RECOVERY_SECS` | `router.circuitBreaker.recoverySecs` | `60` | Seconds before half-open retry |
+| `CIRCUIT_BREAKER_WINDOW_SECS` | `router.circuitBreaker.windowSecs` | `60` | Failure counting window in seconds |
+
+### DLQ and event archive
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `DLQ_ARCHIVE_BUCKET` | `router.dlqArchive.bucket` | - | S3 bucket for DLQ archive (only set when non-empty) |
+| `DLQ_ARCHIVE_REGION` | `router.dlqArchive.region` | `us-east-1` | S3 region for DLQ archive |
+| `DLQ_ARCHIVE_PREFIX` | `router.dlqArchive.prefix` | `dlq` | S3 key prefix for DLQ archive |
+| `DLQ_ARCHIVE_RETENTION_DAYS` | `router.dlqArchive.retentionDays` | `90` | DLQ archive retention in days |
+| `DLQ_ARCHIVE_MIN_AGE_HOURS` | `router.dlqArchive.minAgeHours` | `48` | Minimum age before DLQ archival |
+| `EVENT_ARCHIVE_BUCKET` | `router.eventArchive.bucket` | - | S3 bucket for event archive (only set when non-empty) |
+| `EVENT_ARCHIVE_PREFIX` | `router.eventArchive.prefix` | `events` | S3 key prefix for event archive |
+| `EVENT_ARCHIVE_RETENTION_DAYS` | `router.eventArchive.retentionDays` | `7` | Event archive retention in days |
+
+### Customer metrics and integrations
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `STREAM_CUSTOMER_METRICS_ENABLED` | `router.customerMetricsEnabled` | `true` | Enable customer-facing metrics forwarding |
+| `DATADOG_DEFAULT_SITE` | `router.datadogDefaultSite` | `datadoghq.com` | Default Datadog site for metrics |
+| `NEWRELIC_DEFAULT_REGION` | `router.newrelicDefaultRegion` | `US` | Default New Relic region |
+| `CLOUD_NOTIFY_URL` | `router.cloudNotifyUrl` | - | Cloud notification webhook URL (only set when non-empty) |
+
+### Logging
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `LOG_FORMAT` | `log.format` | `json` | Log format (`json` or `pretty`) |
+| `RUST_LOG` | `log.level` | `info,takumo=debug` | Rust log level directive |
+
+<Note>The `DATABASE_URL`, `NATS_NKEY_SEED`, `ENCRYPTION_KEY` (AES-256 base64 for destination credential encryption), S3 credentials, and cloud notify shared secret are all mounted from Kubernetes secrets, not from the ConfigMap.</Note>
+
+## NATS
+
+NATS configuration is rendered into a `nats.conf` file (not environment variables) via a ConfigMap.
+
+| Setting | Helm Value | Default | Description |
+|---------|-----------|---------|-------------|
+| JetStream enabled | `jetstream.enabled` | `true` | Required for durable event delivery |
+| Max memory | `jetstream.maxMemory` | `1Gi` | JetStream memory limit |
+| Max file storage | `jetstream.maxFile` | `45Gi` | JetStream file storage limit |
+| Client port | `ports.client` | `4222` | NATS client connection port |
+| Cluster port | `ports.cluster` | `6222` | NATS inter-node cluster port |
+| Monitor port | `ports.monitor` | `8222` | NATS HTTP monitoring port |
+| Persistence size | `persistence.size` | `50Gi` | PVC size for JetStream data |
+| Replica count | `replicaCount` | `3` | StatefulSet replicas (cluster auto-configured when >1) |
+
+### NATS authentication
+
+NATS uses NKey authentication. The full `authorization { ... }` block is stored in a SealedSecret and included into `nats.conf` at runtime. Four NKey users per cluster:
+
+| Key | Used by | Purpose |
+|-----|---------|---------|
+| `stream-ingest` | Stream Ingest | Publish events |
+| `stream-router` | Stream Router | Subscribe to events, route to destinations |
+| `coordinator` | Gateway Coordinator | Publish detection events |
+| `worker` | Cloud Worker | Subscribe to detection events |
+
+<Warning>For Linkerd service mesh: add `config.linkerd.io/opaque-ports: "4222"` annotation to the NATS service. Linkerd's mTLS proxy can interfere with NATS TCP connections.</Warning>
+
+## Vault Service
+
+### Server
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `VAULT_HTTP_PORT` | `server.httpPort` | `8080` | HTTP port |
+| `VAULT_GRPC_PORT` | `server.grpcPort` | `50053` | gRPC port |
+| `VAULT_SHUTDOWN_TIMEOUT` | `server.shutdownTimeout` | `30` | Graceful shutdown timeout in seconds |
+
+### Vault behavior
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `VAULT_DB_MAX_CONNECTIONS` | `vault.dbMaxConnections` | `20` | Maximum database connection pool size |
+| `VAULT_DB_ACQUIRE_TIMEOUT_SECS` | `vault.dbAcquireTimeoutSecs` | `5` | Database connection acquire timeout in seconds |
+| `VAULT_JANITOR_INTERVAL_SECS` | `vault.janitorIntervalSecs` | `300` | Stale fingerprint cleanup interval in seconds |
+| `VAULT_STALE_FINGERPRINT_DAYS` | `vault.staleFingerprintDays` | `90` | Days before a fingerprint is considered stale |
+| `VAULT_RATE_LIMIT_LOOKUP_PER_SEC` | `vault.rateLimitLookupPerSec` | `1000` | Lookup rate limit per second |
+| `VAULT_RATE_LIMIT_STORE_PER_SEC` | `vault.rateLimitStorePerSec` | `100` | Store rate limit per second |
+| `VAULT_RATE_LIMIT_DELETE_PER_MIN` | `vault.rateLimitDeletePerMin` | `10` | Delete rate limit per minute |
+| `VAULT_MAX_CONCURRENT_RPCS` | `vault.maxConcurrentRpcs` | `500` | Maximum concurrent RPCs |
+
+### Logging
+
+| Environment Variable | Helm Value | Default | Description |
+|---------------------|-----------|---------|-------------|
+| `VAULT_LOG_FORMAT` | `log.format` | `json` | Log format (`json` or `pretty`) |
+| `RUST_LOG` | `log.level` | `info,takumo=debug` | Rust log level directive |
+
+<Note>The `DATABASE_URL` and `SALT_KMS` key are mounted from Kubernetes secrets, not from the ConfigMap.</Note>
+
+## Daemon (local)
+
+The daemon is configured via the extension settings, not Helm. Key settings:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `takumo.daemon.port` | `19532` | Local HTTP port |
+| `takumo.daemon.binaryPath` | (auto) | Override binary path for enterprise deployments |
+| `takumo.daemon.autoStart` | `true` | Auto-start on extension activation |
+| `takumo.cloud.baseUrl` | `https://cloud.takumo.io` | Cloud API URL |
+
 ## Secrets management
 
 The Helm charts support three secrets providers, controlled by `secrets.provider`:
@@ -95,7 +292,7 @@ The Helm charts support three secrets providers, controlled by `secrets.provider
       encryptedData: "AgBy3i4OJSWK+PiTySYZZA9rO..."
   ```
 
-  This is the default for SaaS and staging environments.
+  This is the recommended approach for production environments.
 </Accordion>
 
 <Accordion title="External Secrets">
@@ -127,57 +324,54 @@ The Helm charts support three secrets providers, controlled by `secrets.provider
 
 ## Autoscaling
 
-Both charts include HPA configuration with identical defaults:
+Most charts include HPA configuration. The scale-down policy is consistent across all charts (25% per minute, 5-minute stabilization window). Scale-up allows 100% per 30 seconds or 4 pods per 60 seconds. However, each service has different replica counts and CPU targets tuned for its workload:
 
-```yaml
-autoscaling:
-  enabled: true
-  minReplicas: 2
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 70
-  targetMemoryUtilizationPercentage: 80
-  behavior:
-    scaleDown:
-      stabilizationWindowSeconds: 300
-      policies:
-        - type: Percent
-          value: 25
-          periodSeconds: 60
-    scaleUp:
-      stabilizationWindowSeconds: 30
-      policies:
-        - type: Percent
-          value: 100
-          periodSeconds: 30
-        - type: Pods
-          value: 4
-          periodSeconds: 60
-```
+| Service | minReplicas | maxReplicas | CPU target | Memory target |
+|---------|------------|------------|------------|---------------|
+| Gateway (Aegis Shield) | 2 | 10 | 70% | 80% |
+| Coordinator | 2 | 10 | 70% | 80% |
+| Stream Ingest | 2 | 10 | 70% | 80% |
+| Stream Router | 2 | 20 | 70% | 80% |
+| Vault Service | 2 | 10 | 70% | 80% |
+| Sentinel Service | 2 | 10 | 60% | - |
+| Brain Indexer | 3 | 20 | 60% | - |
+| Brain Embedding | 4 | 12 | 60% | - |
+| Brain Query | 4 | 16 | 70% | - |
 
-Scale-down is conservative (25% per minute, 5-minute stabilization). Scale-up is aggressive (100% or 4 pods per 30 seconds).
+<Note>NATS runs as a StatefulSet (default 3 replicas) and brain-pattern runs as a CronJob — neither uses HPA.</Note>
 
 ## Resource defaults
 
-Both services use the same resource requests and limits:
+Each service has resource requests and limits tuned for its workload:
 
-```yaml
-resources:
-  requests:
-    cpu: 100m
-    memory: 256Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
-```
+| Service | CPU request | Memory request | CPU limit | Memory limit |
+|---------|-----------|---------------|----------|-------------|
+| Gateway (Aegis Shield) | 100m | 256Mi | 500m | 512Mi |
+| Coordinator | 100m | 256Mi | 500m | 512Mi |
+| Stream Ingest | 500m | 512Mi | 2000m | 1Gi |
+| Stream Router | 1000m | 1Gi | 4000m | 4Gi |
+| Vault Service | 100m | 256Mi | 500m | 512Mi |
+| Sentinel Service | 100m | 256Mi | 500m | 512Mi |
+| NATS | 500m | 1Gi | 2000m | 2Gi |
+| Brain Indexer | 250m | 512Mi | 1000m | 1Gi |
+| Brain Embedding | 500m | 512Mi | 2000m | 1Gi |
+| Brain Query | 250m | 256Mi | 500m | 512Mi |
 
 ## Pod security
 
-Both charts enforce a restrictive security context by default:
+All charts enforce a restrictive security context by default: read-only root filesystem, no privilege escalation, all Linux capabilities dropped, and seccomp set to `RuntimeDefault`. The user/group IDs vary by base image:
+
+| Service | UID/GID | Base image |
+|---------|---------|------------|
+| Gateway, Coordinator, Vault, Sentinel, Brain Indexer, Brain Embedding, Brain Query, Brain Pattern | 65534 (`nobody`) | Standard |
+| Stream Ingest, Stream Router | 65532 | `distroless/cc-debian12:nonroot` |
+| NATS | 1000 (`nats`) | `nats:2.10-alpine` |
 
 ```yaml
+# Common security context (UIDs differ per service — see table above)
 podSecurityContext:
   runAsNonRoot: true
-  runAsUser: 65534
+  runAsUser: 65534   # or 65532 / 1000 depending on service
   runAsGroup: 65534
   fsGroup: 65534
   seccompProfile:
@@ -190,5 +384,3 @@ containerSecurityContext:
     drop:
       - ALL
 ```
-
-<Note>Containers run as `nobody` (UID 65534) with a read-only root filesystem and all Linux capabilities dropped.</Note>

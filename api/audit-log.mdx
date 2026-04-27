@@ -1,0 +1,99 @@
+---
+title: Audit Log
+description: Query organization audit events
+icon: "scroll"
+---
+
+Retrieve timestamped records of every action taken in your organization — member changes, policy updates, key operations, and security events.
+
+<Note>Requires Developer plan or higher and `audit.read` scope on the API key.</Note>
+
+## GET /audit-log
+
+<CodeGroup>
+```bash curl
+curl "https://cloud.takumo.io/api/v1/audit-log?from=2026-04-01&to=2026-04-30" \
+  -H "Authorization: Bearer tk_live_your_api_key"
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://cloud.takumo.io/api/v1/audit-log?from=2026-04-01&to=2026-04-30",
+  { headers: { "Authorization": "Bearer tk_live_your_api_key" } }
+);
+const result = await response.json();
+```
+</CodeGroup>
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `from` | string | No | Start date (ISO 8601). Defaults to 30 days ago. |
+| `to` | string | No | End date (ISO 8601). Defaults to now. |
+| `action` | string | No | Filter by action type (e.g., `member.invited`, `policy.updated`) |
+| `actor` | string | No | Filter by actor (user ID or API key ID) |
+| `cursor` | string | No | Pagination cursor from previous response |
+| `limit` | number | No | Results per page (default 50, max 100) |
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "cm2abc123def456",
+      "timestamp": "2026-04-15T09:30:00.000Z",
+      "action": "apikey.created",
+      "actor": "usr_def456",
+      "actorIp": "203.0.113.42",
+      "resourceType": "apikey",
+      "resourceId": "key_ghi789",
+      "result": "success",
+      "before": null,
+      "after": { "name": "CI Pipeline Key", "scopes": ["policies.read", "policies.create"] },
+      "metadata": { "environment": "production" }
+    }
+  ],
+  "pagination": {
+    "hasMore": true,
+    "nextCursor": "cm2abc123def456"
+  }
+}
+```
+
+### Entry object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique audit entry ID |
+| `timestamp` | string | ISO 8601 timestamp |
+| `action` | string | Action that occurred (see action types below) |
+| `actor` | string | Who performed the action (user ID or API key ID) |
+| `actorIp` | string \| null | Client IP address |
+| `resourceType` | string | Type of resource affected (e.g., `apikey`, `policy`, `member`) |
+| `resourceId` | string \| null | ID of the affected resource |
+| `result` | string | Outcome of the action (e.g., `success`, `failure`) |
+| `before` | object \| null | State before the change (for update/delete actions) |
+| `after` | object \| null | State after the change (for create/update actions) |
+| `metadata` | object \| null | Additional context (varies by action) |
+
+### Action types
+
+| Action | Description |
+|--------|-------------|
+| `member.invited` | Team member invited |
+| `member.removed` | Team member removed |
+| `member.role_changed` | Member role updated |
+| `apikey.created` | API key created |
+| `apikey.revoked` | API key revoked |
+| `policy.created` | Policy created |
+| `policy.updated` | Policy modified |
+| `policy.deleted` | Policy deleted |
+| `rule.published` | Custom rule published |
+| `sso.configured` | SSO settings changed |
+| `sso.enforced` | SSO enforcement toggled |
+| `brain.break_glass` | Brain break-glass activated |
+| `settings.updated` | Organization settings changed |
+
+Audit entries are append-only and tamper-evident. They cannot be modified or deleted.

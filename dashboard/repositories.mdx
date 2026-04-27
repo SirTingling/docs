@@ -1,0 +1,90 @@
+---
+title: Repositories
+description: Repository inventory and security posture
+icon: "folder-git-2"
+---
+
+The Repositories page lists all connected repos with their security posture, detection counts, and Brain indexing status.
+
+---
+
+## Repository list
+
+| Column | Description |
+|--------|-------------|
+| **Name** | Repository name (org/repo format) |
+| **Provider** | GitHub, GitLab, or Bitbucket |
+| **Posture score** | Security posture rating (A through D) based on Brain analysis |
+| **Open issues** | Number of unresolved security issues |
+| **Last scanned** | Most recent Shield or Sentinel scan |
+| **Brain status** | Indexing status — Indexed, Indexing, Not indexed |
+
+---
+
+## Repository detail
+
+Click a repo to see its full security profile:
+
+### Security overview
+
+- **Total detections** over time (chart)
+- **Severity distribution** — Critical, High, Medium, Low breakdown
+- **Most common categories** — Top detection types for this repo
+
+### Open issues
+
+Filtered list of issues specific to this repository. Same interface as the [Issues page](/dashboard/issues), pre-filtered to this repo.
+
+### Brain insights
+
+If the repo is indexed by Brain:
+
+- **Patterns discovered** — Code patterns Brain has identified
+- **Architecture map** — Module boundaries and dependency relationships
+- **Posture factors** — What contributes to the security score
+
+### Pipeline status
+
+If CI/CD pipelines are detected:
+
+- **Pipeline findings** — Security issues in workflow files
+- **Recent runs** — Pipeline execution history with security status
+
+---
+
+## Connecting repositories
+
+Repositories are connected through integrations:
+
+| Provider | How to connect |
+|----------|---------------|
+| **GitHub** | Install the [GitHub App](/integrations/github) — repos sync automatically |
+| **GitLab** | Connect via [OAuth](/integrations/gitlab) — select repos to sync |
+| **Bitbucket** | Connect via [OAuth or App Password](/integrations/bitbucket) — repos sync automatically |
+
+Once connected, Takumo monitors push events via webhooks and scans on every code change.
+
+---
+
+## Posture scoring
+
+Brain assigns a posture score based on:
+
+| Factor | Weight | Description |
+|--------|--------|-------------|
+| Secret hygiene | 30% | No hardcoded secrets, proper `.env` usage |
+| Error handling | 20% | Consistent error handling patterns |
+| Auth patterns | 20% | Secure authentication and authorization |
+| Dependency risk | 15% | Up-to-date dependencies, no known vulnerabilities |
+| Code patterns | 15% | Following team conventions and best practices |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Issues" icon="alert-triangle" href="/dashboard/issues">
+    View all security issues
+  </Card>
+  <Card title="Brain" icon="brain" href="/dashboard/brain">
+    Brain intelligence dashboard
+  </Card>
+</CardGroup>

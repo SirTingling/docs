@@ -1,0 +1,84 @@
+---
+title: Command Reference
+description: All 21 Studio commands
+icon: "terminal"
+---
+
+# Command Reference
+
+Open the Command Palette (`Cmd+Shift+P`) and type "Takumo" to see them all.
+
+---
+
+## Scanning
+
+| Command | Title | Description |
+|---------|-------|-------------|
+| `takumo.scanFile` | Scan Current File | Run Sentinel rules on the active file |
+| `takumo.scanWorkspace` | Scan Workspace | Scan all open files sequentially |
+| `takumo.scanSelection` | Scan Selection | Scan only the highlighted text |
+| `takumo.detectSecrets` | Detect Secrets in File | Run secret detection on the active file |
+| `takumo.detectSecretsInSelection` | Detect Secrets in Selection | Run secret detection on the highlighted text |
+| `takumo.clearDiagnostics` | Clear Diagnostics | Remove all Takumo squiggles |
+
+## Authentication
+
+| Command | Title | Description |
+|---------|-------|-------------|
+| `takumo.signIn` | Sign In with Browser | Device flow — opens browser for OAuth |
+| `takumo.login` | Sign In with API Key | Enter an API key directly (stored in OS keychain) |
+| `takumo.logout` | Sign Out | Clear credentials and disconnect |
+
+## Intelligence
+
+| Command | Title | Description |
+|---------|-------|-------------|
+| `takumo.showBrainContext` | Show Brain Context | Fetch relevant functions, patterns, and boundaries |
+| `takumo.findSimilarCode` | Find Similar Code | Search for similar patterns in your codebase |
+| `takumo.transformSelection` | Transform Selection | AI-powered rewrite of selected code |
+| `takumo.applyTransform` | Apply Transform | Apply a pending transform (internal) |
+| `takumo.createRule` | Create Rule from Selection | Create a custom Sentinel rule from highlighted code |
+
+## Management
+
+| Command | Title | Description |
+|---------|-------|-------------|
+| `takumo.openCloud` | Open Dashboard | Open cloud.takumo.io in your browser |
+| `takumo.showSecurityScore` | Show Security Score | View scanner health and gateway connectivity status |
+| `takumo.toggleDaemon` | Toggle Daemon | Start or stop the daemon |
+| `takumo.showPrivacy` | Privacy Settings | View current privacy configuration |
+| `takumo.showStatus` | Show Status | View daemon status details |
+| `takumo.refreshPanel` | Refresh Panel | Force-refresh the side panel |
+| `takumo.toggleDemoMode` | Toggle Demo Mode | Switch between demo and full mode |
+
+---
+
+## Context menu
+
+Right-click in the editor with text selected:
+
+| Item | When available |
+|------|---------------|
+| Scan Selection | Always (when text is selected) |
+| Detect Secrets in Selection | Always (when text is selected) |
+| Transform Selection | Always (when text is selected) |
+| Create Rule from Selection | Only when signed in |
+
+---
+
+## Keyboard shortcuts
+
+No default keybindings are set. Add your own in `keybindings.json`:
+
+```json
+[
+  {
+    "key": "cmd+shift+t",
+    "command": "takumo.scanFile"
+  },
+  {
+    "key": "cmd+shift+d",
+    "command": "takumo.detectSecrets"
+  }
+]
+```

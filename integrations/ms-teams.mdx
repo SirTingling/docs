@@ -1,0 +1,103 @@
+---
+title: Microsoft Teams
+description: Post security alerts to Teams channels via webhook
+icon: "message-circle"
+---
+
+Post security alerts to Microsoft Teams channels. Takumo sends messages when violations are detected -- secrets exposed, policies triggered, or critical issues found.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Create an incoming webhook in Teams">
+    In Microsoft Teams, go to the channel where you want alerts. Click **...** > **Connectors** (or **Workflows** in newer Teams) and add an **Incoming Webhook** connector. Name it (e.g. "Takumo") and copy the webhook URL.
+  </Step>
+  <Step title="Add to Takumo">
+    Go to **Dashboard > Settings > Integrations > Microsoft Teams**. Paste the webhook URL (starts with `https://outlook.office.com/webhook/...`).
+  </Step>
+  <Step title="Choose alert types">
+    Select which events trigger Teams messages:
+    - Security violations (secret exposure, vulnerabilities)
+    - Policy violations
+    - Critical incidents
+  </Step>
+</Steps>
+
+---
+
+## Message format
+
+Teams messages are posted as MessageCard payloads with structured fields:
+
+| Field | Description |
+|-------|-------------|
+| **Title** | Violation type and severity |
+| **Repository** | Where it was detected |
+| **File** | File path and line number |
+| **Rule** | Which rule or pattern triggered |
+| **Link** | Direct link to the detection in the dashboard |
+
+Messages use the [Office 365 MessageCard format](https://learn.microsoft.com/en-us/outlook/actionable-messages/message-card-reference) with color-coded severity indicators.
+
+---
+
+## How it works
+
+Takumo stores the webhook URL encrypted in the `Integration` record. When a matching event occurs:
+
+1. The notification system checks if Teams is configured for the org
+2. Formats the message as an Office 365 MessageCard payload
+3. POSTs to the webhook URL
+4. Delivery status is tracked in the notification receipts
+
+---
+
+## Health check
+
+Takumo verifies connectivity by POSTing a test MessageCard to the webhook URL:
+
+```json
+{
+  "@type": "MessageCard",
+  "summary": "Takumo connection test",
+  "text": "Takumo connection test"
+}
+```
+
+If the POST succeeds, the integration shows as connected. No authentication headers are needed -- the webhook URL itself is the credential.
+
+---
+
+## Credential details
+
+| Field | Value |
+|-------|-------|
+| **Type** | Incoming Webhook URL |
+| **Format** | `https://outlook.office.com/webhook/...` |
+| **Auth method** | None (URL acts as the credential) |
+
+The webhook URL is stored encrypted. It is never displayed after initial setup.
+
+---
+
+## Limitations
+
+- **Webhook-based only** -- Takumo does not use Microsoft Graph or Teams OAuth. No interactive cards, no thread replies, no bot commands.
+- **One channel per webhook** -- To post to multiple channels, configure multiple webhooks.
+- **No bidirectional sync** -- Messages are fire-and-forget. Acknowledging in Teams does not update Takumo.
+- **MessageCard format** -- Uses the legacy MessageCard format for broad compatibility. Adaptive Cards may be supported in the future.
+
+For richer integrations, use the [Stream pipeline](/concepts/streaming) to build custom Teams workflows via webhook destinations.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Slack" icon="message-square" href="/integrations/slack">
+    Slack alerting integration
+  </Card>
+  <Card title="Notifications" icon="bell" href="/dashboard/notifications">
+    Configure notification preferences
+  </Card>
+</CardGroup>

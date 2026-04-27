@@ -1,0 +1,60 @@
+---
+title: Incidents
+description: Real-time security violation alerts
+icon: "bell"
+---
+
+# Incidents
+
+When your org has a security violation — a secret in a PR, a policy breach, a critical detection — you get a notification in your editor. No tab-switching needed.
+
+---
+
+## How it works
+
+The daemon receives `incident_alert` events via WebSocket from Takumo Cloud. Each incident includes:
+
+| Field | Description |
+|-------|-------------|
+| `violation_id` | Unique identifier |
+| `summary` | What happened |
+| `severity` | critical, high, medium, low |
+| `repo_name` | Affected repository |
+| `trigger_type` | What triggered it (PR, push, scan) |
+| `trigger_ref` | Branch or PR reference |
+| `trigger_url` | Link to the source (PR URL, commit URL) |
+| `triggered_at` | Timestamp |
+
+---
+
+## Actions
+
+From the notification or side panel, you can:
+
+| Action | What it does |
+|--------|-------------|
+| **Acknowledge** | Mark the incident as seen |
+| **Rotate secret** | Trigger secret rotation workflow |
+| **Revert commit** | Initiate a revert of the triggering commit |
+| **Notify team** | Send an alert to the configured notification channel |
+| **Snooze** | Suppress the alert temporarily |
+
+---
+
+## Viewing incidents
+
+Incidents appear in:
+1. **VS Code notification** — Pop-up with summary and action buttons
+2. **Side panel** — Under the incidents section
+3. **Dashboard** — Full incident detail at cloud.takumo.io
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Incidents API" icon="code" href="/api/incidents">
+    Manage incidents programmatically
+  </Card>
+  <Card title="Notifications" icon="bell" href="/dashboard/notifications">
+    Configure notification preferences
+  </Card>
+</CardGroup>

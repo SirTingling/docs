@@ -1,0 +1,62 @@
+---
+title: Sentinel Detections
+description: Monitor vulnerabilities across repos
+icon: "eye"
+---
+
+Every vulnerability Sentinel finds lands here. Filter, triage, and track detections across your entire codebase.
+
+## Detection overview
+
+The top of the page shows aggregate counters:
+
+- **Total detections** — All vulnerabilities found across all repos
+- **Critical / High / Medium / Low** — Breakdown by severity
+- **Open** — Detections not yet resolved or dismissed
+- **Resolved** — Detections that have been fixed or acknowledged
+
+A trend chart visualizes detection volume over 7, 30, or 90 days. Spikes are easy to spot — a new dependency, a batch of AI-generated code, a policy change.
+
+## Detection details
+
+Click any detection to see:
+
+| Field | Description |
+|-------|-------------|
+| **Type** | What was found (e.g., `sql_injection`, `secret_exposure`, `xss`) |
+| **Severity** | Critical, High, Medium, Low |
+| **Location** | File path and line number |
+| **Rule** | Which Sentinel rule triggered it |
+| **Suggested fix** | Remediation guidance |
+| **PR** | Link to the pull request (if from CI/CD) |
+| **First seen** | When Sentinel first flagged this |
+
+## Filtering
+
+Filter detections by:
+- Repository
+- Severity level
+- Rule type
+- Date range
+- Open/resolved status
+
+## Enforcement modes
+
+Each detection shows the enforcement mode that was applied:
+
+| Mode | What happened |
+|------|--------------|
+| **Block** | The code was rejected |
+| **Warn** | The code passed with a warning |
+| **Monitor** | The detection was logged silently |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Sentinel Concept" icon="eye" href="/concepts/sentinel">
+    How Sentinel scanning works
+  </Card>
+  <Card title="GitHub Integration" icon="github" href="/integrations/github">
+    Sentinel on pull requests
+  </Card>
+</CardGroup>

@@ -1,0 +1,83 @@
+---
+title: Custom Rules
+description: Create Sentinel rules from code
+icon: "pencil-ruler"
+---
+
+# Custom Rules
+
+Select code. Create a rule from it. Publish to your org. Every team member's daemon picks it up.
+
+<Note>Custom rules require authentication. The "Create Rule from Selection" context menu item only appears when signed in.</Note>
+
+---
+
+## Creating a rule
+
+<Steps>
+  <Step title="Select code">
+    Highlight the pattern you want to catch (or prevent).
+  </Step>
+  <Step title="Open the command">
+    Right-click → **Create Rule from Selection**. Or `Cmd+Shift+P` → **Takumo: Create Rule from Selection**.
+  </Step>
+  <Step title="Configure the rule">
+    Provide:
+    - **Name** — Human-readable identifier
+    - **Severity** — error, warning, or info
+    - **Category** — security, quality, style, or performance
+    - **Message** — What developers see in the diagnostic
+    - **Fix suggestion** (optional) — Remediation guidance
+  </Step>
+  <Step title="Publish">
+    The rule is sent to your org via the daemon. Status starts as `draft`. Publish from the dashboard to activate.
+  </Step>
+</Steps>
+
+---
+
+## Rule structure
+
+```json
+{
+  "name": "no-eval",
+  "language": "typescript",
+  "pattern": { "type": "regex", "value": "eval\\(" },
+  "severity": "error",
+  "category": "security",
+  "message": "eval() is dangerous — use a safer alternative",
+  "fixSuggestion": "Use JSON.parse() for data or Function() for dynamic code"
+}
+```
+
+### Pattern types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `regex` | Regular expression match | `"eval\\("`, `"console\\.log\\("` |
+| `content` | Exact string match | `"TODO: fix this"`, `"any"` |
+
+### Rule lifecycle
+
+| Status | Meaning |
+|--------|---------|
+| `draft` | Created but not active. Only visible to the creator. |
+| `published` | Active. Synced to all team daemons. |
+| `archived` | Deactivated. No longer triggers. |
+
+---
+
+## Syncing
+
+Published rules sync to all team members' daemons automatically. When a rule is published or archived in the dashboard, the coordinator pushes the update to connected daemons.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Dashboard Rules" icon="pencil-ruler" href="/dashboard/rules">
+    Full rule lifecycle management
+  </Card>
+  <Card title="Policies" icon="file-check" href="/concepts/policies">
+    How rules fit into the policy system
+  </Card>
+</CardGroup>

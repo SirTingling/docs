@@ -1,0 +1,83 @@
+---
+title: Integrations
+description: Connect and manage third-party services from the dashboard
+icon: "plug"
+---
+
+The Integrations page is where you connect, configure, and monitor third-party services -- source control providers, CI/CD pipelines, alerting channels, issue trackers, SIEM platforms, and secrets managers.
+
+<Note>This page documents the **Dashboard > Integrations** management UI. For setup guides on specific providers, see the [Integrations tab](/integrations/overview).</Note>
+
+---
+
+## Integration categories
+
+Integrations are organized into groups:
+
+| Category | Examples |
+|----------|---------|
+| **Source Code** | GitHub, GitLab, Bitbucket |
+| **CI/CD Pipelines** | GitHub Actions, GitLab CI, Jenkins |
+| **Alerting & ChatOps** | Slack, Microsoft Teams |
+| **Issue Tracking** | Jira, Linear, PagerDuty, GitHub Issues |
+| **SIEM & Monitoring** | Splunk, Datadog, Elasticsearch, Custom Webhook |
+| **Secrets Management** | AWS Secrets Manager, HashiCorp Vault |
+
+Each integration card shows its current status, when it was last synced, and the number of connected resources (repositories, pipelines, etc.).
+
+---
+
+## Connecting an integration
+
+1. Find the integration in its category section
+2. Click **Connect**
+3. Follow the provider-specific authorization flow (OAuth, webhook URL, API key, etc.)
+4. Once connected, the card updates to show sync status
+
+Some integrations (GitHub, GitLab, Bitbucket) sync repository and organization data automatically after connecting. You can trigger a manual resync from the integration card.
+
+---
+
+## Filtering
+
+The filter bar lets you narrow the view by:
+
+- **Status** -- Connected, Disconnected, Error
+- **Category** -- Source Code, CI/CD Pipelines, Alerting & ChatOps, Issue Tracking, SIEM & Monitoring, Secrets Management
+- **Search** -- Free text search across integration names
+
+---
+
+## Managing connected integrations
+
+For connected integrations, the card expands to show:
+
+- **Sync status** with progress indicator during active syncs
+- **Last synced** timestamp
+- **Configuration** -- provider-specific settings (webhook URLs, notification channels, etc.)
+- **Test connection** -- verify the integration is still working
+- **Rotate credentials** -- regenerate tokens or keys
+- **Disconnect** -- remove the integration (shows impact summary before confirming)
+
+---
+
+## Enterprise integrations
+
+Some integrations are only available on the Enterprise plan. These are marked with an upgrade badge and show a prompt to contact sales when clicked.
+
+---
+
+## Permissions
+
+Viewing integrations requires `integrations.read`. Connecting, configuring, and disconnecting integrations requires `integrations.manage`.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="GitHub" icon="github" href="/integrations/github">
+    Set up the GitHub integration
+  </Card>
+  <Card title="Slack" icon="message-square" href="/integrations/slack">
+    Configure Slack notifications
+  </Card>
+</CardGroup>

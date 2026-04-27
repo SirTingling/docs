@@ -1,0 +1,73 @@
+---
+title: The Daemon
+description: Local bridge to Takumo services
+icon: "cpu"
+---
+
+# The Daemon
+
+The Takumo daemon is a local HTTP server written in Rust. It runs on your machine and bridges your editor to Takumo's cloud services.
+
+---
+
+## What it handles
+
+| Capability | Description |
+|------------|-------------|
+| **Scanning** | Runs Sentinel rules against your code locally |
+| **Secret detection** | 30+ pattern matchers for secrets |
+| **AI transforms** | Sends code to Aegis Shield for AI-powered rewrites |
+| **Brain context** | Queries Brain for workspace intelligence |
+| **Auth management** | Device flow, API key auth, session management |
+| **Policy enforcement** | Fetches and applies org policies |
+| **Incident notifications** | Receives and surfaces org security violations |
+
+---
+
+## Communication
+
+The extension talks to the daemon over two channels:
+
+| Protocol | Endpoint | Purpose |
+|----------|----------|---------|
+| HTTP | `http://127.0.0.1:19532/*` | Request/response for scans, transforms, auth |
+| WebSocket | `ws://127.0.0.1:19532/events` | Real-time event stream |
+
+All traffic is local. Your code doesn't leave your machine unless a transform or Brain query explicitly calls a remote service.
+
+---
+
+## Resilience (v0.3.0+)
+
+The daemon has built-in resilience for cloud and gateway connections:
+
+| Feature | Details |
+|---------|---------|
+| **Circuit breaker** | Separate breakers for gateway and cloud. Opens after consecutive failures, half-opens to probe recovery. |
+| **Retry with jitter** | Failed requests retry with exponential backoff and full jitter to avoid thundering herd. |
+| **Prometheus metrics** | Resilience metrics exposed for monitoring (circuit state, retry counts, latency). |
+
+Circuit breaker state changes are broadcast to the extension via `CircuitBreakerStateChanged` WebSocket events.
+
+---
+
+## Platform support
+
+| Platform | Binary name |
+|----------|-------------|
+| macOS Apple Silicon | `takumo-daemon` (arm64) |
+| macOS Intel | `takumo-daemon` (x64) |
+| Linux x64 | `takumo-daemon` |
+| Linux ARM64 | `takumo-daemon` |
+| Windows x64 | `takumo-daemon.exe` |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Daemon in Studio" icon="monitor" href="/studio/daemon">
+    Extension daemon lifecycle and configuration
+  </Card>
+  <Card title="Aegis Shield" icon="shield" href="/concepts/aegis-shield">
+    The gateway the daemon connects to
+  </Card>
+</CardGroup>

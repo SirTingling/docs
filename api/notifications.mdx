@@ -1,0 +1,290 @@
+---
+title: Notifications
+description: List, read, and stream notifications in real-time
+icon: "bell-ring"
+---
+
+The Notifications API lets you list notifications, mark them as read, get unread counts, subscribe to real-time events via SSE, and trigger weekly digest emails.
+
+Most endpoints use **session cookie** authentication (the same cookie set when a user signs in to the dashboard). The digest endpoint uses **API key** authentication.
+
+## Notification object
+
+Every notification returned by the API has this shape:
+
+```json
+{
+  "id": "cm1abc2de3fg4hi5j",
+  "type": "shield_block",
+  "title": "Shield blocked 2 detection(s)",
+  "body": "clipboard_paste: aws_access_key, github_token",
+  "severity": "warning",
+  "actionUrl": "/dashboard/violations",
+  "read": false,
+  "readAt": null,
+  "metadata": { "eventType": "clipboard_paste" },
+  "createdAt": "2026-04-20T14:30:00.000Z"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique notification ID (cuid) |
+| `type` | `string` | Notification category (see below) |
+| `title` | `string` | Short summary |
+| `body` | `string \| null` | Longer description |
+| `severity` | `string` | `info`, `warning`, or `critical` |
+| `actionUrl` | `string \| null` | Dashboard deep link |
+| `read` | `boolean` | Whether the notification has been read |
+| `readAt` | `string \| null` | ISO 8601 timestamp when marked read |
+| `metadata` | `object \| null` | Arbitrary extra data |
+| `createdAt` | `string` | ISO 8601 creation timestamp |
+
+### Notification types
+
+These are the `type` values used across the platform:
+
+| Type | Source | Description |
+|------|--------|-------------|
+| `shield_block` | Worker (detection consumer) | Aegis Shield blocked outbound secrets |
+| `violation` | GitHub webhook handler | Sentinel found a policy violation in a PR |
+| `policy` | Rules API | A security rule was published |
+| `team` | Member actions, SCIM, device auth | Member invited, removed, role changed, device authorized |
+| `integration` | Integration actions, streaming | Integration connected, updated, disconnected |
+| `system` | API keys, billing, SSO, SCIM | API key created/revoked/rotated, plan change, SSO config |
+
+---
+
+## GET /api/v1/notifications
+
+List notifications for the current user in the active organization. Returns org-wide notifications (where `userId` is null) and user-targeted notifications for the authenticated user.
+
+**Auth:** Session cookie
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `read` | `string` | _(all)_ | Filter by read status: `true` or `false` |
+| `type` | `string` | _(all)_ | Filter by notification type (e.g. `shield_block`, `team`) |
+| `cursor` | `string` | _(none)_ | Notification ID for cursor-based pagination |
+| `limit` | `number` | `20` | Results per page (1--50) |
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "cm1abc2de3fg4hi5j",
+      "type": "shield_block",
+      "title": "Shield blocked 2 detection(s)",
+      "body": "clipboard_paste: aws_access_key, github_token",
+      "severity": "warning",
+      "actionUrl": "/dashboard/violations",
+      "read": false,
+      "readAt": null,
+      "metadata": null,
+      "createdAt": "2026-04-20T14:30:00.000Z"
+    }
+  ],
+  "nextCursor": "cm1xyz9ab8cd7ef6g"
+}
+```
+
+`nextCursor` is `null` when there are no more results. Pass it as the `cursor` parameter to fetch the next page.
+
+### Example
+
+```bash
+curl https://cloud.takumo.io/api/v1/notifications?read=false&limit=10 \
+  -H "Cookie: <session-cookie>"
+```
+
+---
+
+## POST /api/v1/notifications/{notificationId}/read
+
+Mark a single notification as read. The notification must belong to the active organization and be visible to the authenticated user. Returns `404` (not `403`) if the notification does not exist or is not visible, to avoid leaking notification existence.
+
+**Auth:** Session cookie
+
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `notificationId` | `string` | The notification ID |
+
+### Response
+
+```json
+{
+  "success": true
+}
+```
+
+If the notification is already read, the endpoint succeeds without updating anything.
+
+### Example
+
+```bash
+curl -X POST https://cloud.takumo.io/api/v1/notifications/cm1abc2de3fg4hi5j/read \
+  -H "Cookie: <session-cookie>"
+```
+
+---
+
+## POST /api/v1/notifications/read-all
+
+Mark all unread notifications as read for the current user in the active organization.
+
+**Auth:** Session cookie
+
+### Response
+
+```json
+{
+  "updated": 12
+}
+```
+
+`updated` is the number of notifications that were marked as read.
+
+### Example
+
+```bash
+curl -X POST https://cloud.takumo.io/api/v1/notifications/read-all \
+  -H "Cookie: <session-cookie>"
+```
+
+---
+
+## GET /api/v1/notifications/unread-count
+
+Get the count of unread notifications for the current user. Used by the dashboard bell icon badge.
+
+**Auth:** Session cookie
+
+### Response
+
+```json
+{
+  "count": 5
+}
+```
+
+### Example
+
+```bash
+curl https://cloud.takumo.io/api/v1/notifications/unread-count \
+  -H "Cookie: <session-cookie>"
+```
+
+---
+
+## GET /api/v1/notifications/stream
+
+Subscribe to real-time notifications via Server-Sent Events (SSE). Backed by Redis pub/sub on the channel `notifications:{orgId}`.
+
+**Auth:** Session cookie (EventSource does not support custom headers, so API key auth is not available for this endpoint)
+
+### Behavior
+
+- Sends a `ping` comment immediately to flush headers through reverse proxies.
+- Sends heartbeat pings every 30 seconds to keep the connection alive.
+- User-targeted notifications for other users are filtered out server-side.
+- Maximum 500 concurrent SSE connections per pod. Returns `503` with `Retry-After: 30` if the limit is reached.
+- Returns `501` if Redis pub/sub is not available (fall back to polling the list endpoint).
+
+### Event format
+
+```
+data: {"id":"cm1abc...","type":"shield_block","title":"Shield blocked 2 detection(s)","body":"...","severity":"warning","actionUrl":"/dashboard/violations","userId":null,"metadata":null,"createdAt":"2026-04-20T14:30:00.000Z"}
+```
+
+Each event is a JSON-encoded notification object on a single `data:` line.
+
+### Example
+
+```javascript
+const source = new EventSource("/api/v1/notifications/stream", {
+  withCredentials: true,
+});
+
+source.onmessage = (event) => {
+  const notification = JSON.parse(event.data);
+  console.log(`[${notification.severity}] ${notification.title}`);
+};
+```
+
+---
+
+## POST /api/v1/notifications/digest
+
+Trigger a weekly digest email for the organization. This is the only notification endpoint that uses API key authentication.
+
+**Auth:** API key (`Authorization: Bearer <api-key>`) with `notifications:write` scope
+
+**Plan requirement:** Pro or Enterprise. Returns `403` on Free and Developer plans.
+
+### Response (success)
+
+```json
+{
+  "ok": true,
+  "message": "Digest sent",
+  "timestamp": "2026-04-20T14:30:00.000Z"
+}
+```
+
+### Response (error)
+
+```json
+{
+  "error": "Weekly digest requires a Pro or Enterprise plan"
+}
+```
+
+Other possible errors:
+
+| Status | Error | Meaning |
+|--------|-------|---------|
+| `401` | `Unauthorized: Missing or malformed Authorization header` | No API key provided |
+| `401` | `Unauthorized: API key has been revoked` | Key was revoked |
+| `401` | `Unauthorized: API key lacks required scope` | Key missing `notifications:write` scope |
+| `403` | `Weekly digest requires a Pro or Enterprise plan` | Plan does not include weekly digest |
+| `422` | _(varies)_ | Digest generation failed (e.g. no email recipients configured) |
+| `429` | `Rate limit exceeded` | API key rate limit hit |
+
+### Example
+
+```bash
+curl -X POST https://cloud.takumo.io/api/v1/notifications/digest \
+  -H "Authorization: Bearer tk_live_abc123..."
+```
+
+---
+
+## Rate limiting
+
+| Endpoint | Limiter | Limit | Window |
+|----------|---------|-------|--------|
+| `GET /notifications` | `rateLimiter` | 100 req | 60s sliding |
+| `GET /unread-count` | `rateLimiter` | 100 req | 60s sliding |
+| `POST /digest` | `apiKeyRateLimiter` | 1,000 req | 60s sliding |
+| `POST /{id}/read` | _(none)_ | -- | -- |
+| `POST /read-all` | _(none)_ | -- | -- |
+| `GET /stream` | _(connection limit)_ | 500 concurrent | per pod |
+
+Rate-limited responses include a `Retry-After` header with the number of seconds to wait.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Rate Limits" icon="clock" href="/api/rate-limits">
+    Rate limit details and handling
+  </Card>
+  <Card title="Webhooks" icon="zap" href="/api/webhooks">
+    Outbound webhook event delivery
+  </Card>
+</CardGroup>

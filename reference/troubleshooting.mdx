@@ -6,6 +6,8 @@ icon: "wrench"
 
 # Troubleshooting
 
+## API & Gateway
+
 <Accordion title="401 Unauthorized">
 Your API key is invalid, expired, or revoked.
 
@@ -74,7 +76,7 @@ Takumo detects specific patterns. If your secret doesn't match a known pattern, 
 **Check these:**
 - Review [Supported Patterns](/patterns/supported) for the full list.
 - Run a local scan to see what Takumo finds: `takumo-aegis scan ./your-file.ts`
-- If the secret uses a non-standard format, add a custom pattern in your [policy configuration](/concepts/policies).
+- If the secret uses a non-standard format, add a custom pattern in your [policy configuration](/concepts/policies) or create a [custom Sentinel rule](/dashboard/rules).
 - Generic detection catches values assigned to variables named `password`, `secret`, `api_key`, etc. If your variable name doesn't match, the value won't be flagged.
 </Accordion>
 
@@ -107,5 +109,104 @@ The gateway needs a valid join key to register with the coordinator.
 - Has the join key been revoked? Revoked keys are rejected immediately.
 - Can the gateway reach the coordinator's gRPC endpoint? The gateway initiates the connection.
 - Check gateway logs for connection errors: `kubectl logs -n takumo deployment/aegis-gateway`.
-- Verify the coordinator's gRPC port (default: 50051) is accessible from the gateway's network.
+- Verify the coordinator's gRPC port (default: 9090) is accessible from the gateway's network.
+</Accordion>
+
+## Extension (Studio)
+
+<Accordion title="Side panel shows 'Offline'">
+The extension can't reach the daemon.
+
+**Check these:**
+1. Is the daemon running? Check the Takumo status bar at the bottom of VS Code.
+2. Try **Takumo: Toggle Daemon** from the command palette to restart it.
+3. Check the output channel: **View > Output** → select **Takumo** from the dropdown.
+4. Is something else using port 19532? Change the port in settings: `takumo.daemon.port`.
+5. On first install, the daemon downloads automatically. Check your network connection.
+</Accordion>
+
+<Accordion title="Daemon won't start">
+**Check these:**
+1. Open the Takumo output channel for error details.
+2. Binary not found? The daemon auto-downloads on first activation. If behind a corporate proxy, the download may fail. Manually download from [GitHub Releases](https://github.com/SirTingling/takumo-extension/releases) and set `takumo.daemon.binaryPath`.
+3. Permission denied? On macOS/Linux, the extension sets executable permission automatically. If it fails, run: `chmod +x ~/.vscode/globalStorage/takumo.takumo/daemon/takumo-daemon`
+4. Checksum verification failed? The downloaded binary didn't match the expected SHA256 hash. Retry — the download may have been corrupted.
+5. On macOS, you may need to allow the binary in **System Settings > Privacy & Security** on first run.
+</Accordion>
+
+<Accordion title="Sign-in fails or times out">
+**Check these:**
+1. The daemon may still be starting. Wait a few seconds and click **Retry**.
+2. Check that cloud.takumo.io is reachable from your browser.
+3. The device flow auto-expires after 10 minutes. If the browser page expired, start again from the extension.
+4. If you're behind a VPN, ensure cloud.takumo.io is accessible.
+5. Try signing in with an API key instead: **Takumo: Sign In with API Key**.
+</Accordion>
+
+<Accordion title="Scans not appearing">
+**Check these:**
+1. Is the extension enabled? Check `takumo.enabled` in settings.
+2. Is the file type supported? Takumo scans 10+ file types. Check the output channel for "skipping" messages.
+3. Is on-save scanning enabled? Check `takumo.scan.onSave` in settings.
+4. Is the daemon running? Check the status bar.
+5. Try a manual scan: **Takumo: Scan Current File** from the command palette.
+</Accordion>
+
+<Accordion title="Transform not working">
+**Check these:**
+1. Transforms require authentication. Sign in first.
+2. Transforms are not available in demo mode.
+3. Select code before running **Takumo: Transform Selection**.
+4. Check the output channel for error details. The transform calls Aegis Shield, which may be temporarily unavailable.
+5. Check your credit balance in the dashboard. Transforms consume credits.
+</Accordion>
+
+<Accordion title="Brain context empty or unavailable">
+**Check these:**
+1. Brain requires authentication. Sign in first.
+2. Brain is not available in demo mode.
+3. Your repo must be connected and indexed. Check the dashboard for repo connection status.
+4. Indexing happens after repo connection and may take a few minutes for large repos.
+5. Check the output channel for Brain-related errors.
+</Accordion>
+
+<Accordion title="Extension slowing down my editor">
+Takumo's extension is designed to be lightweight, but if you notice lag:
+
+1. Increase the debounce interval: set `takumo.scan.debounceMs` to `1000` or higher.
+2. Disable on-type scanning: set `takumo.scan.onType` to `false` (keeps on-save scanning).
+3. Disable clipboard monitoring: set `takumo.secrets.clipboardMonitoring` to `false`.
+4. Check the output channel for repeated errors causing retry loops.
+</Accordion>
+
+## Deployment (On-Prem)
+
+<Accordion title="NATS connection issues with Linkerd">
+Linkerd's mTLS proxy can interfere with NATS TCP connections. Add the opaque-ports annotation to the NATS service:
+
+```yaml
+metadata:
+  annotations:
+    config.linkerd.io/opaque-ports: "4222"
+```
+
+This tells Linkerd to pass through TCP traffic on port 4222 without trying to parse it as HTTP.
+</Accordion>
+
+<Accordion title="SealedSecret not overwriting existing Secret">
+If a Kubernetes Secret was created before the SealedSecret controller was installed, the controller won't overwrite it. Options:
+
+1. Delete the existing Secret, then sync the SealedSecret.
+2. Or patch the existing Secret directly and label it: `sealedsecrets.bitnami.com/managed: "true"`.
+
+<Warning>Deleting a Secret causes downtime for any pod mounting it. Prefer patching.</Warning>
+</Accordion>
+
+<Accordion title="ImagePullBackOff on gateway pods">
+The image tag in your Helm values doesn't exist in the container registry.
+
+**Check these:**
+1. Verify the image exists: `gh api /users/SirTingling/packages/container/takumo-aegis-shield/versions --jq '.[0:5]'`
+2. CI only builds Docker images when gateway crate code changes (paths-filter). Daemon-only changes don't trigger builds.
+3. Don't bump `image.tag` unless you've confirmed the SHA exists in GHCR.
 </Accordion>

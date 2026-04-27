@@ -8,7 +8,9 @@ icon: "book-open"
 
 You paste code into Claude. That code has secrets in it. Now Claude has your secrets.
 
-Takumo fixes this. It swaps your secrets for tokens before anything leaves your machine, then swaps them back when the response comes in.
+Your team merges a PR from Copilot. That code has a SQL injection. Now it's in production.
+
+Takumo fixes both directions.
 
 ```typescript
 // Your code (example values)
@@ -37,14 +39,33 @@ No config. No setup. Your secrets stay on your machine.
 
 ---
 
-## Two parts
+## Two directions
 
 <CardGroup cols={2}>
   <Card title="Aegis Shield" icon="shield" href="/concepts/aegis-shield">
-    **Outbound.** Tokenizes secrets before they reach AI. Done and working.
+    **Outbound.** Tokenizes secrets before they reach AI. Deterministic, reversible, zero-knowledge.
   </Card>
   <Card title="Sentinel" icon="eye" href="/concepts/sentinel">
-    **Inbound.** Validates AI-generated code before you use it. Dashboard scanning available, standalone API coming.
+    **Inbound.** Validates AI-generated code before it reaches your codebase. Security scanning, license compliance, custom rules.
+  </Card>
+</CardGroup>
+
+---
+
+## The platform
+
+<CardGroup cols={2}>
+  <Card title="Studio" icon="monitor" href="/studio/overview">
+    VS Code and Cursor extension. Real-time scanning, secret detection, AI transforms, Brain intelligence — all inside your editor.
+  </Card>
+  <Card title="Dashboard" icon="server" href="/dashboard/overview">
+    Manage API keys, monitor detections, configure policies, view audit logs, and control your organization at cloud.takumo.io.
+  </Card>
+  <Card title="Gateway" icon="shield" href="/concepts/aegis-shield">
+    Rust proxy that sits between your AI tools and providers. Tokenizes outbound secrets, validates inbound code.
+  </Card>
+  <Card title="Brain" icon="brain" href="/concepts/brain">
+    Code intelligence layer. Indexes your repos, finds relevant functions, detects patterns, maps architecture boundaries.
   </Card>
 </CardGroup>
 
@@ -62,8 +83,23 @@ No config. No setup. Your secrets stay on your machine.
 | Crypto | RSA/EC/OpenSSH private keys, PGP keys |
 | Infra | Internal hostnames (`*.internal`), private IPs, localhost URLs |
 | Generic | Any value assigned to `password`, `secret`, `api_key`, etc. |
+| Security | SQL injection, XSS, command injection, insecure crypto (Sentinel) |
 
 Full list at [Supported Patterns](/patterns/supported).
+
+---
+
+## Integrations
+
+Works with the tools you already use.
+
+| Category | Tools |
+|----------|-------|
+| Editors | VS Code, Cursor, Windsurf, any VS Code-compatible editor |
+| AI tools | Claude, Copilot, Continue, Windsurf, Claude Code |
+| Source control | GitHub, GitLab, Bitbucket |
+| Communication | Slack |
+| Project management | Jira |
 
 ---
 
@@ -73,7 +109,13 @@ Full list at [Supported Patterns](/patterns/supported).
   <Card title="Quickstart" icon="zap" href="/quickstart">
     Get running in 5 minutes
   </Card>
+  <Card title="Install the Extension" icon="download" href="/studio/installation">
+    Set up Takumo in your editor
+  </Card>
   <Card title="How It Works" icon="zap" href="/concepts/how-it-works">
     The full tokenization flow
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Use Takumo programmatically
   </Card>
 </CardGroup>

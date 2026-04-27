@@ -1,0 +1,52 @@
+---
+title: Gateway Coordinator
+description: Fleet management and event distribution
+icon: "git-merge"
+---
+
+# Gateway Coordinator
+
+The coordinator manages fleet-wide operations. It connects gateways to the dashboard, distributes policies, ships audit events, and publishes detections to NATS.
+
+---
+
+## Responsibilities
+
+| Job | Description |
+|-----|-------------|
+| **Audit shipping** | Collects audit events from gateways, writes to the database in configurable batches (default: 500 events per batch). |
+| **Policy sync** | Pushes policy changes to gateways in real-time. Debounced at 500ms to batch rapid changes. |
+| **Health tracking** | Receives health reports from gateways every 30 seconds. Marks instances stale after 120 seconds without a report. |
+| **NATS publishing** | Publishes detection events to NATS JetStream for downstream processing. |
+
+---
+
+## Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `telemetryBatchSize` | 500 | Events per database write batch |
+| `telemetryFlushIntervalMs` | 5000 | Max time between flushes |
+| `policyDebounceMs` | 500 | Debounce before pushing policy updates |
+| `healthStaleSecs` | 120 | Seconds before a gateway is marked stale |
+| `maxConnectionsPerOrg` | 100 | Max gateway connections per org |
+
+---
+
+## Ports
+
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 8080 | HTTP | Health checks, token exchange, admin API |
+| 9090 | gRPC | Gateway connections, audit shipping, policy sync |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Fleet Management" icon="server" href="/dashboard/fleet">
+    Monitor gateways in the dashboard
+  </Card>
+  <Card title="Deployment" icon="cloud" href="/deployment/configuration">
+    Coordinator configuration reference
+  </Card>
+</CardGroup>

@@ -6,13 +6,40 @@ icon: "download"
 
 # Installation
 
-Takumo is distributed via private GitHub repo during alpha.
+Takumo has two main components: the **CLI/API** for programmatic use and the **extension** for editor integration. Install whichever you need — or both.
 
-## From GitHub (recommended)
+---
 
-```bash
-npm install github:SirTingling/takumo
+## VS Code / Cursor Extension
+
+The fastest way to get Takumo running. Install from your editor's marketplace.
+
+<CodeGroup>
+
+```bash VS Code
+code --install-extension takumo.takumo
 ```
+
+```bash Cursor
+# Search "Takumo" in Cursor's extension panel
+# Or install the universal VSIX from GitHub Releases
+```
+
+</CodeGroup>
+
+Or search **"Takumo"** in the Extensions panel (`Cmd+Shift+X`).
+
+The daemon binary downloads automatically on first activation. No manual setup needed.
+
+<Card title="Full Extension Guide" icon="monitor" href="/studio/installation">
+  Detailed installation for VS Code, Cursor, Windsurf, and sideloading
+</Card>
+
+---
+
+## CLI / API (npm)
+
+For programmatic use, CI/CD pipelines, and custom integrations.
 
 <CodeGroup>
 ```bash npm
@@ -30,7 +57,7 @@ yarn add SirTingling/takumo
 
 This gives you both the CLI and the API.
 
-## From source
+### From source
 
 If you want to modify or contribute:
 
@@ -49,7 +76,7 @@ pnpm aegis tokenize ./path/to/file.ts
 pnpm aegis shield ./path/to/file.ts --prompt "your prompt"
 ```
 
-## Global CLI install
+### Global CLI install
 
 To use `takumo-aegis` from anywhere:
 
@@ -64,11 +91,29 @@ Now works globally:
 takumo-aegis scan ~/any/project/src/
 ```
 
+---
+
+## Gateway (on-premises)
+
+For teams deploying Takumo in their own infrastructure.
+
+```bash
+helm repo add takumo https://charts.takumo.io
+helm install aegis-shield takumo/aegis-shield -n takumo
+```
+
+<Card title="Deployment Guide" icon="cloud" href="/deployment/overview">
+  Full on-premises deployment with all services
+</Card>
+
+---
+
 ## Environment variables
 
 | Variable | When needed | Description |
 |----------|-------------|-------------|
 | `ANTHROPIC_API_KEY` | `shield` command only | Your Claude API key |
+| `TAKUMO_API_KEY` | Cloud features | Your Takumo API key |
 
 The `scan` and `tokenize` commands work completely offline. Only `shield` needs an API key because it actually calls Claude.
 
@@ -89,8 +134,8 @@ npx takumo-aegis --help
 
 ## Requirements
 
-- Node.js 20 or higher
-- macOS, Linux, or Windows (WSL recommended on Windows)
+- **CLI/API:** Node.js 20 or higher. macOS, Linux, or Windows (WSL recommended).
+- **Extension:** VS Code 1.85+, Cursor, or any VS Code-compatible editor. macOS (Intel/Apple Silicon), Linux (x64/arm64), or Windows (x64).
 
 <Accordion title="Node version issues?">
 If you're on an older Node version:
@@ -108,5 +153,5 @@ node --version  # Should be v20.x.x or higher
 ---
 
 <Card title="Next: Authentication" icon="arrow-right" href="/authentication">
-  Set up your API key
+  Set up your API key or sign in via device flow
 </Card>

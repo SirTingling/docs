@@ -6,6 +6,8 @@ icon: "search"
 
 # FAQ
 
+## General
+
 <Accordion title="Does Takumo store my secrets?">
 No. Secrets live in an in-memory vault for the duration of a request. When the response is delivered, the vault is zeroized. Nothing is written to disk, nothing is logged. The only thing recorded is detection metadata: type of secret, location in the file, timestamp. The actual secret value is never persisted.
 </Accordion>
@@ -15,7 +17,7 @@ Takumo scans your code to find secrets. The code is processed in memory, never s
 </Accordion>
 
 <Accordion title="What AI providers are supported?">
-Any provider with an HTTP API. Anthropic and OpenAI are the primary targets. The gateway proxies requests transparently -- it doesn't care what's on the other end. If your AI tool sends HTTP requests, Takumo can sit in front of it.
+Any provider with an HTTP API. Anthropic and OpenAI are the primary targets. The gateway proxies requests transparently — it doesn't care what's on the other end. If your AI tool sends HTTP requests, Takumo can sit in front of it.
 </Accordion>
 
 <Accordion title="Does it work with streaming responses?">
@@ -42,4 +44,64 @@ Enterprise plans include a 99.9% uptime SLA. Free, Developer, and Pro plans are 
 **SaaS:** Takumo hosts the gateway and coordinator. Your tools connect to `gateway.takumo.io`. We handle updates, scaling, and availability. You handle nothing.
 
 **On-Prem:** You deploy the gateway and coordinator in your own Kubernetes cluster. Same software, your infrastructure. You handle updates (Helm chart), scaling (HPA), and availability. Secrets never leave your network.
+</Accordion>
+
+## Extension (Studio)
+
+<Accordion title="What editors does Takumo support?">
+VS Code, Cursor, Windsurf, and any VS Code-compatible editor. The extension is published on VS Code Marketplace and Open VSX. Platform-specific builds (macOS Intel/ARM, Linux x64/ARM, Windows x64) are available, plus a universal VSIX with auto-download for editors that don't support platform-specific extensions.
+</Accordion>
+
+<Accordion title="What is the daemon?">
+The daemon is a local HTTP server (written in Rust) that handles scanning, secret detection, AI transforms, and communication with Takumo's cloud services. It runs on your machine, starts automatically when the extension activates, and runs detached — it outlives the extension process. Default port: 19532.
+</Accordion>
+
+<Accordion title="Do I need an account to use the extension?">
+No. Demo mode activates automatically on first install when no API key is configured. You get real-time scanning and secret detection with built-in rules. For Brain intelligence, AI transforms, custom rules, org policies, and audit trails, sign in with a Takumo account.
+</Accordion>
+
+<Accordion title="How does the extension authenticate?">
+Device flow. Run **Takumo: Sign In with Browser** — the extension opens your browser, shows a code, and you approve the device on cloud.takumo.io. Credentials are stored in your OS keychain via VS Code's SecretStorage API. Never written to disk in plaintext.
+</Accordion>
+
+<Accordion title="What happens if the daemon crashes?">
+The extension detects daemon unavailability and attempts to restart it. The status bar shows the connection state. If the daemon can't start, check the Takumo output channel (`View > Output > Takumo`) for diagnostics.
+</Accordion>
+
+<Accordion title="Can I use a specific daemon binary version?">
+Yes. Set `takumo.daemon.binaryPath` in VS Code settings to point to your binary. This overrides the auto-download and bundled binary resolution. Useful for enterprise deployments with centrally managed daemon versions.
+</Accordion>
+
+## Sentinel
+
+<Accordion title="What does Sentinel scan for?">
+Security vulnerabilities (SQL injection, XSS, command injection, insecure crypto), hardcoded secrets in AI-generated code, license compliance issues, and any custom rules you've created. Sentinel runs in the gateway (on AI responses), the extension (on save/type), and CI/CD (on pull requests via GitHub integration).
+</Accordion>
+
+<Accordion title="Can I create custom Sentinel rules?">
+Yes. Create rules in the dashboard under Rules, or directly from the extension by selecting code and running "Create Rule from Selection". Rules support regex and content matching with severity levels, categories, and fix suggestions.
+</Accordion>
+
+<Accordion title="How does Sentinel work on pull requests?">
+Install the Takumo GitHub App on your organization. When a PR is opened or updated, the webhook triggers a Sentinel scan of the diff. Detections appear as check run annotations directly on the PR.
+</Accordion>
+
+## Brain Intelligence
+
+<Accordion title="What is Brain?">
+Brain is Takumo's code intelligence layer. It indexes your connected repos and provides contextual information: relevant functions for the file you're editing, established coding patterns in your codebase, architecture and security boundaries, and dependency context. Available in the extension via "Show Brain Context" command.
+</Accordion>
+
+<Accordion title="How does Brain index my code?">
+After you connect a repo (via GitHub, GitLab, or Bitbucket integration), Brain Indexer scans the repository. It extracts function signatures, detects patterns, maps architectural boundaries, and generates vector embeddings for semantic search. Indexing is automatic and incremental — only changed files are re-indexed.
+</Accordion>
+
+## Streaming
+
+<Accordion title="What is Takumo Stream?">
+An event pipeline that routes detection events to external destinations. Set up destinations (webhooks, Slack channels, email), create subscriptions with filters (by event type, severity, repo), and monitor delivery in the dashboard. Useful for alerting, compliance logging, and integration with external tools.
+</Accordion>
+
+<Accordion title="Where does streaming data go?">
+Only to destinations you configure. Events are encrypted in transit. Destination credentials are AES-256-GCM encrypted at rest. The dead letter queue captures failed deliveries for manual reprocessing.
 </Accordion>

@@ -1,0 +1,89 @@
+---
+title: GitLab CI
+description: Add Takumo scanning to .gitlab-ci.yml pipeline stages
+icon: "gitlab"
+---
+
+Add Takumo scanning to your GitLab CI pipelines. Takumo analyzes `.gitlab-ci.yml` configurations, detects security misconfigurations, and monitors pipeline stages for credential exposure.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Create a GitLab personal access token">
+    Go to **GitLab > Edit Profile > Access Tokens** and [create a new token](https://gitlab.com/-/user_settings/personal_access_tokens).
+  </Step>
+  <Step title="Select required scopes">
+    Create a personal access token with scopes: **api**, **read_repository**. Copy the token (starts with `glpat-`).
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard > Settings > Integrations > GitLab CI**. Enter the token in the connection form. For self-hosted GitLab, also enter your instance URL (e.g. `https://gitlab.example.com`).
+  </Step>
+</Steps>
+
+---
+
+## What Takumo does
+
+Takumo analyzes your `.gitlab-ci.yml` files and pipeline configurations:
+
+| Check | Severity | Description |
+|-------|----------|-------------|
+| Hardcoded secrets in CI variables | Critical | Credentials stored as plain text in pipeline config |
+| Unprotected CI/CD variables | High | Sensitive variables exposed to unprotected branches or merge requests |
+| Missing `rules` or `only/except` | Medium | Jobs running on all events without filtering |
+| Overly permissive `artifacts:public` | Medium | Build artifacts exposed publicly by default |
+| Insecure `include` directives | High | Including CI templates from untrusted external sources |
+| Missing SAST/DAST stages | Low | Pipeline lacks security scanning stages |
+
+---
+
+## Pipeline stage monitoring
+
+When connected, Takumo tracks your pipeline runs:
+
+1. **Stage analysis** -- Reviews each stage definition for security best practices
+2. **Secret variable audit** -- Checks that sensitive variables are marked as protected and masked
+3. **Include chain resolution** -- Follows `include:` directives to analyze the full effective pipeline
+4. **Runner security** -- Flags shared runners used for sensitive deployments
+
+---
+
+## Health check
+
+Takumo verifies connectivity by calling `GET https://gitlab.com/api/v4/user` with your token (using `PRIVATE-TOKEN` header). For self-hosted instances, the instance URL is used instead. If this fails, the integration shows as disconnected.
+
+---
+
+## Credential details
+
+| Field | Value |
+|-------|-------|
+| **Type** | Personal Access Token |
+| **Prefix** | `glpat-...` |
+| **Required scopes** | `api` |
+| **Auth method** | `PRIVATE-TOKEN` header |
+
+For self-hosted GitLab, an optional **Instance URL** field lets you point to your own GitLab server. Leave it blank for gitlab.com.
+
+Credentials are stored encrypted. The token is never displayed after initial setup.
+
+---
+
+## Limitations
+
+- **GitLab 13.0+** -- Requires GitLab 13.0 or later for full CI API support.
+- **Read-only** -- Takumo analyzes pipelines but does not modify `.gitlab-ci.yml`. Use the [GitLab source code integration](/integrations/gitlab) for merge request checks and auto-remediation.
+- **Self-hosted support** -- Self-hosted instances work if the API endpoint is reachable from Takumo.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="GitLab" icon="gitlab" href="/integrations/gitlab">
+    GitLab source code integration
+  </Card>
+  <Card title="Pipelines" icon="git-branch" href="/dashboard/pipelines">
+    Pipeline security dashboard
+  </Card>
+</CardGroup>

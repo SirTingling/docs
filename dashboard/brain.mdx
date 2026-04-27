@@ -1,0 +1,95 @@
+---
+title: Brain Intelligence
+description: AI-powered code pattern analysis
+icon: "brain"
+---
+
+The Brain dashboard gives you visibility into how Takumo's AI understands your codebase — patterns detected, security posture scoring, and contextual intelligence.
+
+---
+
+## Overview
+
+The Brain overview page shows:
+
+- **Indexed repositories** — Which repos Brain has analyzed
+- **Total patterns** — Code patterns discovered across your codebase
+- **Posture score** — Overall security posture based on pattern analysis
+- **Last indexed** — When the most recent indexing run completed
+
+---
+
+## Analytics
+
+The analytics view charts Brain activity over time:
+
+| Metric | Description |
+|--------|-------------|
+| **Queries served** | How many context queries Brain answered (from extensions and gateways) |
+| **Patterns discovered** | New patterns detected this period |
+| **Indexing runs** | How many repos were re-indexed |
+| **Average query latency** | How fast Brain responds to context requests |
+
+---
+
+## Patterns
+
+Brain automatically discovers coding patterns in your repos — recurring error handling strategies, authentication flows, data access patterns, validation approaches.
+
+Each pattern shows:
+
+| Field | Description |
+|-------|-------------|
+| **Name** | Auto-generated description of the pattern |
+| **Category** | Error handling, auth, validation, data access, etc. |
+| **Occurrences** | How many times it appears across repos |
+| **Repos** | Which repos contain it |
+| **Status** | Pending review, Approved, Rejected |
+
+### Pattern review
+
+Patterns start as **pending**. You can:
+
+- **Approve** — Brain includes it in context for AI tools and Sentinel analysis
+- **Reject** — Brain ignores it going forward
+- **Edit** — Adjust the pattern description or category
+
+Approved patterns improve Sentinel's accuracy — it can reference your team's conventions when reviewing code.
+
+---
+
+## Security posture
+
+The posture page aggregates Brain's findings into a security score per repository:
+
+- **A** (90-100) — Strong patterns, consistent error handling, no known anti-patterns
+- **B** (70-89) — Mostly good, some areas for improvement
+- **C** (50-69) — Significant gaps in security patterns
+- **D** (below 50) — Critical issues detected
+
+Each factor contributing to the score is listed with remediation guidance.
+
+---
+
+## Break-glass
+
+Emergency override for Brain analysis. If Brain is producing incorrect pattern matches or interfering with a critical deployment:
+
+1. Go to **Brain > Break-glass**
+2. Toggle **Disable Brain analysis** for the affected repo
+3. Set a time limit (1 hour, 4 hours, 24 hours, or until manually re-enabled)
+
+Break-glass events are logged in the audit log.
+
+<Warning>Break-glass disables Brain context for the selected repo. AI tools and Sentinel will operate without pattern context until Brain is re-enabled.</Warning>
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Brain Concept" icon="brain" href="/concepts/brain">
+    How Brain intelligence works
+  </Card>
+  <Card title="Brain in Studio" icon="monitor" href="/studio/brain-context">
+    Use Brain context from your editor
+  </Card>
+</CardGroup>

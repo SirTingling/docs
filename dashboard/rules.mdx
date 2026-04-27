@@ -1,0 +1,163 @@
+---
+title: Security Policies
+description: Define and enforce security, license, and operational risk policies
+icon: "shield-check"
+---
+
+Policies are the core enforcement mechanism in Takumo. Each policy groups one or more rules under a single configuration, with scoping, enforcement mode, notifications, and version history. Policies are enforced across scans and generate violations when code does not comply.
+
+The policies page is at **Dashboard → Policies**.
+
+---
+
+## Policy types
+
+Every policy has a type that determines what kind of rules it can contain:
+
+| Type | Description |
+|------|-------------|
+| **Security** | CVE thresholds, secret detection, malicious package flags, scan freshness requirements |
+| **License** | Banned/allowed license lists, unknown license handling |
+| **Operational Risk** | Dependency health — inactivity, contributor count, download volume, version lag, deprecation |
+
+---
+
+## Policy lifecycle
+
+A policy moves through three statuses:
+
+| Status | Meaning |
+|--------|---------|
+| **Draft** | Not enforced. Editable. Use this for testing before rollout. |
+| **Active** | Enforced across matching repositories. Violations are tracked. |
+| **Paused** | Temporarily disabled. Rules remain configured but do not trigger. |
+
+Policies are soft-deleted — deleting a policy removes it from the list and stops enforcement, but the record is preserved in the database.
+
+---
+
+## Enforcement modes
+
+Each policy has an enforcement mode that controls what happens when a rule matches:
+
+| Mode | Behavior |
+|------|----------|
+| **Block** | Blocks the PR merge or fails the check. |
+| **Warn** | Surfaces a warning but allows the merge. |
+| **Notify** | Sends a notification without affecting the PR. |
+| **Monitor** | Records the violation silently for analytics. |
+
+The enforcement mode is derived from the first rule in the policy.
+
+---
+
+## Creating a policy
+
+<Steps>
+  <Step title="Open the policies page">
+    Navigate to **Dashboard → Policies** and click **Create Policy**.
+  </Step>
+  <Step title="Configure basics">
+    Set the policy name, description, and type (Security, License, or Operational Risk).
+  </Step>
+  <Step title="Add rules">
+    Add one or more rules to the policy. Each rule has a name, description, priority, criteria specific to the policy type, an enforcement action (block, warn, notify, monitor), and an enabled toggle.
+
+    Security rule criteria include CVSS thresholds, specific CVEs, secret types, finding age, fix availability, malicious package detection, and scan freshness. License criteria include banned/allowed license lists. Operational risk criteria include inactivity thresholds, contributor minimums, download requirements, and version lag limits.
+  </Step>
+  <Step title="Set the scope">
+    Apply the policy to all repositories, specific repositories by name, or repositories matching tags.
+
+    Optionally configure path filters with include/exclude glob patterns.
+  </Step>
+  <Step title="Configure notifications">
+    Add notification targets (Slack, email, webhook, Jira, PagerDuty) to be alerted when the policy triggers.
+  </Step>
+  <Step title="Choose activation">
+    Activate immediately, set a grace period (enforcement starts after N days), or save as draft.
+  </Step>
+</Steps>
+
+---
+
+## Dashboard stats
+
+The policies page shows four summary cards at the top:
+
+| Stat | Description |
+|------|-------------|
+| **Total policies** | Count of all non-deleted policies |
+| **Active** | Policies with `active` status |
+| **Violations (30d)** | Total violations triggered across all policies in the last 30 days |
+| **Block rate** | Percentage of active policies using `block` enforcement |
+
+Clicking a stat card filters the policy list to the relevant subset.
+
+---
+
+## Filtering
+
+The policy list supports filtering by:
+
+- **Type** — Security, License, Ops Risk
+- **Status** — Active, Paused, Draft
+- **Enforcement** — Block, Warn, Notify, Monitor
+- **Search** — Text search across policy name, description, and rule names
+
+Active filters appear as removable chips below the filter bar.
+
+---
+
+## Policy actions
+
+From the policy list, you can:
+
+- **Expand** a policy card to see its rules, scope, version history, and metadata
+- **Edit** — opens the policy in the create/edit sheet with all fields pre-populated
+- **Toggle status** — switch between active, paused, and draft
+- **Duplicate** — creates a copy of the policy in draft status
+- **Delete** — soft-deletes the policy
+
+---
+
+## Version history
+
+Every change to a policy creates a version record. The version history tracks:
+
+- Version number
+- Who made the change
+- Change type (`created`, `rules_modified`, `scope_changed`, `status_changed`, `notifications_changed`, `grace_period_set`)
+- Summary of what changed
+- Field-level diffs (before/after values)
+
+---
+
+## Plan limits
+
+The number of policies you can create depends on your plan. When you hit the limit, the **Create Policy** button is hidden and attempts to create via the API return an error with the limit and plan name.
+
+Duplicating a policy also counts toward the limit.
+
+---
+
+## Permissions
+
+| Action | Required scope |
+|--------|---------------|
+| View policies | `policies.read` |
+| Create policies | `policies.create` |
+| Edit / toggle status | `policies.edit` |
+| Delete policies | `policies.delete` |
+
+<Note>Billing Admins have read-only access to policies. They cannot create, edit, or delete.</Note>
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Rules API" icon="code" href="/api/rules">
+    Create and manage policies programmatically
+  </Card>
+  <Card title="Workbench" icon="flask-conical" href="/dashboard/workbench">
+    Test policy rules before deploying
+  </Card>
+</CardGroup>

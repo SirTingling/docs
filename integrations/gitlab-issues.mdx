@@ -1,0 +1,98 @@
+---
+title: GitLab Issues
+description: Create GitLab issues directly from scan findings
+icon: "circle-dot"
+---
+
+Connect GitLab Issues to automatically create issues in your projects when Takumo detects security findings. This is a separate integration from the GitLab source code connection — it focuses specifically on issue tracking.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Generate a Personal Access Token">
+    Go to [GitLab Access Tokens](https://gitlab.com/-/user_settings/personal_access_tokens) and create a new token with the **api** scope.
+  </Step>
+  <Step title="Copy the token">
+    Copy the token (starts with `glpat-`). GitLab only shows it once.
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard → Settings → Integrations → GitLab Issues**. Paste the token and click **Connect**. For self-hosted GitLab, also enter your instance URL.
+  </Step>
+  <Step title="Select a project">
+    Choose which GitLab project receives Takumo issues.
+  </Step>
+</Steps>
+
+### Self-hosted GitLab
+
+For self-hosted instances, enter your GitLab URL when connecting:
+
+```
+https://gitlab.yourcompany.com
+```
+
+Takumo uses the custom API base URL for all issue creation calls. Leave the instance URL blank if you use gitlab.com.
+
+---
+
+## How issues are created
+
+When Takumo detects an issue that meets your notification threshold:
+
+1. Maps the issue to a GitLab issue format:
+   - **Title** — Issue title with severity and category
+   - **Description** — Full details in Markdown, including file location, detection context, and remediation guidance
+   - **Labels** — `takumo`, severity level, category
+   - **Confidential** — Set to true for critical and high severity findings
+
+2. Creates the issue via the GitLab REST API
+
+3. Stores the issue reference on the Takumo issue for bidirectional tracking
+
+---
+
+## Health check
+
+Takumo verifies the connection by calling `GET https://gitlab.com/api/v4/user` with the `PRIVATE-TOKEN` header. For self-hosted instances, the health check targets your custom instance URL. If the token is invalid or expired, the integration is marked as disconnected.
+
+---
+
+## Credentials reference
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Personal Access Token** | Yes | Token with `api` scope |
+| **Instance URL** | No | Only for self-hosted GitLab. Leave blank for gitlab.com. |
+
+---
+
+## GitLab source code vs. GitLab Issues integration
+
+| | GitLab (Source Code) | GitLab Issues |
+|---|---------------------|---------------|
+| **Purpose** | MR checks, repo scanning, Brain indexing | Issue tracking from findings |
+| **Auth** | PAT with `api` + `read_repository` | PAT with `api` |
+| **Scope** | Repository content, merge requests, webhooks | Issues only |
+
+You can use both simultaneously. The source code integration handles scanning; the GitLab Issues integration handles ticket creation.
+
+---
+
+## Limitations
+
+- **One project per org** — All Takumo issues go to a single GitLab project. Use GitLab triage policies for further routing.
+- **No bidirectional sync** — Closing the GitLab issue does not automatically resolve the Takumo issue (webhook support planned).
+- **Self-hosted must be reachable** — Your GitLab instance must be accessible from Takumo Cloud (or from your on-prem deployment).
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Jira" icon="ticket" href="/integrations/jira">
+    Create Jira tickets from findings
+  </Card>
+  <Card title="GitLab" icon="gitlab" href="/integrations/gitlab">
+    GitLab source code scanning
+  </Card>
+</CardGroup>

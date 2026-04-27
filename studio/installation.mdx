@@ -1,0 +1,104 @@
+---
+title: Installation
+description: Install Takumo in your editor
+icon: "download"
+---
+
+# Installation
+
+Install the extension. The daemon downloads automatically. You're scanning in under a minute.
+
+---
+
+## VS Code
+
+<Steps>
+  <Step title="Open Extensions">
+    Press `Cmd+Shift+X` (macOS) or `Ctrl+Shift+X` (Windows/Linux).
+  </Step>
+  <Step title="Search for Takumo">
+    Type "Takumo" in the search bar.
+  </Step>
+  <Step title="Install">
+    Click **Install**. The extension activates on startup.
+  </Step>
+  <Step title="Daemon starts">
+    The daemon binary is bundled in the platform-specific VSIX. It starts automatically. Check the status bar for "Takumo: Connected".
+  </Step>
+</Steps>
+
+Or from the command line:
+
+```bash
+code --install-extension takumo.takumo
+```
+
+## Cursor
+
+<Steps>
+  <Step title="Open Extensions">
+    Press `Cmd+Shift+X` and search "Takumo".
+  </Step>
+  <Step title="Install">
+    Click **Install**. Cursor uses the universal VSIX.
+  </Step>
+  <Step title="Daemon downloads">
+    On first activation, the daemon binary downloads automatically via `cloud.takumo.io`. Progress shows in a notification. Takes 5-10 seconds.
+  </Step>
+</Steps>
+
+## Windsurf
+
+Same as Cursor — search "Takumo" in the extension panel. The universal VSIX with auto-download handles everything.
+
+## Manual VSIX sideload
+
+For air-gapped environments or editors without marketplace access:
+
+<Steps>
+  <Step title="Download the VSIX">
+    Go to [GitHub Releases](https://github.com/SirTingling/takumo-extension/releases) and download the VSIX for your platform.
+  </Step>
+  <Step title="Install">
+    In VS Code: `Cmd+Shift+P` → "Extensions: Install from VSIX" → select the file.
+  </Step>
+</Steps>
+
+### Available builds
+
+| Platform | VSIX | Daemon |
+|----------|------|--------|
+| macOS Apple Silicon | `takumo-darwin-arm64.vsix` | Bundled |
+| macOS Intel | `takumo-darwin-x64.vsix` | Bundled |
+| Linux x64 | `takumo-linux-x64.vsix` | Bundled |
+| Linux ARM64 | `takumo-linux-arm64.vsix` | Bundled |
+| Windows x64 | `takumo-win32-x64.vsix` | Bundled |
+| Universal | `takumo.vsix` | Auto-downloads on first activation |
+
+<Tip>
+Platform-specific VSIXs include the daemon binary. The universal VSIX downloads it on first run. For corporate proxies that block downloads, use the platform-specific build.
+</Tip>
+
+---
+
+## Verify installation
+
+After install, check three things:
+
+1. **Status bar** — Bottom of VS Code shows "Takumo: Connected" (or "Takumo: Demo" if not signed in)
+2. **Activity bar** — Takumo icon appears in the left sidebar
+3. **Output channel** — `View > Output` → select "Takumo" → should show "Daemon started successfully"
+
+---
+
+## Requirements
+
+- VS Code 1.85 or higher (or compatible editor)
+- macOS, Linux, or Windows
+- Internet connection for daemon auto-download (first run only)
+
+---
+
+<Card title="Next: Getting Started" icon="arrow-right" href="/studio/getting-started">
+  Your first 5 minutes with Takumo
+</Card>

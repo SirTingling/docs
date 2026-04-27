@@ -1,0 +1,93 @@
+---
+title: Activity
+description: Unified feed of security events across your organization
+icon: "activity"
+---
+
+The Activity page is a unified timeline of every security-relevant event in your organization -- secret detections, policy violations, audit actions, integration changes, and telemetry from the gateway. Events from six different sources are merged into a single, filterable feed.
+
+---
+
+## Event categories
+
+Events are grouped into tabs:
+
+| Category | Sources |
+|----------|---------|
+| **Secrets** | Secret detections and blocks from Shield and telemetry |
+| **Vulnerabilities** | Vulnerability detections from Sentinel scans |
+| **Policies** | Policy version changes and violation events |
+| **Audit** | Audit log entries (member changes, API key operations, settings updates) |
+
+The **All Events** tab shows everything combined.
+
+---
+
+## Filtering
+
+The filter bar supports multiple dimensions simultaneously:
+
+- **Severity** -- Critical, High, Medium, Low, Info
+- **Source** -- Which system produced the event (Shield, Sentinel, Dashboard, etc.)
+- **Actor** -- Filter by the user or system that triggered the event
+- **Date range** -- Calendar picker with presets (Last 7 days, 30 days, etc.)
+- **Status** -- Blocked, Active, Detected, Warning, Resolved, etc.
+- **Search** -- Free text search across event titles, descriptions, and actor emails
+
+Active filters appear as removable chips below the filter bar.
+
+---
+
+## Event detail
+
+Click any event to open the detail sheet. Depending on the event type, the detail view includes:
+
+- Full event description and metadata
+- Event timeline showing the history of the parent issue or violation
+- Source location (repository, branch, file, line)
+- Policy match information
+- Actions: **Resolve**, **View Source** (navigates to Issues or Violations page), **Export** as JSON
+
+---
+
+## Live mode
+
+When live mode is enabled (the green dot in the summary bar), the feed polls for new events every 30 seconds. A banner appears when new events arrive -- click it to refresh.
+
+---
+
+## Export
+
+Export the current filtered view as CSV or JSON. Exports include up to 1,000 events and respect all active filters. Each export is recorded in the audit log.
+
+| Format | Contents |
+|--------|----------|
+| **CSV** | Flat spreadsheet with all event fields -- timestamp, category, severity, status, title, description, actor, location, policy match |
+| **JSON** | Structured export with metadata header (exporter, org, filters applied) and full event objects |
+
+---
+
+## Bulk actions
+
+Select multiple events using the checkboxes to access the bulk action bar:
+
+- **Resolve** -- Mark selected events as resolved
+- **Archive** -- Archive selected events
+- **Export** -- Export only selected events
+
+---
+
+## Permissions
+
+The Activity page requires `audit.read`. Exporting requires `audit.export`.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Audit Log" icon="scroll-text" href="/dashboard/audit-log">
+    View the full audit log
+  </Card>
+  <Card title="Issues" icon="alert-triangle" href="/dashboard/issues">
+    Manage detected issues
+  </Card>
+</CardGroup>

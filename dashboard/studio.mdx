@@ -1,0 +1,64 @@
+---
+title: Studio
+description: Manage the Takumo Studio VS Code extension from the dashboard
+icon: "monitor"
+---
+
+The Studio page in the dashboard shows the connection status of the Takumo Studio VS Code extension for your organization and provides install links and feature details.
+
+---
+
+## Connection status
+
+The top card shows whether Studio is currently connected:
+
+| Status | Meaning |
+|--------|---------|
+| **Active** (green) | The extension has communicated with the API in the last 5 minutes |
+| **Last active N ago** (amber) | The extension was seen recently but is not currently active |
+| **Not connected** (grey) | No device flow API key has been used for this organization |
+
+Status is determined by checking the most recent `lastUsedAt` timestamp on any Device Flow API key in the organization.
+
+---
+
+## Installation
+
+The page links directly to the extension on both marketplaces:
+
+- **VS Code** -- [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=takumo.takumo)
+- **Cursor** -- [Open VSX Registry](https://open-vsx.org/extension/takumo/takumo)
+
+After installing, sign in with your organization account to connect.
+
+---
+
+## Capabilities
+
+Studio provides these features inside your editor:
+
+| Feature | Description |
+|---------|-------------|
+| **Real-time scanning** | Catches secrets, vulnerabilities, and policy violations as you type |
+| **Inline transforms** | One-click remediation suggestions directly in your editor |
+| **Brain integration** | Adapts enforcement to your team's patterns over time |
+| **Security score** | Per-file posture score, updated in real time |
+| **Privacy-first** | All scanning happens locally -- code never leaves your machine |
+| **Works everywhere** | VS Code, Cursor, and any compatible editor |
+
+---
+
+## Studio Desktop
+
+Studio Desktop is a standalone app currently in development. It combines the editor, scanning engine, and intelligence layer into a single application -- no extensions to install, no daemon to manage.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Studio Docs" icon="book-open" href="/studio/overview">
+    Full Studio extension documentation
+  </Card>
+  <Card title="Daemon" icon="cpu" href="/studio/daemon">
+    How the local daemon powers Studio
+  </Card>
+</CardGroup>

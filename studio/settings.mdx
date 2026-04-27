@@ -1,0 +1,108 @@
+---
+title: Settings
+description: All configurable settings
+icon: "sliders"
+---
+
+# Settings
+
+Every setting in Takumo Studio. All changes take effect immediately — no reload needed.
+
+---
+
+## General
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.enabled` | boolean | `true` | Master switch for the extension |
+
+## Daemon
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.daemon.autoStart` | boolean | `true` | Start daemon on extension activation |
+| `takumo.daemon.binaryPath` | string | `""` | Custom binary path (enterprise override) |
+| `takumo.daemon.port` | number | `19532` | Daemon HTTP/WS port |
+
+## Scanning
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.scan.onSave` | boolean | `true` | Scan files on save |
+| `takumo.scan.onType` | boolean | `true` | Scan while typing (debounced) |
+| `takumo.scan.debounceMs` | number | `500` | Debounce delay in milliseconds |
+
+## Secrets
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.secrets.enabled` | boolean | `true` | Enable secret detection |
+| `takumo.secrets.clipboardMonitoring` | boolean | `true` | Monitor clipboard for secrets |
+
+## Interception
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.interception.enabled` | boolean | `true` | Enable AI paste interception |
+| `takumo.interception.minLines` | number | `3` | Minimum lines for paste detection |
+| `takumo.interception.minChars` | number | `50` | Minimum characters for paste detection |
+
+## Privacy
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.privacy.sendCodeSnippets` | boolean | `false` | Send full code to cloud (metadata-only if false) |
+
+## Notifications
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.notifications.showScanResults` | boolean | `true` | Show notifications for scan results |
+| `takumo.notifications.showSecretAlerts` | boolean | `true` | Show notifications for detected secrets |
+
+## Authentication
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.apiKey` | string | `""` | API key (prefer Sign In command for keychain storage) |
+| `takumo.cloud.baseUrl` | string | `https://cloud.takumo.io` | Cloud base URL |
+
+## Transform
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.transformMode` | string | `"manual"` | `manual` or `auto` (auto fires on AI pastes with issues) |
+| `takumo.transformModel` | string | `"claude-sonnet-4-5"` | Model for AI rewrites |
+
+## Demo
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `takumo.demoMode` | boolean | `false` | Run in demo mode (built-in rules, no account) |
+
+---
+
+## Org forced settings
+
+Organization admins can force specific settings for all members. When a setting is forced:
+
+- The value cannot be changed by the member
+- A lock indicator appears in the side panel
+- The setting shows the org-enforced value
+
+Forced settings are pushed to the daemon via the `forced_settings_update` WebSocket event.
+
+---
+
+## Workspace vs User settings
+
+All settings can be set at workspace level (`.vscode/settings.json`) or user level. Workspace settings take priority except for forced org settings, which always win.
+
+```json
+// .vscode/settings.json
+{
+  "takumo.scan.onSave": true,
+  "takumo.scan.onType": false,
+  "takumo.scan.debounceMs": 1000
+}
+```

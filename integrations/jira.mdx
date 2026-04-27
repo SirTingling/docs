@@ -1,0 +1,83 @@
+---
+title: Jira
+description: Create tickets from security issues
+icon: "ticket"
+---
+
+Connect Jira to automatically create tickets when Takumo detects security issues. Status syncs bidirectionally — resolve in Jira, and Takumo updates the issue.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Generate an API token">
+    In Jira Cloud, go to **Account Settings → Security → API Tokens** and create a token.
+  </Step>
+  <Step title="Connect in Takumo">
+    Go to **Dashboard → Settings → Integrations → Jira**. Enter your Jira instance URL, email address, and API token.
+  </Step>
+  <Step title="Select a project">
+    Choose which Jira project receives Takumo tickets. You can also select the default issue type.
+  </Step>
+</Steps>
+
+---
+
+## How tickets are created
+
+When Takumo detects an issue that meets your notification threshold:
+
+1. Maps the Issue to a Jira ticket format:
+   - **Summary** — Issue title with severity and category
+   - **Description** — Full details in Atlassian Document Format (ADF), including file location, detection details, and remediation guidance
+   - **Priority** — Mapped from Takumo severity (Critical → Highest, High → High, Medium → Medium, Low → Low)
+   - **Labels** — `takumo`, severity level, category
+
+2. Creates the ticket via Jira Cloud REST API v3
+
+3. Stores the ticket reference on the Takumo Issue for bidirectional tracking
+
+---
+
+## Bidirectional status sync
+
+| Direction | What syncs |
+|-----------|-----------|
+| **Takumo → Jira** | Issue created → Jira ticket created. Issue resolved → Jira ticket transitioned. |
+| **Jira → Takumo** | Jira ticket status change (via webhook) → Takumo issue status updated. |
+
+Jira status names are matched to transitions. If your workflow uses custom status names, Takumo finds the closest matching transition.
+
+---
+
+## Other ticket providers
+
+Jira isn't the only option. Takumo supports the same ticket creation flow with:
+
+| Provider | Auth method |
+|----------|------------|
+| **GitHub Issues** | GitHub App (automatic if connected) |
+| **GitLab Issues** | OAuth token (automatic if connected) |
+| **Bitbucket Issues** | OAuth / App Password (automatic if connected) |
+
+All providers share the same interface — configure your preferred provider in **Dashboard → Settings → Ticket Provider**.
+
+---
+
+## Limitations
+
+- **Jira Cloud only** — Jira Server/Data Center is not currently supported.
+- **One project per org** — All Takumo tickets go to a single Jira project. Use Jira automation rules for further routing.
+- **No attachment sync** — Code snippets are in the description, not as attachments.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Sentinel Dashboard" icon="eye" href="/dashboard/sentinel">
+    View all detections
+  </Card>
+  <Card title="Notifications" icon="bell" href="/dashboard/notifications">
+    Configure alert delivery
+  </Card>
+</CardGroup>
