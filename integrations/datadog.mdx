@@ -40,7 +40,7 @@ Send security metrics and events from Takumo to Datadog. Detections, policy viol
 Takumo verifies the connection by sending a `GET` request to:
 
 ```
-https://api.{site}/api/v1/validate
+https://api.SITE/api/v1/validate
 ```
 
 The API key is sent as a bearer token. A `200` response with `valid: true` confirms the integration is healthy.
