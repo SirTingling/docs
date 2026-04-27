@@ -20,7 +20,7 @@ Index security events from Takumo into Elasticsearch or OpenSearch. Detections, 
     Go to **Dashboard > Settings > Integrations > Elasticsearch**. Enter your cluster URL and (optionally) an API key.
   </Step>
   <Step title="Verify connection">
-    Takumo sends a health check to `{clusterUrl}/_cluster/health`. If the cluster responds, the integration shows as connected.
+    Takumo sends a health check to `CLUSTER_URL/_cluster/health`. If the cluster responds, the integration shows as connected.
   </Step>
 </Steps>
 
@@ -40,7 +40,7 @@ Index security events from Takumo into Elasticsearch or OpenSearch. Detections, 
 Takumo verifies the connection by sending a `GET` request to:
 
 ```
-{clusterUrl}/_cluster/health
+CLUSTER_URL/_cluster/health
 ```
 
 If an API key is provided, it is sent as a bearer token in the `Authorization` header. A successful response confirms the cluster is reachable and the integration is healthy.

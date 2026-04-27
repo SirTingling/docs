@@ -28,7 +28,7 @@ Takumo supports two SSO protocols:
     Your SP metadata URL is:
 
     ```
-    https://cloud.takumo.io/saml/{your-org-slug}/metadata
+    https://cloud.takumo.io/saml/YOUR_ORG_SLUG/metadata
     ```
 
     Download this XML and import it into your IdP, or point your IdP at the URL directly.
@@ -36,8 +36,8 @@ Takumo supports two SSO protocols:
   <Step title="Configure your IdP">
     In your IdP (Okta, Azure AD, etc.), create a new SAML application:
 
-    - **Entity ID:** `https://cloud.takumo.io/saml/{your-org-slug}`
-    - **ACS URL:** `https://cloud.takumo.io/saml/{your-org-slug}/acs`
+    - **Entity ID:** `https://cloud.takumo.io/saml/YOUR_ORG_SLUG`
+    - **ACS URL:** `https://cloud.takumo.io/saml/YOUR_ORG_SLUG/acs`
     - **Name ID format:** Email address
     - **Attribute mapping:** Map `email` and `name` attributes
   </Step>
@@ -56,8 +56,8 @@ Takumo supports two SSO protocols:
 
 | Field | Value |
 |-------|-------|
-| SP Entity ID | `https://cloud.takumo.io/saml/{orgSlug}` |
-| ACS URL | `https://cloud.takumo.io/saml/{orgSlug}/acs` |
+| SP Entity ID | `https://cloud.takumo.io/saml/YOUR_ORG_SLUG` |
+| ACS URL | `https://cloud.takumo.io/saml/YOUR_ORG_SLUG/acs` |
 | Binding | `HTTP-POST` |
 | Name ID Format | `emailAddress` or `persistent` |
 | Signed requests | Yes (`AuthnRequestsSigned: true`) |
@@ -116,7 +116,7 @@ SCIM automates user lifecycle management — when someone is added or removed in
   <Step title="Configure your IdP">
     In your IdP's SCIM provisioning settings:
 
-    - **SCIM endpoint:** `https://cloud.takumo.io/api/scim/v2/{your-org-slug}`
+    - **SCIM endpoint:** `https://cloud.takumo.io/api/scim/v2/YOUR_ORG_SLUG`
     - **Auth method:** Bearer token
     - **Token:** The token you generated
   </Step>
