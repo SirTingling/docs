@@ -57,7 +57,7 @@ Generate a report and return it as a file download. The report is generated sync
 
 **Scope:** `reports:write`
 
-**Plan gate:** Requires a paid plan. PDF format requires Enterprise.
+**Plan gate:** Requires a paid plan. PDF format requires Custom.
 
 ```bash
 curl -X POST "https://cloud.takumo.io/api/v1/reports/generate" \
@@ -165,7 +165,7 @@ Create a recurring report schedule.
 
 **Scope:** `reports:write`
 
-**Plan gate:** Requires Pro or Enterprise plan.
+**Plan gate:** Requires Enterprise or Custom plan.
 
 ```bash
 curl -X POST "https://cloud.takumo.io/api/v1/reports/schedules" \

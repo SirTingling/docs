@@ -36,7 +36,7 @@ A chart shows daily usage over the selected period (7, 30, or 90 days). You can 
 
 Your current plan defines hard limits:
 
-| Limit | Free | Developer | Pro | Enterprise |
+| Limit | Free | Pro | Enterprise | Custom |
 |-------|------|-----------|-----|------------|
 | Credits/month | 1,000 | 5,000 | 5,000/seat | Unlimited |
 | Secret scans/month | 1,000 | 5,000 | 10,000 | Unlimited |
@@ -64,7 +64,7 @@ Credits are consumed by operations:
 | Fix suggestion | 3 credits |
 | Code review | 5 credits |
 
-Credits reset at the start of each billing cycle. Unused credits don't roll over. Developer and Pro plans support overage at $0.02 per credit. Free plans are hard-capped.
+Credits reset at the start of each billing cycle. Unused credits don't roll over. Pro and Enterprise plans support overage at $0.02 per credit. Free plans are hard-capped.
 
 ---
 
@@ -75,9 +75,9 @@ API rate limits are separate from credit limits:
 | Plan | API requests/min | API requests/hr |
 |------|-----------------|----------------|
 | Free | 30 | 500 |
-| Developer | 60 | 2,500 |
-| Pro | 120 | 5,000 |
-| Enterprise | 500 | 20,000 |
+| Pro | 60 | 2,500 |
+| Enterprise | 120 | 5,000 |
+| Custom | 500 | 20,000 |
 
 Rate limit headers (`X-RateLimit-Remaining`, `X-RateLimit-Reset`, `Retry-After`) are included in every API response. See [Error Codes](/reference/error-codes) for details. For a full breakdown of per-operation rate limits, see [Plan Comparison](/reference/plan-comparison).
 
