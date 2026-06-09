@@ -61,8 +61,7 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@takumo.io",
-        "icon": "life-buoy"
+        "href": "mailto:support@takumo.io"
       }
     ],
     "primary": {
