@@ -38,7 +38,7 @@ Each plan defines per-minute, per-hour, and per-month limits for specific operat
 
 ### Secret scans
 
-| | Free | Developer | Pro | Enterprise |
+| | Free | Pro | Enterprise | Custom |
 |--|------|-----------|-----|------------|
 | Per minute | 10 | 20 | 30 | 100 |
 | Per hour | 100 | 300 | 500 | 2,000 |
@@ -46,7 +46,7 @@ Each plan defines per-minute, per-hour, and per-month limits for specific operat
 
 ### Vulnerability scans
 
-| | Free | Developer | Pro | Enterprise |
+| | Free | Pro | Enterprise | Custom |
 |--|------|-----------|-----|------------|
 | Per minute | 5 | 5 | 10 | 50 |
 | Per hour | 50 | 100 | 200 | 1,000 |
@@ -54,7 +54,7 @@ Each plan defines per-minute, per-hour, and per-month limits for specific operat
 
 ### Policy evaluations
 
-| | Free | Developer | Pro | Enterprise |
+| | Free | Pro | Enterprise | Custom |
 |--|------|-----------|-----|------------|
 | Per minute | 20 | 40 | 60 | 200 |
 | Per hour | 200 | 500 | 1,000 | 5,000 |
@@ -62,7 +62,7 @@ Each plan defines per-minute, per-hour, and per-month limits for specific operat
 
 ### Auto-fix generation
 
-| | Free | Developer | Pro | Enterprise |
+| | Free | Pro | Enterprise | Custom |
 |--|------|-----------|-----|------------|
 | Per minute | 5 | 10 | 20 | 50 |
 | Per hour | 50 | 150 | 300 | 1,000 |
@@ -70,7 +70,7 @@ Each plan defines per-minute, per-hour, and per-month limits for specific operat
 
 ### API requests
 
-| | Free | Developer | Pro | Enterprise |
+| | Free | Pro | Enterprise | Custom |
 |--|------|-----------|-----|------------|
 | Per minute | 30 | 60 | 120 | 500 |
 | Per hour | 500 | 2,500 | 5,000 | 20,000 |
@@ -78,7 +78,7 @@ Each plan defines per-minute, per-hour, and per-month limits for specific operat
 
 ### Webhook deliveries
 
-| | Free | Developer | Pro | Enterprise |
+| | Free | Pro | Enterprise | Custom |
 |--|------|-----------|-----|------------|
 | Per minute | 10 | 20 | 30 | 100 |
 | Per hour | 200 | 500 | 1,000 | 5,000 |
@@ -86,7 +86,7 @@ Each plan defines per-minute, per-hour, and per-month limits for specific operat
 
 ### Additional plan limits
 
-| Limit | Free | Developer | Pro | Enterprise |
+| Limit | Free | Pro | Enterprise | Custom |
 |-------|------|-----------|-----|------------|
 | Concurrent scans | 2 | 3 | 5 | 50 |
 | Max policies | 5 | 15 | 25 | Unlimited |
@@ -141,18 +141,18 @@ Every operation consumes credits from your plan's included balance:
 ## Overage behavior
 
 - **Free plan**: Hard-capped. Overage is disabled. When you hit the monthly limit, requests are rejected until the next billing cycle.
-- **Developer and Pro plans**: Overage is enabled at $0.02 per credit. You are not cut off mid-request. Overage is billed at the end of the billing cycle.
-- **Enterprise plans**: Unlimited included credits. Overage is enabled at $0.00 per credit (no charge).
+- **Pro and Enterprise plans**: Overage is enabled at $0.02 per credit. You are not cut off mid-request. Overage is billed at the end of the billing cycle.
+- **Custom plans**: Unlimited included credits. Overage is enabled at $0.00 per credit (no charge).
 
 ### Included credits per plan
 
 | Plan | Included credits | Per-seat | Overage rate |
 |------|-----------------|----------|--------------|
 | Free | 1,000 | No | None (hard cap) |
-| Developer | 5,000 | No | $0.02/credit |
-| Pro | 5,000 | Yes (per seat) | $0.02/credit |
-| Enterprise | Unlimited | No | $0.00/credit |
+| Pro | 5,000 | No | $0.02/credit |
+| Enterprise | 5,000 | Yes (per seat) | $0.02/credit |
+| Custom | Unlimited | No | $0.00/credit |
 
-Pro plans multiply the credit allowance by seat count. A Pro org with 10 seats gets 50,000 included credits per month.
+Enterprise plans multiply the credit allowance by seat count. A Enterprise org with 10 seats gets 50,000 included credits per month.
 
 <Tip>If you consistently hit rate limits, check your plan's monthly allowance first. Per-minute limits reset quickly, but monthly limits do not. Upgrading your plan is usually more cost-effective than optimizing around limits.</Tip>

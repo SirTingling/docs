@@ -8,7 +8,7 @@ Security settings control how your team authenticates and what network restricti
 
 ## Features by Plan
 
-| Feature | Free | Developer | Pro | Enterprise |
+| Feature | Free | Pro | Enterprise | Custom |
 |---------|------|-----------|-----|------------|
 | MFA enforcement | - | - | Yes | Yes |
 | Domain verification | - | - | Yes | Yes |
@@ -18,7 +18,7 @@ Security settings control how your team authenticates and what network restricti
 
 ## MFA Enforcement
 
-<Note>Available on Pro and Enterprise plans.</Note>
+<Note>Available on Enterprise and Custom plans.</Note>
 
 Require all members to enable multi-factor authentication. When you turn this on, any member without MFA configured is prompted to set it up on their next login. They cannot access the dashboard until MFA is active.
 
@@ -38,7 +38,7 @@ This is a hard requirement, not a suggestion. Members who don't complete MFA set
 
 ## Domain Verification
 
-<Note>Available on Pro and Enterprise plans.</Note>
+<Note>Available on Enterprise and Custom plans.</Note>
 
 Verify ownership of your email domain. Once verified, this enables:
 
@@ -49,7 +49,7 @@ Verification works via DNS TXT record. Add the provided record to your domain's 
 
 ## SSO / SAML
 
-<Note>Available on Enterprise plans only.</Note>
+<Note>Available on Custom plans only.</Note>
 
 Configure SAML-based single sign-on with your identity provider. Supported providers include:
 
@@ -62,7 +62,7 @@ Once SSO is configured, members authenticate through your IdP instead of using e
 
 ## SCIM Provisioning
 
-<Note>Available on Enterprise plans only.</Note>
+<Note>Available on Custom plans only.</Note>
 
 Automatically sync team members from your identity provider. When someone is added or removed in your IdP, the change is reflected in Takumo without manual intervention.
 
@@ -74,7 +74,7 @@ SCIM handles:
 
 ## IP Allowlist
 
-<Note>Available on Enterprise plans only.</Note>
+<Note>Available on Custom plans only.</Note>
 
 Restrict dashboard access to specific IP addresses or CIDR ranges. Requests from IPs not on the allowlist are rejected.
 
