@@ -58,7 +58,13 @@
   },
 
   "navbar": {
-    "links": [],
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@takumo.io",
+        "icon": "life-buoy"
+      }
+    ],
     "primary": {
       "type": "button",
       "label": "Open Takumo Cloud",
