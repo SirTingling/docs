@@ -225,7 +225,7 @@ Trigger a weekly digest email for the organization. This is the only notificatio
 
 **Auth:** API key (`Authorization: Bearer <api-key>`) with `notifications:write` scope
 
-**Plan requirement:** Enterprise or Custom. Returns `403` on Free and Pro plans.
+**Plan requirement:** Pro plan or higher. Returns `403` on Free plans.
 
 ### Response (success)
 
@@ -241,7 +241,7 @@ Trigger a weekly digest email for the organization. This is the only notificatio
 
 ```json
 {
-  "error": "Weekly digest requires an Enterprise or Custom plan"
+  "error": "Weekly digest requires a Pro plan or higher"
 }
 ```
 
@@ -252,7 +252,7 @@ Other possible errors:
 | `401` | `Unauthorized: Missing or malformed Authorization header` | No API key provided |
 | `401` | `Unauthorized: API key has been revoked` | Key was revoked |
 | `401` | `Unauthorized: API key lacks required scope` | Key missing `notifications:write` scope |
-| `403` | `Weekly digest requires an Enterprise or Custom plan` | Plan does not include weekly digest |
+| `403` | `Weekly digest requires a Pro plan or higher` | Plan does not include weekly digest |
 | `422` | _(varies)_ | Digest generation failed (e.g. no email recipients configured) |
 | `429` | `Rate limit exceeded` | API key rate limit hit |
 
