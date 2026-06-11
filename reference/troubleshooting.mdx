@@ -128,7 +128,7 @@ The extension can't reach the daemon.
 <Accordion title="Daemon won't start">
 **Check these:**
 1. Open the Takumo output channel for error details.
-2. Binary not found? The daemon auto-downloads on first activation. If behind a corporate proxy, the download may fail. Manually download from [GitHub Releases](https://github.com/SirTingling/takumo-extension/releases) and set `takumo.daemon.binaryPath`.
+2. Binary not found? The daemon auto-downloads on first activation. If behind a corporate proxy, the download may fail. Email [support@takumo.io](mailto:support@takumo.io) for the air-gapped daemon binary and set `takumo.daemon.binaryPath`.
 3. Permission denied? On macOS/Linux, the extension sets executable permission automatically. If it fails, run: `chmod +x ~/.vscode/globalStorage/takumo.takumo/daemon/takumo-daemon`
 4. Checksum verification failed? The downloaded binary didn't match the expected SHA256 hash. Retry — the download may have been corrupted.
 5. On macOS, you may need to allow the binary in **System Settings > Privacy & Security** on first run.
@@ -203,10 +203,10 @@ If a Kubernetes Secret was created before the SealedSecret controller was instal
 </Accordion>
 
 <Accordion title="ImagePullBackOff on gateway pods">
-The image tag in your Helm values doesn't exist in the container registry.
+The image tag in your Helm values doesn't exist in the container registry, or the pull credentials are missing/invalid.
 
 **Check these:**
-1. Verify the image exists: `gh api /users/SirTingling/packages/container/takumo-aegis-shield/versions --jq '.[0:5]'`
-2. CI only builds Docker images when gateway crate code changes (paths-filter). Daemon-only changes don't trigger builds.
-3. Don't bump `image.tag` unless you've confirmed the SHA exists in GHCR.
+1. `kubectl describe pod -n takumo <pod>` — the Events section will name the exact reason (manifest unknown, unauthorized, image not found, etc).
+2. Confirm the `image.tag` in your Helm values matches a real tag — try `helm template ... | grep image:` to see what's pinned, then verify that tag is in your registry.
+3. If using a private registry, make sure the `imagePullSecrets` are in the namespace and valid.
 </Accordion>

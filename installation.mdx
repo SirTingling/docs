@@ -22,7 +22,7 @@ code --install-extension takumo.takumo
 
 ```bash Cursor
 # Search "Takumo" in Cursor's extension panel
-# Or install the universal VSIX from GitHub Releases
+# Or download the universal VSIX from the VS Code Marketplace
 ```
 
 </CodeGroup>
@@ -41,55 +41,25 @@ The daemon binary downloads automatically on first activation. No manual setup n
 
 For programmatic use, CI/CD pipelines, and custom integrations.
 
+<Note>
+The Aegis CLI is currently in early access. If `npm install` reports the package isn't found, email [support@takumo.io](mailto:support@takumo.io) for preview access.
+</Note>
+
 <CodeGroup>
 ```bash npm
-npm install github:SirTingling/takumo
+npm install -g @takumo/aegis
 ```
 
 ```bash pnpm
-pnpm add github:SirTingling/takumo
+pnpm add -g @takumo/aegis
 ```
 
 ```bash yarn
-yarn add SirTingling/takumo
+yarn global add @takumo/aegis
 ```
 </CodeGroup>
 
-This gives you both the CLI and the API.
-
-### From source
-
-If you want to modify or contribute:
-
-```bash
-git clone https://github.com/SirTingling/takumo.git
-cd takumo
-pnpm install
-pnpm build
-```
-
-Run commands from the repo:
-
-```bash
-pnpm aegis scan ./path/to/file.ts
-pnpm aegis tokenize ./path/to/file.ts
-pnpm aegis shield ./path/to/file.ts --prompt "your prompt"
-```
-
-### Global CLI install
-
-To use `takumo-aegis` from anywhere:
-
-```bash
-cd takumo/packages/aegis
-pnpm link --global
-```
-
-Now works globally:
-
-```bash
-takumo-aegis scan ~/any/project/src/
-```
+This installs the `takumo-aegis` binary globally with both the CLI and the API.
 
 ---
 
