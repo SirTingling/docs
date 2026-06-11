@@ -203,11 +203,12 @@ If a Kubernetes Secret was created before the SealedSecret controller was instal
 </Accordion>
 
 <Accordion title="ImagePullBackOff on gateway pods">
-The default image registry is `cr.takumo.io` and requires no credentials. ImagePullBackOff usually means the tag doesn't exist, your cluster can't reach `cr.takumo.io`, or you've overridden `image.repository` to a private registry without configuring pull credentials.
+The default image registry is `cr.takumo.io` and requires a per-tenant Takumo deploy token. ImagePullBackOff usually means the pull secret is missing or holds a stale/revoked token, the tag doesn't exist, your cluster can't reach `cr.takumo.io`, or you've overridden `image.repository` without updating the pull secret.
 
 **Check these:**
-1. `kubectl describe pod -n takumo <pod>` — the Events section will name the exact reason (manifest unknown, unauthorized, image not found, etc).
-2. Confirm the `image.tag` in your Helm values matches a real tag — try `helm template ... | grep image:` to see what's pinned, then verify that tag actually exists.
-3. From any pod in the cluster: `curl -I https://cr.takumo.io/v2/` should return `200`. If not, your cluster can't reach the public Takumo registry (egress firewall, DNS, etc).
-4. If you've overridden `image.repository` to a private registry, make sure `secrets.imagePull.enabled` is set to `true` in your values file and the `imagePullSecrets` are valid in the namespace.
+1. `kubectl describe pod -n takumo <pod>` — the Events section will name the exact reason (`401 Unauthorized`, `manifest unknown`, image not found, etc).
+2. Confirm the `takumo-pull-secret` exists in the namespace and decodes to a `cr.takumo.io` registry entry: `kubectl get secret -n takumo takumo-pull-secret -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d`. If it's empty, recreate it with a fresh deploy token from the Takumo dashboard (Settings → Deploy Tokens).
+3. Confirm the `image.tag` in your Helm values matches a real tag — `helm template ... | grep image:` to see what's pinned, then verify the tag exists.
+4. From any pod in the cluster: `curl -I -H "Authorization: Bearer <token>" https://cr.takumo.io/v2/` should return `200`. If you get `403` or `connection refused`, check egress firewall + DNS resolution for `cr.takumo.io`.
+5. If you've overridden `image.repository` to your own mirrored registry, make sure `secrets.imagePull.secretName` points to the secret holding that registry's credentials.
 </Accordion>

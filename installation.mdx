@@ -69,12 +69,30 @@ For teams deploying Takumo in their own infrastructure.
 
 ```bash
 helm repo add takumo https://charts.takumo.io
-helm install aegis-shield takumo/aegis-shield -n takumo --create-namespace
+
+# 1. Create a docker-registry pull secret using your Takumo deploy token
+#    (Settings → Deploy Tokens in cloud.takumo.io). Tenant ID is the username.
+kubectl create namespace takumo
+kubectl create secret docker-registry takumo-pull-secret \
+  --docker-server=cr.takumo.io \
+  --docker-username=<your-takumo-tenant-id> \
+  --docker-password=<your-takumo-pull-token> \
+  --namespace=takumo
+
+# 2. Install the chart. The pull secret is wired by default.
+helm install aegis-shield takumo/aegis-shield -n takumo
 ```
 
-Images pull anonymously from `cr.takumo.io` — no registry credentials or
-pull secrets required. Outbound HTTPS to `cr.takumo.io` is the only network
-requirement for image access.
+Images pull from `cr.takumo.io`, Takumo's authenticated container registry.
+Per-tenant deploy tokens are issued from the dashboard and can be revoked
+at any time. Outbound HTTPS to `cr.takumo.io` is the only network requirement
+for image access.
+
+**Air-gapped environments:** mirror `cr.takumo.io/aegis-shield`,
+`cr.takumo.io/gateway-coordinator`, `cr.takumo.io/sentinel-service`,
+`cr.takumo.io/vault-service`, and `cr.takumo.io/mirror/redis` into your
+internal registry, then override `image.repository` in your values file
+and supply that registry's pull credentials.
 
 <Card title="Deployment Guide" icon="cloud" href="/deployment/overview">
   Full on-premises deployment with all services
