@@ -131,6 +131,6 @@ You don't need a deploy token in this flow — your internal registry's pull cre
 
 - Tokens are stored as `sha256(token)` server-side. The plaintext never persists anywhere after the create dialog.
 - Lookups are scoped by workspace ID + token hash, so a token leaked from one workspace can't be replayed against another workspace.
-- Revoked and expired tokens are rejected immediately at the registry edge.
+- Revoked and expired tokens are rejected immediately at the registry edge — the next pull returns `401 unauthorized`.
 - Token activity (`pullCount`, `lastUsedAt`) is updated asynchronously; expect a few seconds of lag.
-- The registry edge runs in **audit mode** today — invalid tokens are logged but pulls still succeed. Audit will switch to **enforce** mode soon; plan to have a valid token in place before then.
+- The registry edge is in **enforce mode**: anonymous pulls and pulls with invalid credentials return `401 unauthorized`. Every pull through `cr.takumo.io` requires a valid deploy token.
