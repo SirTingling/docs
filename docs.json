@@ -76,11 +76,6 @@
       "anchor": "Takumo Cloud",
       "icon": "server",
       "href": "https://cloud.takumo.io/dashboard"
-    },
-    {
-      "anchor": "GitHub",
-      "icon": "github",
-      "href": "https://github.com/SirTingling/takumo"
     }
   ],
 
@@ -335,7 +330,7 @@
 
   "footer": {
     "socials": {
-      "github": "https://github.com/SirTingling/takumo"
+      "website": "https://takumo.io"
     },
     "links": [
       {
