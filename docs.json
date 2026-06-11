@@ -186,6 +186,7 @@
               "dashboard/studio",
               "dashboard/integrations",
               "dashboard/api-keys",
+              "dashboard/deploy-tokens",
               "dashboard/fleet",
               "dashboard/team",
               "dashboard/members",
