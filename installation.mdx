@@ -69,8 +69,12 @@ For teams deploying Takumo in their own infrastructure.
 
 ```bash
 helm repo add takumo https://charts.takumo.io
-helm install aegis-shield takumo/aegis-shield -n takumo
+helm install aegis-shield takumo/aegis-shield -n takumo --create-namespace
 ```
+
+Images pull anonymously from `cr.takumo.io` — no registry credentials or
+pull secrets required. Outbound HTTPS to `cr.takumo.io` is the only network
+requirement for image access.
 
 <Card title="Deployment Guide" icon="cloud" href="/deployment/overview">
   Full on-premises deployment with all services
