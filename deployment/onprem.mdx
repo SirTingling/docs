@@ -14,7 +14,7 @@ For organizations that need full control over where their data flows. Deploy the
 | Helm | 3.x |
 | PostgreSQL | 15+ (or Neon Postgres) |
 | Redis | 7+ |
-| Container registry access | Outbound HTTPS to `cr.takumo.io` (Takumo's public image registry — no credentials required) |
+| Container registry access | Outbound HTTPS to `cr.takumo.io` (Takumo's authenticated container registry, per-tenant deploy token) |
 
 ## Deployment
 
@@ -57,15 +57,25 @@ For organizations that need full control over where their data flows. Deploy the
       --from-file=public.pem=./verification.pem
     ```
 
-    Create the image pull secret for `ghcr.io`:
+    Create the image pull secret for `cr.takumo.io`. Issue a deploy token
+    from the Takumo dashboard (Settings → Deploy Tokens) — the username is
+    your workspace ID, the password is the token value. Tokens can be
+    revoked at any time. Full reference:
+    [Deploy Tokens](/dashboard/deploy-tokens).
 
     ```bash
-    kubectl create secret docker-registry ghcr-pull-secret \
+    kubectl create secret docker-registry takumo-pull-secret \
       --namespace takumo \
-      --docker-server=ghcr.io \
-      --docker-username=YOUR_USERNAME \
-      --docker-password=YOUR_PAT
+      --docker-server=cr.takumo.io \
+      --docker-username=YOUR_TAKUMO_WORKSPACE_ID \
+      --docker-password=YOUR_TAKUMO_DEPLOY_TOKEN
     ```
+
+    **Air-gapped:** if your cluster has no egress to `cr.takumo.io`, mirror
+    the four service images (`aegis-shield`, `gateway-coordinator`,
+    `sentinel-service`, `vault-service`) plus `mirror/redis` into your
+    internal registry, override `image.repository` in your values file,
+    and supply that registry's pull credentials in this secret instead.
   </Step>
 
   <Step title="Deploy the coordinator">
@@ -179,7 +189,7 @@ For organizations that need full control over where their data flows. Deploy the
 |------------|------|-------------|
 | `aegis-jwt-key` | `public.pem` | JWT public key for auth verification |
 | `aegis-join-key` | `join-key` | Join key for coordinator registration |
-| `ghcr-pull-secret` | Docker registry credentials | Image pull secret for `ghcr.io` |
+| `takumo-pull-secret` | Docker registry credentials | Image pull secret for `cr.takumo.io` (per-tenant deploy token from Takumo dashboard) |
 
 ## Network requirements
 
