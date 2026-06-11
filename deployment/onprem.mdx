@@ -59,8 +59,9 @@ For organizations that need full control over where their data flows. Deploy the
 
     Create the image pull secret for `cr.takumo.io`. Issue a deploy token from
     the Takumo dashboard (Settings → Deploy Tokens) — the username is your
-    tenant ID, the password is the token value. Tokens can be revoked at any
-    time from the same screen.
+    workspace ID, the password is the token value. Tokens can be revoked at any
+    time from the same screen. Full token reference:
+    [Deploy Tokens](/dashboard/deploy-tokens).
 
     ```bash
     kubectl create secret docker-registry takumo-pull-secret \

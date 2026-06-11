@@ -70,8 +70,9 @@ For teams deploying Takumo in their own infrastructure.
 ```bash
 helm repo add takumo https://charts.takumo.io
 
-# 1. Create a docker-registry pull secret using your Takumo deploy token
-#    (Settings → Deploy Tokens in cloud.takumo.io). Tenant ID is the username.
+# 1. Create a docker-registry pull secret using your Takumo deploy token.
+#    Issue tokens at https://cloud.takumo.io/dashboard/settings/deploy-tokens.
+#    See: https://docs.takumo.io/dashboard/deploy-tokens
 kubectl create namespace takumo
 kubectl create secret docker-registry takumo-pull-secret \
   --docker-server=cr.takumo.io \
