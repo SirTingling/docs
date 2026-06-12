@@ -362,7 +362,7 @@
   },
 
   "contextual": {
-    "options": ["copy", "view", "claude", "chatgpt", "cursor"]
+    "options": ["assistant", "mcp", "add-mcp", "copy", "view", "claude", "chatgpt", "cursor"]
   },
 
   "redirects": []
