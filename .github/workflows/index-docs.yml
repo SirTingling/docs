@@ -1,0 +1,37 @@
+name: Index Docs into Vectorize
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.mdx'
+      - 'docs.json'
+      - 'scripts/index-docs.mjs'
+      - '.github/workflows/index-docs.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: index-docs
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  index:
+    name: Embed + upsert
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Walk MDX → embed → upsert
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SITE_BASE: https://docs.takumo.io
+          VECTORIZE_INDEX: takumo-docs-index
+        run: node scripts/index-docs.mjs
