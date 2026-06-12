@@ -175,8 +175,11 @@ function splitByH2(body, title) {
  */
 function sanitize(s) {
     return s
-        .replace(/<[A-Z][^>]*\/>/g, '') // self-closing JSX components
-        .replace(/<[A-Z][^>]*>[\s\S]*?<\/[A-Z][^>]*>/g, '') // paired JSX components
+        .replace(/<[A-Z][^>]*\/>/g, ' ') // self-closing JSX (e.g. <Card/>) → drop
+        // Strip JSX tags BUT KEEP the inner text. The earlier version was
+        // removing the entire paired component including its body, which
+        // killed every step inside <Steps>...</Steps> + every accordion body.
+        .replace(/<\/?[A-Za-z][^>]*>/g, ' ')
         .replace(/```[\s\S]*?```/g, ' ') // fenced code blocks
         .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ') // images
         .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // links → text only
