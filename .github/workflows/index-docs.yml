@@ -30,8 +30,13 @@ jobs:
 
       - name: Walk MDX → embed → upsert
         env:
+          # API token: sensitive — must be set as a repo secret. Needs
+          # Account → Workers AI → Read + Account → Vectorize → Edit.
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Account ID: NOT sensitive — it's an identifier visible in any
+          # Cloudflare dashboard URL. Inlining avoids requiring a second
+          # repo secret in this repo.
+          CLOUDFLARE_ACCOUNT_ID: c38732aacc9359a9294ae7f0e6d2f47a
           SITE_BASE: https://docs.takumo.io
           VECTORIZE_INDEX: takumo-docs-index
         run: node scripts/index-docs.mjs
