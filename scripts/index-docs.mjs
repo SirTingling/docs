@@ -63,10 +63,32 @@ for (const path of mdxPaths) {
         const text = sanitize(c.text)
         if (text.length < 40) continue // skip tiny stubs
         const id = sha1(`${url}#${c.section ?? ''}::${text}`).slice(0, 32)
-        chunks.push({ id, url, title, section: c.section, text })
+        chunks.push({ id, url, title, section: c.section, text, kind: 'body' })
+
+        // Synthetic question chunk for sections whose H2 reads like a verb
+        // form (Creating, Using, Revoking, …). Embedded text is just the
+        // synthetic question — no body — so it wins ranking when a user
+        // types a natural-language "how do I X" query. Metadata still
+        // points at the same URL + carries the original body text, so the
+        // citation context the Worker shows Claude is unchanged.
+        if (c.section) {
+            const q = synthesizeQuestion(title, c.section)
+            if (q) {
+                const qId = sha1(`${url}#${c.section}::Q`).slice(0, 32)
+                chunks.push({
+                    id: qId,
+                    url,
+                    title,
+                    section: c.section,
+                    text,
+                    kind: 'question',
+                    embedText: q,
+                })
+            }
+        }
     }
 }
-console.log(`[index-docs] produced ${chunks.length} chunks`)
+console.log(`[index-docs] produced ${chunks.length} chunks (incl. synthetic Qs)`)
 
 if (chunks.length === 0) {
     console.error('[index-docs] no chunks; refusing to upsert')
@@ -78,12 +100,15 @@ if (chunks.length === 0) {
 let upserted = 0
 for (let i = 0; i < chunks.length; i += BATCH) {
     const slice = chunks.slice(i, i + BATCH)
-    // Prepend the page title + section to the text we embed so the vector
-    // captures "Creating a Token" semantics even when the body is bare
-    // imperative steps. Metadata.text stays clean (no prefix) so the
-    // citation context the Worker shows Claude reads like docs prose.
+    // For body chunks: prepend the page title + section to the text we
+    // embed so the vector captures "Creating a Token" semantics even when
+    // the body is bare imperative steps. Metadata.text stays clean (no
+    // prefix) so the citation context the Worker shows Claude reads like
+    // docs prose.
+    // For question chunks: embed the synthetic question alone.
     const vectors = await embedBatch(
         slice.map((c) => {
+            if (c.kind === 'question') return c.embedText
             const heading = c.section ? `${c.title} — ${c.section}` : c.title
             return `${heading}\n\n${c.text}`
         }),
@@ -207,6 +232,56 @@ function mdxPathToUrl(p) {
 
 function sha1(s) {
     return createHash('sha1').update(s).digest('hex')
+}
+
+// Gerund → infinitive mapping. Covers the verbs that show up in our docs
+// sections; everything else falls through to no synthetic question.
+const VERB_MAP = {
+    creating: 'create',
+    using: 'use',
+    installing: 'install',
+    configuring: 'configure',
+    deploying: 'deploy',
+    building: 'build',
+    managing: 'manage',
+    adding: 'add',
+    removing: 'remove',
+    revoking: 'revoke',
+    rotating: 'rotate',
+    updating: 'update',
+    upgrading: 'upgrade',
+    generating: 'generate',
+    issuing: 'issue',
+    setting: 'set',
+    enabling: 'enable',
+    disabling: 'disable',
+    connecting: 'connect',
+    integrating: 'integrate',
+    migrating: 'migrate',
+    deleting: 'delete',
+    sending: 'send',
+    handling: 'handle',
+    publishing: 'publish',
+    starting: 'start',
+    running: 'run',
+    customizing: 'customize',
+    scanning: 'scan',
+    monitoring: 'monitor',
+    debugging: 'debug',
+    testing: 'test',
+}
+
+function synthesizeQuestion(title, section) {
+    // Section: "Creating a Token" → "How do I create a token in Title?"
+    // Section: "Air-Gapped Deployments" → no transform (no gerund); skip
+    const m = section.match(/^([A-Z][a-z]+)\b\s*(.*)$/)
+    if (!m) return null
+    const gerund = m[1].toLowerCase()
+    const rest = m[2].trim()
+    const verb = VERB_MAP[gerund]
+    if (!verb) return null
+    const tail = rest ? ` ${rest.toLowerCase()}` : ''
+    return `How do I ${verb}${tail} in ${title}?`
 }
 
 async function embedBatch(texts) {
