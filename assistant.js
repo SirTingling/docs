@@ -155,6 +155,8 @@
     flex-direction: column;
     gap: 16px;
     scroll-behavior: smooth;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
 }
 .takumo-assistant-transcript::-webkit-scrollbar { width: 6px; }
 .takumo-assistant-transcript::-webkit-scrollbar-thumb {
@@ -540,7 +542,16 @@
             return ` FENCE${i} `
         })
 
-        const lines = withoutFences.split('\n')
+        const splitBullets = withoutFences.replace(
+            /^([-*•])\s+([^\n]+)$/gm,
+            (_, marker, rest) => {
+                if (!/\[\d+\]\s*[-*•]\s/.test(rest)) return `${marker} ${rest}`
+                const parts = rest.split(/\s*[-*•]\s+/)
+                return parts.map((p) => `${marker} ${p.trim()}`).join('\n')
+            },
+        )
+
+        const lines = splitBullets.split('\n')
         const out = []
         let buffer = []
 
@@ -810,8 +821,22 @@
         input.style.height = 'auto'
         input.style.height = Math.min(120, input.scrollHeight) + 'px'
     }
+    // Render the send button's interior. While streaming, swap to a stop
+    // glyph and keep the button enabled so the user can interrupt.
+    const SEND_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`
+    const STOP_ICON = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>`
     function updateSendState() {
-        sendBtn.disabled = input.value.trim().length === 0 || busy
+        if (busy) {
+            sendBtn.disabled = false
+            sendBtn.innerHTML = STOP_ICON
+            sendBtn.setAttribute('aria-label', 'Stop generating')
+            sendBtn.title = 'Stop generating'
+        } else {
+            sendBtn.disabled = input.value.trim().length === 0
+            sendBtn.innerHTML = SEND_ICON
+            sendBtn.setAttribute('aria-label', 'Send')
+            sendBtn.title = 'Send'
+        }
     }
     input.addEventListener('input', () => {
         autosize()
@@ -823,7 +848,13 @@
             if (!sendBtn.disabled) send()
         }
     })
-    sendBtn.addEventListener('click', send)
+    sendBtn.addEventListener('click', () => {
+        if (busy && abortController) {
+            abortController.abort()
+            return
+        }
+        send()
+    })
 
     async function send() {
         const text = input.value.trim()
