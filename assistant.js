@@ -16,14 +16,21 @@
     window.__takumoAssistantLoaded = true
 
     const ENDPOINT = 'https://ai.takumo.io/v1/chat'
+    const ENDPOINT_SUGGEST = 'https://ai.takumo.io/v1/suggest'
+    const ENDPOINT_FEEDBACK = 'https://ai.takumo.io/v1/feedback'
     const HEALTH = 'https://ai.takumo.io/v1/health'
     const STORAGE_KEY = 'takumo:assistant:history'
+    const SUGGEST_CACHE_KEY = 'takumo:assistant:suggest'
     const HISTORY_LIMIT = 16
 
     let open = false
     let busy = false
     let abortController = null
     let history = loadHistory()
+    // Page-specific suggestions, lazily fetched on first drawer open. Null
+    // means "not loaded yet"; an array (possibly empty) means "fetched".
+    let dynamicSuggestions = null
+    let suggestionsFetched = false
 
     const css = `
 @keyframes ta-shimmer {
@@ -289,6 +296,61 @@
     font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
     font-size: 12px;
 }
+.takumo-assistant-msg-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 12.5px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.takumo-assistant-msg-body th,
+.takumo-assistant-msg-body td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.takumo-assistant-msg-body th {
+    background: rgba(255, 255, 255, 0.03);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+}
+.takumo-assistant-msg-body tr:last-child td { border-bottom: 0; }
+
+.takumo-assistant-msg-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    opacity: 0;
+    transition: opacity 150ms ease;
+}
+.takumo-assistant-msg:hover .takumo-assistant-msg-tools,
+.takumo-assistant-msg-tools.acted { opacity: 1; }
+.takumo-assistant-msg-tool {
+    background: transparent;
+    border: 0;
+    color: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 6px;
+    transition: color 150ms ease, background-color 150ms ease;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.takumo-assistant-msg-tool:hover {
+    color: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.04);
+}
+.takumo-assistant-msg-tool.active {
+    color: #A5B4FC;
+    background: rgba(99, 102, 241, 0.12);
+}
+.takumo-assistant-msg-tool svg { width: 13px; height: 13px; }
+.takumo-assistant-msg-tool[data-copied] { color: #6EE7B7; }
 .takumo-assistant-msg-body pre {
     background: #0c0c0e;
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -562,8 +624,64 @@
             buffer = []
         }
 
-        for (const raw of lines) {
+        const isTableRow = (s) => /^\s*\|.*\|\s*$/.test(s)
+        const isTableDivider = (s) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(s)
+        const splitRow = (row) =>
+            row
+                .trim()
+                .replace(/^\|/, '')
+                .replace(/\|$/, '')
+                .split('|')
+                .map((c) => c.trim())
+
+        for (let li = 0; li < lines.length; li++) {
+            const raw = lines[li]
             const line = raw.replace(/\s+$/, '')
+
+            // Table: a header row followed by a divider row, then any number
+            // of body rows. Anything else falls through to the existing
+            // line-level rules.
+            if (
+                isTableRow(line) &&
+                li + 1 < lines.length &&
+                isTableDivider(lines[li + 1])
+            ) {
+                flushParagraph()
+                const headers = splitRow(line)
+                const body = []
+                let j = li + 2
+                while (j < lines.length && isTableRow(lines[j])) {
+                    body.push(splitRow(lines[j]))
+                    j++
+                }
+                const head =
+                    '<thead><tr>' +
+                    headers
+                        .map((h) => '<th>' + renderInline(escapeHtml(h), citations) + '</th>')
+                        .join('') +
+                    '</tr></thead>'
+                const tbody =
+                    '<tbody>' +
+                    body
+                        .map(
+                            (row) =>
+                                '<tr>' +
+                                row
+                                    .map(
+                                        (c) =>
+                                            '<td>' +
+                                            renderInline(escapeHtml(c), citations) +
+                                            '</td>',
+                                    )
+                                    .join('') +
+                                '</tr>',
+                        )
+                        .join('') +
+                    '</tbody>'
+                out.push('<table>' + head + tbody + '</table>')
+                li = j - 1
+                continue
+            }
 
             const fenceMatch = line.match(/^ FENCE(\d+) $/)
             if (fenceMatch) {
@@ -711,17 +829,28 @@
         brain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></svg>',
     }
 
+    function currentChips() {
+        if (Array.isArray(dynamicSuggestions) && dynamicSuggestions.length > 0) {
+            return dynamicSuggestions.map((text, i) => ({
+                text,
+                icon: ['install', 'key', 'scan', 'brain'][i % 4],
+            }))
+        }
+        return SUGGESTIONS
+    }
+
     function renderEmpty() {
+        const chips = currentChips()
         transcript.innerHTML = `
 <div class="takumo-assistant-empty">
   <div><strong>Ask anything about Takumo.</strong> Answers cite the docs they came from. Click a citation to jump straight in.</div>
   <div class="takumo-assistant-suggestions">
-    ${SUGGESTIONS.map((s) => `<button class="takumo-assistant-suggestion">${ICONS[s.icon]}<span>${escapeHtml(s.text)}</span></button>`).join('')}
+    ${chips.map((s) => `<button class="takumo-assistant-suggestion">${ICONS[s.icon]}<span>${escapeHtml(s.text)}</span></button>`).join('')}
   </div>
 </div>`
         transcript.querySelectorAll('.takumo-assistant-suggestion').forEach((b, i) => {
             b.addEventListener('click', () => {
-                input.value = SUGGESTIONS[i].text
+                input.value = chips[i].text
                 input.dispatchEvent(new Event('input'))
                 send()
             })
@@ -735,15 +864,134 @@
         }
         transcript.innerHTML = history
             .map(
-                (m) => `
-<div class="takumo-assistant-msg">
+                (m, i) => `
+<div class="takumo-assistant-msg" data-msg-index="${i}">
   <div class="takumo-assistant-msg-role">${m.role === 'user' ? 'You' : 'Assistant'}</div>
   <div class="takumo-assistant-msg-body">${renderMarkdown(m.content, m.citations)}</div>
-  ${m.role === 'assistant' ? renderSources(m.citations) : ''}
+  ${m.role === 'assistant' ? renderSources(m.citations) + renderTools(m) : ''}
 </div>`,
             )
             .join('')
+        wireTools()
         transcript.scrollTop = transcript.scrollHeight
+    }
+
+    function renderTools(m) {
+        const vote = m.vote || null
+        return `
+<div class="takumo-assistant-msg-tools${vote ? ' acted' : ''}">
+  <button class="takumo-assistant-msg-tool" data-tool="copy" title="Copy answer" aria-label="Copy answer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+  </button>
+  <button class="takumo-assistant-msg-tool${vote === 'up' ? ' active' : ''}" data-tool="up" title="Helpful" aria-label="Mark as helpful">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7"/></svg>
+  </button>
+  <button class="takumo-assistant-msg-tool${vote === 'down' ? ' active' : ''}" data-tool="down" title="Not helpful" aria-label="Mark as not helpful">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17"/></svg>
+  </button>
+</div>`
+    }
+
+    function wireTools() {
+        transcript.querySelectorAll('.takumo-assistant-msg').forEach((msgEl) => {
+            const idx = parseInt(msgEl.getAttribute('data-msg-index') || '-1', 10)
+            const m = history[idx]
+            if (!m || m.role !== 'assistant') return
+            msgEl.querySelectorAll('.takumo-assistant-msg-tool').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    const action = btn.getAttribute('data-tool')
+                    if (action === 'copy') handleCopy(btn, m.content)
+                    else if (action === 'up' || action === 'down') handleVote(idx, m, action, msgEl)
+                })
+            })
+        })
+    }
+
+    function handleCopy(btn, text) {
+        const restore = btn.innerHTML
+        const done = () => {
+            btn.setAttribute('data-copied', 'true')
+            btn.innerHTML =
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
+            setTimeout(() => {
+                btn.removeAttribute('data-copied')
+                btn.innerHTML = restore
+            }, 1500)
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, () => done())
+        } else {
+            const ta = document.createElement('textarea')
+            ta.value = text
+            ta.style.position = 'fixed'
+            ta.style.opacity = '0'
+            document.body.appendChild(ta)
+            ta.select()
+            try {
+                document.execCommand('copy')
+            } catch {}
+            ta.remove()
+            done()
+        }
+    }
+
+    function handleVote(idx, m, vote, msgEl) {
+        const prior = m.vote
+        m.vote = prior === vote ? null : vote
+        saveHistory()
+        const tools = msgEl.querySelector('.takumo-assistant-msg-tools')
+        if (tools) tools.classList.toggle('acted', !!m.vote)
+        msgEl.querySelectorAll('.takumo-assistant-msg-tool').forEach((b) => {
+            const a = b.getAttribute('data-tool')
+            if (a === 'up' || a === 'down') {
+                b.classList.toggle('active', m.vote === a)
+            }
+        })
+        if (!m.vote) return
+        const question = idx > 0 && history[idx - 1].role === 'user' ? history[idx - 1].content : ''
+        sendFeedback({
+            turnId: m.turnId || cryptoId(),
+            vote: m.vote,
+            question,
+            answer: m.content,
+            pagePath: pagePath(),
+            citations: (m.citations || []).map((c) => ({
+                title: c.title,
+                url: c.url,
+                section: c.section || null,
+            })),
+        })
+    }
+
+    function sendFeedback(payload) {
+        try {
+            const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' })
+            if (navigator.sendBeacon && navigator.sendBeacon(ENDPOINT_FEEDBACK, blob)) return
+        } catch {}
+        fetch(ENDPOINT_FEEDBACK, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            keepalive: true,
+        }).catch(() => {})
+    }
+
+    function cryptoId() {
+        if (window.crypto && crypto.getRandomValues) {
+            const a = new Uint8Array(8)
+            crypto.getRandomValues(a)
+            return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('')
+        }
+        return String(Math.floor(Math.random() * 1e15)).padStart(16, '0')
+    }
+
+    function pagePath() {
+        try {
+            return location.pathname + (location.hash || '')
+        } catch {
+            return null
+        }
     }
 
     // Shimmer-text loading state. Cycles through three short phrases while
@@ -782,7 +1030,45 @@
         if (open) {
             setTimeout(() => input.focus(), 50)
             renderTranscript()
+            if (!suggestionsFetched) fetchSuggestions()
         }
+    }
+
+    // Fetch page-specific starter questions from the Worker, with a per-path
+    // sessionStorage cache so subsequent opens on the same page are instant.
+    // Fully optional: a failure keeps the static SUGGESTIONS in place.
+    function fetchSuggestions() {
+        suggestionsFetched = true
+        const path = pagePath() || '/'
+        let cached = null
+        try {
+            const raw = sessionStorage.getItem(SUGGEST_CACHE_KEY)
+            const map = raw ? JSON.parse(raw) : null
+            if (map && map[path] && Array.isArray(map[path])) cached = map[path]
+        } catch {}
+        if (cached) {
+            dynamicSuggestions = cached
+            if (history.length === 0) renderEmpty()
+            return
+        }
+        fetch(ENDPOINT_SUGGEST, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path }),
+        })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (!data || !Array.isArray(data.suggestions) || data.suggestions.length === 0) return
+                dynamicSuggestions = data.suggestions.slice(0, 4)
+                try {
+                    const raw = sessionStorage.getItem(SUGGEST_CACHE_KEY)
+                    const map = raw ? JSON.parse(raw) : {}
+                    map[path] = dynamicSuggestions
+                    sessionStorage.setItem(SUGGEST_CACHE_KEY, JSON.stringify(map))
+                } catch {}
+                if (history.length === 0) renderEmpty()
+            })
+            .catch(() => {})
     }
 
     function reset() {
@@ -882,6 +1168,7 @@
                         role: m.role,
                         content: m.content,
                     })),
+                    pagePath: pagePath(),
                 }),
                 signal: abortController.signal,
             })
@@ -957,7 +1244,12 @@
                 history.pop()
             } else {
                 pending.removeAttribute('data-pending')
-                history.push({ role: 'assistant', content: answer, citations: citations || [] })
+                history.push({
+                    role: 'assistant',
+                    content: answer,
+                    citations: citations || [],
+                    turnId: cryptoId(),
+                })
                 saveHistory()
             }
         } catch (err) {
