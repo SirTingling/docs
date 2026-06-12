@@ -49,6 +49,44 @@ const cfHeaders = {
     'Content-Type': 'application/json',
 }
 
+// Gerund → infinitive mapping. Covers verbs that appear in our H2 section
+// names; everything else falls through to no synthetic question. Defined
+// up here so it's initialised before the chunk-walk loop reads it.
+const VERB_MAP = {
+    creating: 'create',
+    using: 'use',
+    installing: 'install',
+    configuring: 'configure',
+    deploying: 'deploy',
+    building: 'build',
+    managing: 'manage',
+    adding: 'add',
+    removing: 'remove',
+    revoking: 'revoke',
+    rotating: 'rotate',
+    updating: 'update',
+    upgrading: 'upgrade',
+    generating: 'generate',
+    issuing: 'issue',
+    setting: 'set',
+    enabling: 'enable',
+    disabling: 'disable',
+    connecting: 'connect',
+    integrating: 'integrate',
+    migrating: 'migrate',
+    deleting: 'delete',
+    sending: 'send',
+    handling: 'handle',
+    publishing: 'publish',
+    starting: 'start',
+    running: 'run',
+    customizing: 'customize',
+    scanning: 'scan',
+    monitoring: 'monitor',
+    debugging: 'debug',
+    testing: 'test',
+}
+
 // ─── Walk + chunk ─────────────────────────────────────────────────────────
 
 const mdxPaths = await listMdx(DOCS_ROOT)
@@ -232,43 +270,6 @@ function mdxPathToUrl(p) {
 
 function sha1(s) {
     return createHash('sha1').update(s).digest('hex')
-}
-
-// Gerund → infinitive mapping. Covers the verbs that show up in our docs
-// sections; everything else falls through to no synthetic question.
-const VERB_MAP = {
-    creating: 'create',
-    using: 'use',
-    installing: 'install',
-    configuring: 'configure',
-    deploying: 'deploy',
-    building: 'build',
-    managing: 'manage',
-    adding: 'add',
-    removing: 'remove',
-    revoking: 'revoke',
-    rotating: 'rotate',
-    updating: 'update',
-    upgrading: 'upgrade',
-    generating: 'generate',
-    issuing: 'issue',
-    setting: 'set',
-    enabling: 'enable',
-    disabling: 'disable',
-    connecting: 'connect',
-    integrating: 'integrate',
-    migrating: 'migrate',
-    deleting: 'delete',
-    sending: 'send',
-    handling: 'handle',
-    publishing: 'publish',
-    starting: 'start',
-    running: 'run',
-    customizing: 'customize',
-    scanning: 'scan',
-    monitoring: 'monitor',
-    debugging: 'debug',
-    testing: 'test',
 }
 
 function synthesizeQuestion(title, section) {
