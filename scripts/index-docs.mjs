@@ -78,7 +78,16 @@ if (chunks.length === 0) {
 let upserted = 0
 for (let i = 0; i < chunks.length; i += BATCH) {
     const slice = chunks.slice(i, i + BATCH)
-    const vectors = await embedBatch(slice.map((c) => c.text))
+    // Prepend the page title + section to the text we embed so the vector
+    // captures "Creating a Token" semantics even when the body is bare
+    // imperative steps. Metadata.text stays clean (no prefix) so the
+    // citation context the Worker shows Claude reads like docs prose.
+    const vectors = await embedBatch(
+        slice.map((c) => {
+            const heading = c.section ? `${c.title} — ${c.section}` : c.title
+            return `${heading}\n\n${c.text}`
+        }),
+    )
     const payload = slice
         .map((c, j) => ({
             id: c.id,
