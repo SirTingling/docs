@@ -38,6 +38,14 @@
     0%, 100% { box-shadow: 0 8px 32px rgba(99, 102, 241, 0.32), 0 0 0 0 rgba(99, 102, 241, 0.4); }
     50%      { box-shadow: 0 8px 32px rgba(99, 102, 241, 0.48), 0 0 0 6px rgba(99, 102, 241, 0); }
 }
+@keyframes ta-msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ta-chip-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 
 .takumo-assistant-trigger {
     position: fixed;
@@ -185,7 +193,12 @@
     gap: 10px;
     transition: transform 150ms ease, background-color 150ms ease, color 150ms ease, border-color 150ms ease;
     font-family: inherit;
+    animation: ta-chip-in 280ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
 }
+.takumo-assistant-suggestion:nth-child(1) { animation-delay: 60ms; }
+.takumo-assistant-suggestion:nth-child(2) { animation-delay: 100ms; }
+.takumo-assistant-suggestion:nth-child(3) { animation-delay: 140ms; }
+.takumo-assistant-suggestion:nth-child(4) { animation-delay: 180ms; }
 .takumo-assistant-suggestion svg {
     width: 14px;
     height: 14px;
@@ -205,6 +218,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    animation: ta-msg-in 200ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
 }
 .takumo-assistant-msg-role {
     font-size: 10.5px;
@@ -217,8 +231,54 @@
     font-size: 13.5px;
     line-height: 1.62;
     color: rgba(255, 255, 255, 0.88);
-    white-space: pre-wrap;
     word-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.takumo-assistant-msg-body > * { margin: 0; }
+.takumo-assistant-msg-body h2,
+.takumo-assistant-msg-body h3,
+.takumo-assistant-msg-body h4 {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.96);
+    margin-top: 6px;
+    letter-spacing: -0.005em;
+}
+.takumo-assistant-msg-body h2:first-child,
+.takumo-assistant-msg-body h3:first-child,
+.takumo-assistant-msg-body h4:first-child { margin-top: 0; }
+.takumo-assistant-msg-body h2 { font-size: 14.5px; }
+.takumo-assistant-msg-body hr {
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 8px 0;
+}
+.takumo-assistant-msg-body .ta-bullet {
+    display: flex;
+    gap: 10px;
+    padding-left: 2px;
+}
+.takumo-assistant-msg-body .ta-bullet-dot {
+    flex-shrink: 0;
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(165, 180, 252, 0.7);
+    margin-top: 8px;
+}
+.takumo-assistant-msg-body .ta-numbered {
+    display: flex;
+    gap: 10px;
+    padding-left: 2px;
+}
+.takumo-assistant-msg-body .ta-numbered-marker {
+    flex-shrink: 0;
+    color: rgba(165, 180, 252, 0.8);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    min-width: 16px;
 }
 .takumo-assistant-msg-body code {
     background: rgba(255, 255, 255, 0.06);
@@ -442,18 +502,20 @@
             .replace(/'/g, '&#39;')
     }
 
-    function renderMarkdown(md, citations) {
-        let html = escapeHtml(md)
-        html = html.replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code}</code></pre>`)
-        html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
-        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        html = html.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
-        html = html.replace(
+    // Inline formatting (bold, italic, code, links, citations) on already-
+    // escaped text. Pulled out so the line-by-line block renderer can apply
+    // it to header / list / paragraph content uniformly.
+    function renderInline(escaped, citations) {
+        let s = escaped
+        s = s.replace(/`([^`]+)`/g, '<code>$1</code>')
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+        s = s.replace(
             /\[([^\]]+)\]\(([^)]+)\)/g,
             '<a href="$2" target="_blank" rel="noopener">$1</a>',
         )
         if (citations && citations.length) {
-            html = html.replace(/\[(\d+)\]/g, (m, n) => {
+            s = s.replace(/\[(\d+)\]/g, (m, n) => {
                 const idx = parseInt(n, 10)
                 const cit = citations.find((c) => c.index === idx)
                 if (!cit) return m
@@ -461,8 +523,103 @@
                 return `<a class="takumo-assistant-citation" href="${cit.url}" target="_blank" rel="noopener" title="${escapeHtml(label)}">${idx}</a>`
             })
         }
-        html = html.replace(/\n\n+/g, '\n')
-        return html
+        return s
+    }
+
+    // Block-level renderer: escape, pull fenced code out, then walk the
+    // remaining lines and turn headers / bullets / numbered lists / hrs /
+    // paragraphs into their respective elements. Inline formatting is
+    // applied to each block's content via renderInline. Pattern mirrors
+    // Pluvel's MessageContent but emits HTML strings instead of JSX so we
+    // stay vanilla.
+    function renderMarkdown(md, citations) {
+        const fences = []
+        const withoutFences = md.replace(/```([\s\S]*?)```/g, (_, code) => {
+            const i = fences.length
+            fences.push(`<pre><code>${escapeHtml(code.replace(/^\n/, ''))}</code></pre>`)
+            return ` FENCE${i} `
+        })
+
+        const lines = withoutFences.split('\n')
+        const out = []
+        let buffer = []
+
+        const flushParagraph = () => {
+            if (buffer.length === 0) return
+            const joined = escapeHtml(buffer.join(' ').trim())
+            if (joined) out.push('<p>' + renderInline(joined, citations) + '</p>')
+            buffer = []
+        }
+
+        for (const raw of lines) {
+            const line = raw.replace(/\s+$/, '')
+
+            const fenceMatch = line.match(/^ FENCE(\d+) $/)
+            if (fenceMatch) {
+                flushParagraph()
+                out.push(fences[parseInt(fenceMatch[1], 10)])
+                continue
+            }
+
+            if (!line.trim()) {
+                flushParagraph()
+                continue
+            }
+
+            if (line.trim() === '---' || line.trim() === '***') {
+                flushParagraph()
+                out.push('<hr/>')
+                continue
+            }
+
+            const h3 = line.match(/^###\s+(.+)$/)
+            const h2 = line.match(/^##\s+(.+)$/)
+            const h1 = line.match(/^#\s+(.+)$/)
+            if (h3) {
+                flushParagraph()
+                out.push('<h4>' + renderInline(escapeHtml(h3[1]), citations) + '</h4>')
+                continue
+            }
+            if (h2) {
+                flushParagraph()
+                out.push('<h3>' + renderInline(escapeHtml(h2[1]), citations) + '</h3>')
+                continue
+            }
+            if (h1) {
+                flushParagraph()
+                out.push('<h2>' + renderInline(escapeHtml(h1[1]), citations) + '</h2>')
+                continue
+            }
+
+            const bullet = line.match(/^[-*•]\s+(.+)$/)
+            if (bullet) {
+                flushParagraph()
+                out.push(
+                    '<div class="ta-bullet"><span class="ta-bullet-dot"></span><span>' +
+                        renderInline(escapeHtml(bullet[1]), citations) +
+                        '</span></div>',
+                )
+                continue
+            }
+
+            const numbered = line.match(/^(\d+)\.\s+(.+)$/)
+            if (numbered) {
+                flushParagraph()
+                out.push(
+                    '<div class="ta-numbered"><span class="ta-numbered-marker">' +
+                        numbered[1] +
+                        '.</span><span>' +
+                        renderInline(escapeHtml(numbered[2]), citations) +
+                        '</span></div>',
+                )
+                continue
+            }
+
+            buffer.push(line)
+        }
+        flushParagraph()
+
+        return out.join('')
     }
 
     function renderSources(citations) {
