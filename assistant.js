@@ -798,6 +798,14 @@
         }
     })
 
+    // Close on outside click. Mousedown so it feels snappier than click,
+    // and so a drag started inside the drawer can't immediately close it.
+    document.addEventListener('mousedown', (e) => {
+        if (!open) return
+        if (drawer.contains(e.target) || trigger.contains(e.target)) return
+        setOpen(false)
+    })
+
     function autosize() {
         input.style.height = 'auto'
         input.style.height = Math.min(120, input.scrollHeight) + 'px'
