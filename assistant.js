@@ -373,23 +373,23 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    background: linear-gradient(180deg, rgba(99, 102, 241, 0.18), rgba(99, 102, 241, 0.1));
-    color: #C7D2FE;
-    border: 1px solid rgba(99, 102, 241, 0.28);
-    border-radius: 6px;
-    font-size: 11px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 4px;
+    background: rgba(99, 102, 241, 0.12);
+    color: rgba(199, 210, 254, 0.95);
+    border: 0;
+    border-radius: 4px;
+    font-size: 9.5px;
     font-weight: 600;
     margin: 0 1px;
     text-decoration: none;
-    vertical-align: 1px;
-    transition: all 150ms ease;
+    vertical-align: 4px;
+    line-height: 1;
+    transition: background-color 150ms ease, color 150ms ease;
 }
 .takumo-assistant-citation:hover {
-    background: linear-gradient(180deg, rgba(99, 102, 241, 0.3), rgba(99, 102, 241, 0.18));
-    border-color: rgba(99, 102, 241, 0.5);
+    background: rgba(99, 102, 241, 0.28);
     color: #fff;
 }
 
@@ -571,6 +571,30 @@
     // it to header / list / paragraph content uniformly.
     function renderInline(escaped, citations) {
         let s = escaped
+
+        // Defensive em-dash + en-dash scrub. The prompt forbids them, but
+        // the model still slips back when summarising the docs because the
+        // pattern "Term — definition" is grammatical English. Backstop:
+        // turn ` — ` between letters into `. ` and capitalise the next
+        // letter, which is the conversion the prompt asks for. Skip inside
+        // backticks (rare but possible in code identifiers).
+        s = s
+            .replace(
+                /(`[^`]*`)|(\s*[—–]\s*)([a-z])/g,
+                (m, code, _dash, letter) =>
+                    code ? code : '. ' + letter.toUpperCase(),
+            )
+            .replace(/(`[^`]*`)|(\s*[—–]\s*)/g, (m, code) => (code ? code : '. '))
+
+        // Defensive citation cleanup. The prompt says "no clustering, no
+        // mid-sentence placement before punctuation". The model still does
+        // both occasionally. Drop a citation that sits immediately before
+        // a colon / semicolon / comma (it belongs at the end of the
+        // sentence, not at the clause boundary). Collapse adjacent
+        // duplicates so `[6] [6]` reads as one citation.
+        s = s.replace(/\s*\[(\d+)\](?=\s*[:,;])/g, '')
+        s = s.replace(/(\[\d+\])(?:\s*\1)+/g, '$1')
+
         s = s.replace(/`([^`]+)`/g, '<code>$1</code>')
         s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
         s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
@@ -579,6 +603,27 @@
             '<a href="$2" target="_blank" rel="noopener">$1</a>',
         )
         if (citations && citations.length) {
+            // Render an adjacent cluster like `[5][6]` (no space) as a
+            // single comma-joined pill so it reads as one unit. Distinct
+            // sources still surface; the cluster just stops being visual
+            // noise mid-sentence.
+            s = s.replace(/(?:\[(\d+)\]){2,}/g, (m) => {
+                const idxs = Array.from(m.matchAll(/\[(\d+)\]/g)).map((x) =>
+                    parseInt(x[1], 10),
+                )
+                const unique = Array.from(new Set(idxs))
+                const first = citations.find((c) => c.index === unique[0])
+                if (!first) return m
+                const label = unique
+                    .map((i) => {
+                        const c = citations.find((cc) => cc.index === i)
+                        if (!c) return ''
+                        return c.title + (c.section ? ' / ' + c.section : '')
+                    })
+                    .filter(Boolean)
+                    .join(', ')
+                return `<a class="takumo-assistant-citation" href="${first.url}" target="_blank" rel="noopener" title="${escapeHtml(label)}">${unique.join(',')}</a>`
+            })
             s = s.replace(/\[(\d+)\]/g, (m, n) => {
                 const idx = parseInt(n, 10)
                 const cit = citations.find((c) => c.index === idx)
@@ -587,6 +632,11 @@
                 return `<a class="takumo-assistant-citation" href="${cit.url}" target="_blank" rel="noopener" title="${escapeHtml(label)}">${idx}</a>`
             })
         }
+
+        // Trim a stray space between a citation pill and the period it
+        // precedes ("...the PR [6] ." → "...the PR [6].").
+        s = s.replace(/(<\/a>)\s+([.,;])/g, '$1$2')
+
         return s
     }
 
