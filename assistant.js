@@ -1,21 +1,14 @@
-/* ─────────────────────────────────────────────────────────────────────────
- * Takumo docs assistant — chat drawer for docs.takumo.io
+/* Takumo docs assistant. Chat drawer for docs.takumo.io.
  *
- * Mintlify includes any `.js` file at the docs root on every page (see
- * https://mintlify.com/docs/settings/custom-scripts). This file ships the
- * full widget: a sparkle button bottom-right, a slide-in drawer with a chat
- * transcript, Cmd+I to toggle, streaming SSE from ai.takumo.io/v1/chat.
+ * Mintlify auto-includes every .js file at the docs root on every page.
+ * This widget is self-contained: no React, no bundler, no shadow DOM. Every
+ * selector is scoped to .takumo-assistant-* so it can't collide with Mintlify.
  *
- * Styling matches the takumo-frontend brand spec (CLAUDE.md):
- *   - Inter font (already loaded by Mintlify)
- *   - Indigo-500 (#6366F1) accent
- *   - bg-[#0a0a0a] surface, bg-white/[0.04] cards, border-white/[0.08]
- *   - Rounded-full buttons, transition-colors duration-150
- *
- * The widget is self-contained: no React, no bundler, no shadow DOM. We
- * scope every selector to `.takumo-assistant-*` so we can't collide with
- * Mintlify's own classes.
- * ─────────────────────────────────────────────────────────────────────── */
+ * Brand spec from takumo-frontend/CLAUDE.md:
+ *   Inter font (loaded by Mintlify), indigo-500 accent (#6366F1),
+ *   bg-[#0a0a0a] surface, bg-white/[0.04] cards, border-white/[0.08],
+ *   rounded-2xl containers, transition-colors duration-150.
+ */
 
 (function () {
     if (typeof window === 'undefined') return
@@ -27,104 +20,132 @@
     const STORAGE_KEY = 'takumo:assistant:history'
     const HISTORY_LIMIT = 16
 
-    // ─── State ──────────────────────────────────────────────────────────
     let open = false
     let busy = false
     let abortController = null
     let history = loadHistory()
 
-    // ─── Styles ─────────────────────────────────────────────────────────
     const css = `
+@keyframes ta-shimmer {
+    from { background-position: 100% center; }
+    to { background-position: 0% center; }
+}
+@keyframes ta-drawer-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ta-trigger-glow {
+    0%, 100% { box-shadow: 0 8px 32px rgba(99, 102, 241, 0.32), 0 0 0 0 rgba(99, 102, 241, 0.4); }
+    50%      { box-shadow: 0 8px 32px rgba(99, 102, 241, 0.48), 0 0 0 6px rgba(99, 102, 241, 0); }
+}
+
 .takumo-assistant-trigger {
     position: fixed;
     bottom: 24px;
     right: 24px;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 999px;
-    background: #6366F1;
+    background: radial-gradient(circle at 30% 30%, #818CF8, #6366F1 60%, #4F46E5 100%);
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     z-index: 9998;
-    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);
-    transition: transform 150ms ease, background-color 150ms ease;
+    animation: ta-trigger-glow 2.6s ease-in-out infinite;
+    transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), background 150ms ease;
     font-family: inherit;
+    padding: 0;
 }
 .takumo-assistant-trigger:hover {
-    background: #818CF8;
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.04);
+    background: radial-gradient(circle at 30% 30%, #A5B4FC, #818CF8 60%, #6366F1 100%);
 }
-.takumo-assistant-trigger svg { width: 18px; height: 18px; }
+.takumo-assistant-trigger:active { transform: scale(0.97); }
+.takumo-assistant-trigger svg { width: 22px; height: 22px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25)); }
 
 .takumo-assistant-drawer {
     position: fixed;
     bottom: 24px;
     right: 24px;
-    width: min(420px, calc(100vw - 48px));
-    height: min(640px, calc(100vh - 48px));
-    background: #0a0a0a;
+    width: min(440px, calc(100vw - 48px));
+    height: min(680px, calc(100vh - 48px));
+    background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99, 102, 241, 0.08), transparent 60%),
+        linear-gradient(180deg, #111114 0%, #0a0a0a 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
+    border-radius: 24px;
     display: none;
     flex-direction: column;
     overflow: hidden;
     z-index: 9999;
-    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
+    box-shadow:
+        0 32px 80px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+        0 1px 0 0 rgba(255, 255, 255, 0.06) inset;
     backdrop-filter: blur(24px);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.92);
 }
-.takumo-assistant-drawer.open { display: flex; }
+.takumo-assistant-drawer.open {
+    display: flex;
+    animation: ta-drawer-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
 
 .takumo-assistant-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 18px;
+    padding: 18px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 .takumo-assistant-header-title {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     letter-spacing: -0.01em;
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: rgba(255, 255, 255, 0.95);
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.96);
 }
-.takumo-assistant-header-title svg { width: 14px; height: 14px; color: #818CF8; }
-
-.takumo-assistant-header-actions {
+.takumo-assistant-header-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(129, 140, 248, 0.18), rgba(99, 102, 241, 0.08));
+    border: 1px solid rgba(129, 140, 248, 0.22);
     display: flex;
-    gap: 4px;
+    align-items: center;
+    justify-content: center;
 }
+.takumo-assistant-header-icon svg { width: 14px; height: 14px; color: #A5B4FC; }
+
+.takumo-assistant-header-actions { display: flex; gap: 4px; }
 .takumo-assistant-header-action {
     background: transparent;
     border: 0;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    padding: 6px;
+    padding: 7px;
     border-radius: 8px;
     transition: color 150ms ease, background-color 150ms ease;
     font-family: inherit;
 }
 .takumo-assistant-header-action:hover {
-    color: rgba(255, 255, 255, 0.9);
-    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.05);
 }
 .takumo-assistant-header-action svg { width: 14px; height: 14px; display: block; }
 
 .takumo-assistant-transcript {
     flex: 1;
     overflow-y: auto;
-    padding: 18px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
     scroll-behavior: smooth;
 }
 .takumo-assistant-transcript::-webkit-scrollbar { width: 6px; }
@@ -134,38 +155,51 @@
 }
 
 .takumo-assistant-empty {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 13px;
-    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 13.5px;
+    line-height: 1.6;
     padding: 6px 2px;
 }
 .takumo-assistant-empty strong {
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.95);
     font-weight: 600;
 }
 .takumo-assistant-suggestions {
-    margin-top: 14px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 .takumo-assistant-suggestion {
     text-align: left;
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.035);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.75);
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.78);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.4;
     cursor: pointer;
-    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 150ms ease, background-color 150ms ease, color 150ms ease, border-color 150ms ease;
     font-family: inherit;
 }
-.takumo-assistant-suggestion:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.95);
-    border-color: rgba(255, 255, 255, 0.12);
+.takumo-assistant-suggestion svg {
+    width: 14px;
+    height: 14px;
+    color: rgba(129, 140, 248, 0.7);
+    flex-shrink: 0;
+    transition: color 150ms ease;
 }
+.takumo-assistant-suggestion:hover {
+    background: rgba(99, 102, 241, 0.08);
+    color: rgba(255, 255, 255, 0.98);
+    border-color: rgba(129, 140, 248, 0.32);
+    transform: translateY(-1px);
+}
+.takumo-assistant-suggestion:hover svg { color: #A5B4FC; }
 
 .takumo-assistant-msg {
     display: flex;
@@ -175,13 +209,14 @@
 .takumo-assistant-msg-role {
     font-size: 10.5px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
 }
 .takumo-assistant-msg-body {
-    font-size: 13px;
+    font-size: 13.5px;
     line-height: 1.62;
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.88);
     white-space: pre-wrap;
     word-wrap: break-word;
 }
@@ -204,108 +239,114 @@
     margin: 8px 0;
 }
 .takumo-assistant-msg-body a {
-    color: #818CF8;
+    color: #A5B4FC;
     text-decoration: underline;
     text-decoration-color: rgba(129, 140, 248, 0.4);
     text-underline-offset: 2px;
 }
-.takumo-assistant-msg-body a:hover { color: #A5B4FC; }
+.takumo-assistant-msg-body a:hover { color: #C7D2FE; }
 .takumo-assistant-citation {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    background: rgba(99, 102, 241, 0.12);
-    color: #A5B4FC;
-    border: 1px solid rgba(99, 102, 241, 0.2);
-    border-radius: 5px;
-    font-size: 10.5px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.18), rgba(99, 102, 241, 0.1));
+    color: #C7D2FE;
+    border: 1px solid rgba(99, 102, 241, 0.28);
+    border-radius: 6px;
+    font-size: 11px;
     font-weight: 600;
     margin: 0 1px;
     text-decoration: none;
     vertical-align: 1px;
-    transition: background-color 150ms ease;
+    transition: all 150ms ease;
 }
 .takumo-assistant-citation:hover {
-    background: rgba(99, 102, 241, 0.2);
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.3), rgba(99, 102, 241, 0.18));
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #fff;
 }
 
 .takumo-assistant-sources {
-    margin-top: 8px;
+    margin-top: 10px;
     display: flex;
     flex-direction: column;
     gap: 4px;
     font-size: 11.5px;
 }
 .takumo-assistant-source {
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.5);
     text-decoration: none;
     display: flex;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
+    padding: 4px 0;
     transition: color 150ms ease;
 }
-.takumo-assistant-source:hover { color: rgba(255, 255, 255, 0.9); }
+.takumo-assistant-source:hover { color: rgba(255, 255, 255, 0.95); }
 .takumo-assistant-source-index {
     color: #A5B4FC;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    min-width: 14px;
 }
 
-.takumo-assistant-thinking {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 12px;
-}
-.takumo-assistant-thinking-dot {
-    width: 4px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.4);
-    border-radius: 999px;
-    animation: takumo-pulse 1.2s ease-in-out infinite;
-}
-.takumo-assistant-thinking-dot:nth-child(2) { animation-delay: 0.15s; }
-.takumo-assistant-thinking-dot:nth-child(3) { animation-delay: 0.3s; }
-@keyframes takumo-pulse {
-    0%, 80%, 100% { opacity: 0.2; }
-    40% { opacity: 1; }
+.takumo-assistant-shimmer {
+    display: inline-block;
+    font-size: 13px;
+    background-size: 250% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.32) 0%,
+        rgba(255, 255, 255, 0.32) 40%,
+        rgba(255, 255, 255, 0.95) 50%,
+        rgba(255, 255, 255, 0.32) 60%,
+        rgba(255, 255, 255, 0.32) 100%
+    );
+    background-repeat: no-repeat;
+    animation: ta-shimmer 2s linear infinite;
 }
 
 .takumo-assistant-input-wrap {
     border-top: 1px solid rgba(255, 255, 255, 0.06);
-    padding: 14px 16px;
+    padding: 16px 18px;
 }
-.takumo-assistant-input-row {
+.takumo-assistant-input-shell {
     display: flex;
     gap: 8px;
     align-items: flex-end;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 10px 10px 10px 14px;
+    transition: border-color 150ms ease, background-color 150ms ease, box-shadow 200ms ease;
+}
+.takumo-assistant-input-shell:focus-within {
+    border-color: rgba(129, 140, 248, 0.45);
+    background: rgba(99, 102, 241, 0.04);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08);
 }
 .takumo-assistant-input {
     flex: 1;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: transparent;
+    border: 0;
     color: #fff;
-    border-radius: 12px;
-    padding: 10px 12px;
     font-family: inherit;
-    font-size: 13px;
-    line-height: 1.4;
+    font-size: 13.5px;
+    line-height: 1.5;
     resize: none;
     outline: none;
     max-height: 120px;
-    transition: border-color 150ms ease, background-color 150ms ease;
+    padding: 4px 0;
 }
-.takumo-assistant-input::placeholder { color: rgba(255, 255, 255, 0.3); }
-.takumo-assistant-input:focus {
-    border-color: rgba(99, 102, 241, 0.4);
-    background: rgba(255, 255, 255, 0.06);
-}
+.takumo-assistant-input::placeholder { color: rgba(255, 255, 255, 0.32); }
 .takumo-assistant-send {
-    background: #6366F1;
+    background: linear-gradient(180deg, #818CF8, #6366F1);
     color: #fff;
     border: 0;
     border-radius: 12px;
@@ -315,44 +356,53 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 150ms ease;
+    transition: transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1), background 150ms ease, box-shadow 150ms ease;
     flex-shrink: 0;
     font-family: inherit;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.32);
 }
-.takumo-assistant-send:hover { background: #818CF8; }
+.takumo-assistant-send:hover {
+    background: linear-gradient(180deg, #A5B4FC, #818CF8);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+.takumo-assistant-send:active { transform: scale(0.96); }
 .takumo-assistant-send:disabled {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: none;
     cursor: not-allowed;
+    transform: none;
 }
 .takumo-assistant-send svg { width: 14px; height: 14px; }
 
 .takumo-assistant-hint {
-    margin-top: 8px;
+    margin-top: 10px;
     font-size: 10.5px;
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.32);
     letter-spacing: 0.02em;
 }
 .takumo-assistant-hint kbd {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 4px;
-    padding: 1px 4px;
+    padding: 1.5px 5px;
     font-family: inherit;
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.55);
+    margin: 0 1px;
 }
 
 .takumo-assistant-error {
     color: #FCA5A5;
     background: rgba(248, 113, 113, 0.06);
-    border: 1px solid rgba(248, 113, 113, 0.16);
-    border-radius: 10px;
-    padding: 10px 12px;
+    border: 1px solid rgba(248, 113, 113, 0.18);
+    border-radius: 12px;
+    padding: 11px 14px;
     font-size: 12.5px;
+    line-height: 1.5;
 }
 `
 
-    // ─── Helpers ────────────────────────────────────────────────────────
     function el(html) {
         const t = document.createElement('template')
         t.innerHTML = html.trim()
@@ -383,10 +433,6 @@
         } catch {}
     }
 
-    // Minimal markdown rendering. Mintlify already serves the docs as
-    // HTML; here we just need to handle assistant output which is plain
-    // markdown. We DO NOT enable arbitrary HTML — too easy to XSS via
-    // a prompt-injected response.
     function escapeHtml(s) {
         return s
             .replace(/&/g, '&amp;')
@@ -398,31 +444,23 @@
 
     function renderMarkdown(md, citations) {
         let html = escapeHtml(md)
-        // Code fences
         html = html.replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code}</code></pre>`)
-        // Inline code
         html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
-        // Bold
         html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        // Italic
         html = html.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
-        // Links
         html = html.replace(
             /\[([^\]]+)\]\(([^)]+)\)/g,
             '<a href="$2" target="_blank" rel="noopener">$1</a>',
         )
-        // Citations [n] → linkified chips
         if (citations && citations.length) {
             html = html.replace(/\[(\d+)\]/g, (m, n) => {
                 const idx = parseInt(n, 10)
                 const cit = citations.find((c) => c.index === idx)
                 if (!cit) return m
-                return `<a class="takumo-assistant-citation" href="${cit.url}" target="_blank" rel="noopener" title="${escapeHtml(
-                    cit.title + (cit.section ? ' — ' + cit.section : ''),
-                )}">${idx}</a>`
+                const label = cit.title + (cit.section ? ' / ' + cit.section : '')
+                return `<a class="takumo-assistant-citation" href="${cit.url}" target="_blank" rel="noopener" title="${escapeHtml(label)}">${idx}</a>`
             })
         }
-        // Paragraphs (light — preserve line breaks)
         html = html.replace(/\n\n+/g, '\n')
         return html
     }
@@ -435,56 +473,50 @@
                 .slice(0, 5)
                 .map(
                     (c) =>
-                        `<a class="takumo-assistant-source" href="${c.url}" target="_blank" rel="noopener"><span class="takumo-assistant-source-index">${c.index}</span><span>${escapeHtml(
-                            c.title + (c.section ? ' — ' + c.section : ''),
-                        )}</span></a>`,
+                        `<a class="takumo-assistant-source" href="${c.url}" target="_blank" rel="noopener"><span class="takumo-assistant-source-index">${c.index}</span><span>${escapeHtml(c.title + (c.section ? ' / ' + c.section : ''))}</span></a>`,
                 )
                 .join('') +
             '</div>'
         )
     }
 
-    // ─── DOM construction ──────────────────────────────────────────────
     const style = document.createElement('style')
     style.textContent = css
     document.head.appendChild(style)
 
+    // Refined Sparkles icon. The classic four-pointed star paired with a
+    // smaller star for depth — same family as the cns-docs trigger but
+    // single-stroke so it renders cleanly at 22px.
+    const SPARKLES_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><path d="M12 7.5l1.4 3.1L16.5 12l-3.1 1.4L12 16.5l-1.4-3.1L7.5 12l3.1-1.4L12 7.5z" fill="currentColor" fill-opacity="0.25"/></svg>`
+
     const trigger = el(`
-<button class="takumo-assistant-trigger" aria-label="Open Takumo docs assistant" title="Ask the docs (⌘I)">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="m12 3-1.9 5.8L4.5 10l5.6 2.2L12 18l1.9-5.8L19.5 10l-5.6-2.2L12 3z"/>
-    <path d="M5 21v-4"/>
-    <path d="M3 19h4"/>
-    <path d="M19 7V3"/>
-    <path d="M17 5h4"/>
-  </svg>
-</button>`)
+<button class="takumo-assistant-trigger" aria-label="Open Takumo docs assistant" title="Ask the docs">${SPARKLES_SVG}</button>`)
 
     const drawer = el(`
 <div class="takumo-assistant-drawer" role="dialog" aria-label="Takumo docs assistant" aria-hidden="true">
   <div class="takumo-assistant-header">
     <div class="takumo-assistant-header-title">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8L4.5 10l5.6 2.2L12 18l1.9-5.8L19.5 10l-5.6-2.2L12 3z"/></svg>
+      <div class="takumo-assistant-header-icon">${SPARKLES_SVG}</div>
       Ask the docs
     </div>
     <div class="takumo-assistant-header-actions">
-      <button class="takumo-assistant-header-action" data-action="reset" title="Clear conversation">
+      <button class="takumo-assistant-header-action" data-action="reset" title="Clear conversation" aria-label="Clear conversation">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
       </button>
-      <button class="takumo-assistant-header-action" data-action="close" title="Close (Esc)">
+      <button class="takumo-assistant-header-action" data-action="close" title="Close" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
     </div>
   </div>
   <div class="takumo-assistant-transcript"></div>
   <div class="takumo-assistant-input-wrap">
-    <div class="takumo-assistant-input-row">
-      <textarea class="takumo-assistant-input" rows="1" placeholder="Ask anything about Takumo…" aria-label="Ask the docs"></textarea>
+    <div class="takumo-assistant-input-shell">
+      <textarea class="takumo-assistant-input" rows="1" placeholder="Ask anything about Takumo..." aria-label="Ask the docs"></textarea>
       <button class="takumo-assistant-send" aria-label="Send" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </button>
     </div>
-    <div class="takumo-assistant-hint">Enter to send · <kbd>⌘</kbd>+<kbd>I</kbd> to toggle</div>
+    <div class="takumo-assistant-hint">Enter to send. <kbd>⌘</kbd><kbd>I</kbd> to toggle.</div>
   </div>
 </div>`)
 
@@ -495,25 +527,33 @@
     const input = drawer.querySelector('.takumo-assistant-input')
     const sendBtn = drawer.querySelector('.takumo-assistant-send')
 
-    // ─── Render ─────────────────────────────────────────────────────────
+    // Suggested starter questions. Each pairs an icon with copy that reads
+    // like a real user question. No connectors in the copy.
     const SUGGESTIONS = [
-        'How do I install Aegis Shield on-prem?',
-        'Where do I issue a deploy token?',
-        'What does Sentinel scan for in pull requests?',
-        'How does Brain Intelligence learn patterns?',
+        { icon: 'install', text: 'How do I install Aegis Shield on-prem?' },
+        { icon: 'key', text: 'Where do I issue a deploy token?' },
+        { icon: 'scan', text: 'What does Sentinel scan for in pull requests?' },
+        { icon: 'brain', text: 'How does Brain Intelligence learn patterns?' },
     ]
+
+    const ICONS = {
+        install: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
+        key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>',
+        scan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>',
+        brain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></svg>',
+    }
 
     function renderEmpty() {
         transcript.innerHTML = `
 <div class="takumo-assistant-empty">
-  <div><strong>Ask anything about Takumo.</strong> Answers cite the docs they came from — click a citation to jump straight in.</div>
+  <div><strong>Ask anything about Takumo.</strong> Answers cite the docs they came from. Click a citation to jump straight in.</div>
   <div class="takumo-assistant-suggestions">
-    ${SUGGESTIONS.map((s) => `<button class="takumo-assistant-suggestion">${escapeHtml(s)}</button>`).join('')}
+    ${SUGGESTIONS.map((s) => `<button class="takumo-assistant-suggestion">${ICONS[s.icon]}<span>${escapeHtml(s.text)}</span></button>`).join('')}
   </div>
 </div>`
         transcript.querySelectorAll('.takumo-assistant-suggestion').forEach((b, i) => {
             b.addEventListener('click', () => {
-                input.value = SUGGESTIONS[i]
+                input.value = SUGGESTIONS[i].text
                 input.dispatchEvent(new Event('input'))
                 send()
             })
@@ -538,14 +578,25 @@
         transcript.scrollTop = transcript.scrollHeight
     }
 
+    // Shimmer-text loading state. Cycles through three short phrases while
+    // the upstream answer streams. Replaces the dots animation.
     function appendThinking() {
         const node = el(`
 <div class="takumo-assistant-msg" data-pending>
   <div class="takumo-assistant-msg-role">Assistant</div>
-  <div class="takumo-assistant-msg-body"><span class="takumo-assistant-thinking"><span class="takumo-assistant-thinking-dot"></span><span class="takumo-assistant-thinking-dot"></span><span class="takumo-assistant-thinking-dot"></span></span></div>
+  <div class="takumo-assistant-msg-body"><span class="takumo-assistant-shimmer">Reading the docs...</span></div>
 </div>`)
         transcript.appendChild(node)
         transcript.scrollTop = transcript.scrollHeight
+        const shimmer = node.querySelector('.takumo-assistant-shimmer')
+        const phrases = ['Reading the docs...', 'Finding the right page...', 'Writing your answer...']
+        let i = 0
+        const interval = setInterval(() => {
+            i = (i + 1) % phrases.length
+            if (shimmer.isConnected) shimmer.textContent = phrases[i]
+            else clearInterval(interval)
+        }, 1800)
+        node.__cleanup = () => clearInterval(interval)
         return node
     }
 
@@ -555,7 +606,6 @@
         transcript.scrollTop = transcript.scrollHeight
     }
 
-    // ─── Open / close ──────────────────────────────────────────────────
     function setOpen(next) {
         open = next
         drawer.classList.toggle('open', open)
@@ -591,7 +641,6 @@
         }
     })
 
-    // ─── Input handling ────────────────────────────────────────────────
     function autosize() {
         input.style.height = 'auto'
         input.style.height = Math.min(120, input.scrollHeight) + 'px'
@@ -611,7 +660,6 @@
     })
     sendBtn.addEventListener('click', send)
 
-    // ─── Send + stream ─────────────────────────────────────────────────
     async function send() {
         const text = input.value.trim()
         if (!text || busy) return
@@ -643,22 +691,23 @@
             })
 
             if (r.status === 503) {
+                if (pending.__cleanup) pending.__cleanup()
                 pending.remove()
-                appendError(
-                    'The assistant is temporarily unavailable. You can browse the docs directly or email support@takumo.io.',
-                )
+                appendError('The assistant is temporarily unavailable. Browse the docs directly or email support@takumo.io.')
                 history.pop()
                 return
             }
             if (r.status === 429) {
+                if (pending.__cleanup) pending.__cleanup()
                 pending.remove()
-                appendError('Whoa — too many questions in a short window. Give it a minute and try again.')
+                appendError('Too many questions in a short window. Give it a minute and try again.')
                 history.pop()
                 return
             }
             if (!r.ok || !r.body) {
+                if (pending.__cleanup) pending.__cleanup()
                 pending.remove()
-                appendError(`Couldn't reach the assistant (HTTP ${r.status}).`)
+                appendError("Couldn't reach the assistant (HTTP " + r.status + ').')
                 history.pop()
                 return
             }
@@ -666,7 +715,7 @@
             const decoder = new TextDecoder()
             const reader = r.body.getReader()
             let buffer = ''
-            const body = pending.querySelector('.takumo-assistant-msg-body')
+            let body = null
 
             while (true) {
                 const { value, done } = await reader.read()
@@ -686,11 +735,14 @@
                     if (parsed.type === 'context') {
                         citations = parsed.chunks || []
                     } else if (parsed.type === 'text') {
+                        if (!body) {
+                            if (pending.__cleanup) pending.__cleanup()
+                            pending.querySelector('.takumo-assistant-msg-body').innerHTML = ''
+                            body = pending.querySelector('.takumo-assistant-msg-body')
+                        }
                         answer += parsed.value || ''
                         body.innerHTML = renderMarkdown(answer, citations)
                         if (citations) {
-                            // Re-append sources every text delta — cheap, keeps the
-                            // citation list visible while streaming.
                             const existing = pending.querySelector('.takumo-assistant-sources')
                             if (existing) existing.remove()
                             pending.insertAdjacentHTML('beforeend', renderSources(citations))
@@ -703,6 +755,7 @@
             }
 
             if (answer.trim().length === 0) {
+                if (pending.__cleanup) pending.__cleanup()
                 pending.remove()
                 appendError('The assistant returned an empty response. Try rephrasing your question.')
                 history.pop()
@@ -713,9 +766,11 @@
             }
         } catch (err) {
             if (err.name === 'AbortError') {
+                if (pending.__cleanup) pending.__cleanup()
                 pending.remove()
                 return
             }
+            if (pending.__cleanup) pending.__cleanup()
             pending.remove()
             appendError("Couldn't reach the assistant. Check your network connection and try again.")
             history.pop()
@@ -727,9 +782,8 @@
         }
     }
 
-    // ─── Boot ───────────────────────────────────────────────────────────
-    // If ai.takumo.io is health-down (AUTH_MODE=off in the Worker), hide the
-    // trigger entirely so the user never sees a button that returns an error.
+    // Hide the trigger when the Worker reports mode=off so users don't see
+    // a button that returns errors.
     fetch(HEALTH, { method: 'GET' })
         .then((r) => r.json())
         .then((info) => {
@@ -738,8 +792,5 @@
                 drawer.remove()
             }
         })
-        .catch(() => {
-            // Network error — leave the trigger up; user will get a clean
-            // error message in the drawer if they actually try to chat.
-        })
+        .catch(() => {})
 })()
