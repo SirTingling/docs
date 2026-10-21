@@ -18,7 +18,8 @@ serviceMonitor:
   additionalLabels: {}
 ```
 
-Enable it during installation:
+Enable it during installation (the namespace and its `cr.takumo.io` pull Secret come first; see
+[Installation](/installation)):
 
 ```bash
 helm install aegis-shield takumo/aegis-shield \
@@ -56,7 +57,7 @@ The gateway chart includes pre-built Grafana dashboards as ConfigMaps:
 ```bash
 helm upgrade aegis-shield takumo/aegis-shield \
   --namespace takumo \
-  --reuse-values \
+  --reset-then-reuse-values \
   --set grafana.dashboards.enabled=true
 ```
 
@@ -118,7 +119,7 @@ The gateway chart includes a full set of PrometheusRule alert definitions. Enabl
 ```bash
 helm upgrade aegis-shield takumo/aegis-shield \
   --namespace takumo \
-  --reuse-values \
+  --reset-then-reuse-values \
   --set alerting.enabled=true
 ```
 

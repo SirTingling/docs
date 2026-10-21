@@ -6,13 +6,13 @@ icon: "container"
 
 Deploy tokens are credentials your Kubernetes cluster uses to pull Takumo container images from `cr.takumo.io`. Each token is scoped to a single workspace and can be revoked at any time without disrupting other workspaces.
 
-Use a deploy token when you install Aegis Shield, Gateway Coordinator, Vault, or Sentinel via Helm. The token authenticates your `docker pull` against the Takumo registry — Takumo gets a per-tenant audit trail, you get instant revoke if a credential is ever exposed.
+Use a deploy token when you install Aegis Shield, Gateway Coordinator, Vault, or Sentinel with Helm. The token authenticates every image pull against the Takumo registry. Takumo keeps a per-workspace audit trail, and you can revoke a token the moment it is exposed.
 
 ## Creating a Token
 
 <Steps>
   <Step title="Navigate to Deploy Tokens">
-    Go to **Settings → Deploy Tokens** in the dashboard sidebar.
+    Go to **Settings, Deploy Tokens** in the dashboard sidebar.
   </Step>
   <Step title="Click Create Token">
     Hit the **Create token** button in the top right.
@@ -23,8 +23,8 @@ Use a deploy token when you install Aegis Shield, Gateway Coordinator, Vault, or
   <Step title="Set expiry (optional)">
     Leave blank for a non-expiring token, or set a number of days (1-365). Tokens automatically stop authenticating after their expiry.
   </Step>
-  <Step title="Copy the token + login command">
-    The dialog shows the token once. Copy the pre-built `docker login cr.takumo.io ...` command — the username is your workspace ID, the password is the token. You will not see the plaintext token again.
+  <Step title="Copy the token, then the commands">
+    The dialog shows the token once, with its own copy button, next to your workspace ID. The ready-made commands below it never contain the token: they read it from your terminal without echo. Copy the token first. Closing the dialog before you copy it asks you to confirm, because the plaintext token is not shown again.
   </Step>
 </Steps>
 
@@ -36,40 +36,66 @@ Tokens look like `tkdt_<prefix>_<secret>`:
 tkdt_a1b2c3d4_<56 hex chars>
 ```
 
-The first 8 hex chars after `tkdt_` are the displayed prefix — you'll see this in the dashboard listing so you can identify the token without decrypting anything. The remaining 56 chars are the secret portion. Only `sha256(token)` is stored server-side; the plaintext lives nowhere after the create dialog closes.
+The first 8 hex chars after `tkdt_` are the displayed prefix. You see it in the dashboard listing, so you can identify the token without decrypting anything. The remaining 56 chars are the secret portion. Only `sha256(token)` is stored server-side; the plaintext lives nowhere after the create dialog closes.
 
 ## Using a Token
 
 ### Kubernetes (Helm install)
 
-Create a docker-registry secret in your namespace, then install the chart:
+Create the namespace and the pull Secret, then install the chart. The token is read without echo, so it never lands in shell history, on screen, or in a process's arguments (`printf` is a shell builtin, so the token travels over the pipe):
 
 ```bash
-# Create the namespace and pull secret first
 kubectl create namespace takumo
-kubectl create secret docker-registry takumo-pull-secret \
-  --docker-server=cr.takumo.io \
-  --docker-username=YOUR_WORKSPACE_ID \
-  --docker-password=YOUR_DEPLOY_TOKEN \
-  --namespace=takumo
+read -rs TAKUMO_DEPLOY_TOKEN
+printf '{"auths":{"cr.takumo.io":{"username":"%s","password":"%s"}}}' "<workspace-id>" "$TAKUMO_DEPLOY_TOKEN" \
+  | kubectl create secret generic takumo-pull-secret -n takumo \
+      --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
+unset TAKUMO_DEPLOY_TOKEN
 
-# Install. The chart references `takumo-pull-secret` by default.
+# Pods use takumo-pull-secret by default.
 helm install aegis-shield takumo/aegis-shield -n takumo
 ```
+
+The chart checks at install time that the pull Secret exists in the namespace and has type `kubernetes.io/dockerconfigjson`; if not, `helm install` stops and prints these commands. To use your own Secret name, set `imagePull.existingSecret`.
+
+Check a Secret without printing its contents:
+
+```bash
+kubectl get secret takumo-pull-secret -n takumo -o jsonpath='{.type}'
+kubectl describe secret takumo-pull-secret -n takumo
+```
+
+#### Letting the chart create the Secret (direct installs only)
+
+For a one-off `helm install` without GitOps, the chart can create `<release>-pull` from a values file:
+
+```yaml
+# pull-values.yaml: keep this file out of git
+imagePull:
+  deployToken:
+    tenantId: <workspace-id>
+    token: <deploy-token>
+```
+
+```bash
+helm install aegis-shield takumo/aegis-shield -n takumo -f pull-values.yaml
+```
+
+Prefer the Secret above. With `deployToken` the token is stored in the release history (`helm get values`, `helm get manifest`), printed by `--dry-run` and `--debug` (so it lands in CI logs), kept in a ConfigMap readable by anyone with the `view` role when Helm uses `HELM_DRIVER=configmap`, and in your shell history if you type it. Never pass it with `--set`, and do not combine it with `imagePull.existingSecret`.
 
 ### Docker / Podman
 
 ```bash
-docker login cr.takumo.io \
-  --username YOUR_WORKSPACE_ID \
-  --password YOUR_DEPLOY_TOKEN
+read -rs TAKUMO_DEPLOY_TOKEN
+printf '%s' "$TAKUMO_DEPLOY_TOKEN" | docker login cr.takumo.io --username <workspace-id> --password-stdin
+unset TAKUMO_DEPLOY_TOKEN
 
 docker pull cr.takumo.io/aegis-shield:latest
 ```
 
 ### CI/CD
 
-Set `cr.takumo.io` registry credentials as build secrets in your CI provider (GitHub Actions `secrets.TAKUMO_DEPLOY_TOKEN`, etc.) and configure the `docker/login-action` step with `registry: cr.takumo.io`.
+Store the token as a build secret in your CI provider (for example GitHub Actions `secrets.TAKUMO_DEPLOY_TOKEN`) and configure the `docker/login-action` step with `registry: cr.takumo.io`, `username:` your workspace ID and `password: ${{ secrets.TAKUMO_DEPLOY_TOKEN }}`. The action passes the password over stdin.
 
 ## Token Properties
 
@@ -95,13 +121,13 @@ When you hit the limit, revoke an unused token or upgrade your plan.
 
 ## Revoking a Token
 
-Click the menu icon on any active token row in the table and choose **Revoke**. The change is immediate — the next pull from a cluster using the token will start failing within roughly a minute (Takumo's registry cache TTL).
+Click the menu icon on any active token row in the table and choose **Revoke**. New logins with the token fail at once. A registry session issued before the revocation stays valid for up to 10 minutes (600 seconds), so pulls can keep succeeding for that long. Revocation does not stop pods that are already running and does not remove images already cached on your nodes.
 
 If you suspect a token has been compromised, revoke it immediately and issue a new one. Keep an eye on the **Pulls** and **Last Used** columns to confirm the new token starts taking over.
 
 ## Air-Gapped Deployments
 
-If your cluster can't reach `cr.takumo.io`, mirror the four service images plus the Redis mirror into your internal registry, then point Helm at your mirror:
+If your cluster can't reach `cr.takumo.io`, mirror the four service images plus the Redis mirror into your internal registry, then point Helm at your mirror and at the Secret that holds your registry's credentials:
 
 ```bash
 # Mirror once from a network-attached machine
@@ -118,15 +144,16 @@ docker push your-internal-registry.example.com/takumo/redis:7-alpine
 # Override the chart to use your mirror
 helm install aegis-shield takumo/aegis-shield -n takumo \
   --set image.repository=your-internal-registry.example.com/takumo/aegis-shield \
-  --set redis.image.repository=your-internal-registry.example.com/takumo/redis
+  --set redis.image.repository=your-internal-registry.example.com/takumo/redis \
+  --set imagePull.existingSecret=your-registry-pull-secret
 ```
 
-You don't need a deploy token in this flow — your internal registry's pull credentials replace it.
+You don't need a deploy token in this flow. Your internal registry's pull credentials replace it.
 
 ## Security Notes
 
 - Tokens are stored as `sha256(token)` server-side. The plaintext never persists anywhere after the create dialog.
 - Lookups are scoped by workspace ID + token hash, so a token leaked from one workspace can't be replayed against another workspace.
-- Revoked and expired tokens are rejected immediately at the registry edge — the next pull returns `401 unauthorized`.
+- Revoked and expired tokens are refused at the registry edge on the next login (`401 unauthorized`); a session issued before revocation stays valid for up to 600 seconds.
 - Token activity (`pullCount`, `lastUsedAt`) is updated asynchronously; expect a few seconds of lag.
 - The registry edge is in **enforce mode**: anonymous pulls and pulls with invalid credentials return `401 unauthorized`. Every pull through `cr.takumo.io` requires a valid deploy token.

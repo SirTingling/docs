@@ -57,25 +57,31 @@ For organizations that need full control over where their data flows. Deploy the
       --from-file=public.pem=./verification.pem
     ```
 
-    Create the image pull secret for `cr.takumo.io`. Issue a deploy token
-    from the Takumo dashboard (Settings → Deploy Tokens) — the username is
-    your workspace ID, the password is the token value. Tokens can be
-    revoked at any time. Full reference:
+    Create the image pull Secret for `cr.takumo.io`. Issue a deploy token
+    in the Takumo dashboard (Settings, Deploy Tokens); the dialog shows your
+    workspace ID beside it. The token is read without echo, so it stays out
+    of shell history, the screen and process arguments. Full reference:
     [Deploy Tokens](/dashboard/deploy-tokens).
 
     ```bash
-    kubectl create secret docker-registry takumo-pull-secret \
-      --namespace takumo \
-      --docker-server=cr.takumo.io \
-      --docker-username=YOUR_TAKUMO_WORKSPACE_ID \
-      --docker-password=YOUR_TAKUMO_DEPLOY_TOKEN
+    read -rs TAKUMO_DEPLOY_TOKEN
+    printf '{"auths":{"cr.takumo.io":{"username":"%s","password":"%s"}}}' "<workspace-id>" "$TAKUMO_DEPLOY_TOKEN" \
+      | kubectl create secret generic takumo-pull-secret -n takumo \
+          --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
+    unset TAKUMO_DEPLOY_TOKEN
     ```
+
+    The charts check at install time that `takumo-pull-secret` exists in the
+    namespace with type `kubernetes.io/dockerconfigjson`, and stop with these
+    commands if it does not. Create the namespace first (as above) rather than
+    passing `--create-namespace`.
 
     **Air-gapped:** if your cluster has no egress to `cr.takumo.io`, mirror
     the four service images (`aegis-shield`, `gateway-coordinator`,
     `sentinel-service`, `vault-service`) plus `mirror/redis` into your
     internal registry, override `image.repository` in your values file,
-    and supply that registry's pull credentials in this secret instead.
+    and set `imagePull.existingSecret` to the Secret holding that registry's
+    pull credentials.
   </Step>
 
   <Step title="Deploy the coordinator">
@@ -86,7 +92,8 @@ For organizations that need full control over where their data flows. Deploy the
     ```bash
     helm install gateway-coordinator takumo/gateway-coordinator \
       --namespace takumo \
-      --values https://charts.takumo.io/gateway-coordinator/values-onprem.yaml \
+      --version 0.2.0 \
+      --values https://charts.takumo.io/gateway-coordinator/0.2.0/values-onprem.yaml \
       --set secrets.joinKey.enabled=false
     ```
 
@@ -108,7 +115,8 @@ For organizations that need full control over where their data flows. Deploy the
     ```bash
     helm install aegis-shield takumo/aegis-shield \
       --namespace takumo \
-      --values https://charts.takumo.io/aegis-shield/values-onprem.yaml \
+      --version 0.3.0 \
+      --values https://charts.takumo.io/aegis-shield/0.3.0/values-onprem.yaml \
       --set connector.grpcUrl="gateway-coordinator.takumo.svc.cluster.local:9090"
     ```
 
@@ -143,7 +151,8 @@ For organizations that need full control over where their data flows. Deploy the
     ```bash
     helm upgrade aegis-shield takumo/aegis-shield \
       --namespace takumo \
-      --reuse-values \
+      --version 0.3.0 \
+      --reset-then-reuse-values \
       --set secrets.joinKey.enabled=true \
       --set secrets.joinKey.secretName=aegis-join-key
     ```
@@ -153,9 +162,16 @@ For organizations that need full control over where their data flows. Deploy the
     ```bash
     helm upgrade gateway-coordinator takumo/gateway-coordinator \
       --namespace takumo \
-      --reuse-values \
+      --version 0.2.0 \
+      --reset-then-reuse-values \
       --set secrets.joinKey.enabled=true
     ```
+
+    Use `--reset-then-reuse-values`, not `--reuse-values`, for every upgrade.
+    It applies the new chart's defaults and keeps the values you set yourself.
+    `--reuse-values` replays the old chart's defaults instead, which can point
+    pods at an old pull Secret name such as `ghcr-pull-secret`; the chart then
+    stops the upgrade and names it.
   </Step>
 
   <Step title="Verify the connection">
@@ -173,6 +189,20 @@ For organizations that need full control over where their data flows. Deploy the
 
 <Warning>The join key is shown once. Store it in your secrets management system (Vault, AWS Secrets Manager, etc.) before closing the dialog.</Warning>
 
+## GitOps installs (ArgoCD, Flux)
+
+Create the namespace and the pull Secret (or a SealedSecret or External Secret that produces a
+`kubernetes.io/dockerconfigjson` Secret) before the first sync, and set `imagePull.existingSecret` if you use
+another name. Use `imagePull.existingSecret`, never `imagePull.deployToken`, in a repository.
+
+ArgoCD renders charts with `helm template`, so the install-time check that the pull Secret exists does not run
+there: a missing Secret shows up as `ImagePullBackOff` with a `401 Unauthorized` event, not as a failed sync, and
+the chart's install notes are not shown. Flux's helm-controller runs the check, so a missing Secret fails the
+HelmRelease with the same message as `helm install`.
+
+If your installer cannot list Secrets in the namespace (for example Helm with `HELM_DRIVER=configmap` or `sql`
+and RBAC without `list` on Secrets), set `imagePull.skipInstallCheck: true`.
+
 ## Required secrets reference
 
 ### Coordinator
@@ -189,7 +219,7 @@ For organizations that need full control over where their data flows. Deploy the
 |------------|------|-------------|
 | `aegis-jwt-key` | `public.pem` | JWT public key for auth verification |
 | `aegis-join-key` | `join-key` | Join key for coordinator registration |
-| `takumo-pull-secret` | Docker registry credentials | Image pull secret for `cr.takumo.io` (per-tenant deploy token from Takumo dashboard) |
+| `takumo-pull-secret` | `.dockerconfigjson` (type `kubernetes.io/dockerconfigjson`) | Image pull Secret for `cr.takumo.io`, from a deploy token in the Takumo dashboard. Rename with `imagePull.existingSecret`. All four charts use it. |
 
 ## Network requirements
 

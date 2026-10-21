@@ -203,14 +203,18 @@ If a Kubernetes Secret was created before the SealedSecret controller was instal
 </Accordion>
 
 <Accordion title="ImagePullBackOff on gateway pods">
-The default image registry is `cr.takumo.io` and requires a per-tenant Takumo deploy token. ImagePullBackOff usually means the pull secret is missing or holds a stale/revoked token, the tag doesn't exist, your cluster can't reach `cr.takumo.io`, or you've overridden `image.repository` without updating the pull secret.
+The default image registry is `cr.takumo.io` and every pull needs a Takumo deploy token. ImagePullBackOff usually means the pull Secret is missing or holds a revoked or expired token, the tag doesn't exist, your cluster can't reach `cr.takumo.io`, or you've overridden `image.repository` without pointing `imagePull.existingSecret` at that registry's Secret.
 
 **Check these:**
-1. `kubectl describe pod -n takumo <pod>` — the Events section will name the exact reason (`401 Unauthorized`, `manifest unknown`, image not found, etc).
-2. Confirm the `takumo-pull-secret` exists in the namespace and decodes to a `cr.takumo.io` registry entry: `kubectl get secret -n takumo takumo-pull-secret -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d`. If it's empty or wrong, recreate it with a fresh deploy token from the Takumo dashboard (Settings → Deploy Tokens).
-3. Confirm the `image.tag` in your Helm values matches a real tag — `helm template ... | grep image:` to see what's pinned, then verify the tag exists.
-4. From any pod in the cluster: `curl -I https://cr.takumo.io/v2/` should return `401` with a `WWW-Authenticate: Bearer realm=...` header. If you get `403` or `connection refused`, check egress firewall + DNS resolution for `cr.takumo.io`.
-5. If you've overridden `image.repository` to your own mirrored registry, make sure `secrets.imagePull.secretName` points to the secret holding that registry's credentials.
+1. `kubectl describe pod -n takumo <pod>`: the Events section names the exact reason (`401 Unauthorized`, `manifest unknown`, image not found, and so on).
+2. Confirm the pull Secret exists and has the right type, without printing its contents: `kubectl get secret takumo-pull-secret -n takumo -o jsonpath='{.type}'` must print `kubernetes.io/dockerconfigjson`, and `kubectl describe secret takumo-pull-secret -n takumo` must list a `.dockerconfigjson` key. If it is missing or wrong, delete it and create it again from a fresh deploy token (Settings, Deploy Tokens), as in [Installation](/installation).
+3. Confirm the `image.tag` in your Helm values matches a real tag: `helm template ... | grep image:` shows what's pinned.
+4. From any pod in the cluster: `curl -I https://cr.takumo.io/v2/` should return `401` with a `WWW-Authenticate: Bearer realm=...` header. If you get `403` or `connection refused`, check egress firewall and DNS resolution for `cr.takumo.io`.
+5. If you use your own Secret name or a mirrored registry, set `imagePull.existingSecret` to the Secret holding that registry's credentials. `secrets.imagePull.secretName` is still honoured for older installs.
+
+**An install or upgrade fails naming `ghcr-pull-secret`:** the upgrade used `--reuse-values` over values from an older chart, which replays the old default Secret name. Run the upgrade with `--reset-then-reuse-values` instead, or set `imagePull.existingSecret`.
+
+**A revoked token still pulls for a few minutes:** a registry session issued before revocation stays valid for up to 600 seconds. Running pods and images already cached on nodes are not affected by revocation.
 
 See the full Deploy Tokens reference: [Deploy Tokens](/dashboard/deploy-tokens).
 </Accordion>
