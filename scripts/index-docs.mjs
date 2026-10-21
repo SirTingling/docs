@@ -25,14 +25,57 @@
  *   wrangler.toml binding. Change in both places if you rename.
  *
  * - We upsert by content-hash IDs. A re-run with unchanged content is a
- *   no-op (same id, same vector → idempotent). When a page changes, the old
- *   chunks linger in the index until they expire — see the SWEEP_DELETIONS
- *   note below.
+ *   no-op (same id, same vector, so idempotent). When a page changes, its old
+ *   chunks stay in the index until a sweep removes them:
+ *
+ *     git fetch origin && git checkout --detach origin/main     # the sweep refuses any other checkout
+ *     node scripts/index-docs.mjs --sweep --dry-run              # prints each orphan's page and --expect
+ *     node scripts/index-docs.mjs --sweep --expect <count>:<digest>  # deletes exactly that set
+ *
+ *   The sweep logic and its guards live in scripts/index-docs-sweep.mjs (tested by
+ *   scripts/index-docs.test.mjs). The token then also needs Vectorize Write.
  */
 
 import { readdir, readFile } from 'node:fs/promises'
 import { join, relative, sep, basename } from 'node:path'
 import { createHash } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
+import {
+    parseSweepArgs,
+    planSweep,
+    checkExpect,
+    checkoutRefusal,
+    orphanDigest,
+    listAllIds,
+    batches,
+    LIST_PAGE,
+} from './index-docs-sweep.mjs'
+
+let sweepArgs
+try {
+    sweepArgs = parseSweepArgs(process.argv.slice(2))
+} catch (err) {
+    console.error(`[index-docs] ${err.message}`)
+    process.exit(2)
+}
+if (sweepArgs.sweep) {
+    const git = (...a) => {
+        try {
+            return execFileSync('git', a, { encoding: 'utf8' }).trim()
+        } catch {
+            return ''
+        }
+    }
+    const refusal = checkoutRefusal({
+        head: git('rev-parse', 'HEAD'),
+        originMain: git('rev-parse', 'origin/main'),
+        porcelain: git('status', '--porcelain'),
+    })
+    if (refusal) {
+        console.error(`[index-docs] sweep refused: ${refusal}`)
+        process.exit(2)
+    }
+}
 
 const DOCS_ROOT = process.env.DOCS_ROOT ?? '.'
 const SITE_BASE = (process.env.SITE_BASE ?? 'https://docs.takumo.io').replace(/\/$/, '')
@@ -175,11 +218,72 @@ for (let i = 0; i < chunks.length; i += BATCH) {
 
 console.log(`[index-docs] done. ${upserted} vectors live in ${INDEX_NAME}.`)
 
-// SWEEP_DELETIONS: when a page is deleted upstream, its chunks remain in the
-// index. For a small docs site this is fine — they just stop matching as
-// other pages surge in relevance. If/when it matters, add a cron Worker to
-// fetch the full id list, diff against what we just wrote, and delete the
-// orphans.
+// ─── Sweep (only with --sweep) ────────────────────────────────────────────
+
+if (sweepArgs.sweep) {
+    const before = await indexInfo()
+    console.log(`[index-docs] sweep: index reports ${before.vectorCount} vectors before`)
+    const sweepStarted = new Date()
+    const listedIds = await listAllIds((cursor) => listPage(cursor))
+    const { orphans, refused } = planSweep({ listedIds, upsertedIds: chunks.map((c) => c.id) })
+    console.log(`[index-docs] sweep: listed ${listedIds.length}, upserted ${chunks.length}, orphans ${orphans.length}`)
+    // Show what each orphan is, so the reviewer of the dry run can see no live page is on the list.
+    for (const ids of batches(orphans, 20)) {
+        const meta = await getByIds(ids)
+        for (const id of ids) {
+            const m = meta.get(id)
+            console.log(`[index-docs] sweep: orphan ${id} ${m ? `${m.url}#${m.section || ''}` : '(no metadata)'}`)
+        }
+    }
+    if (refused) {
+        console.error(`[index-docs] sweep refused: ${refused}`)
+        process.exit(1)
+    }
+    if (sweepArgs.dryRun) {
+        console.log(
+            `[index-docs] sweep dry run: would delete ${orphans.length}; re-run with --sweep --expect ${orphans.length}:${orphanDigest(orphans)}`,
+        )
+    } else {
+        const mismatch = checkExpect(orphans, sweepArgs.expect)
+        if (mismatch) {
+            console.error(`[index-docs] sweep refused: ${mismatch}`)
+            process.exit(1)
+        }
+        // Re-check just before deleting: a push to main during this run would make its new chunks look like orphans.
+        const remoteMain = (() => {
+            try {
+                return execFileSync('git', ['ls-remote', 'origin', 'refs/heads/main'], { encoding: 'utf8' }).split('\t')[0]
+            } catch {
+                return ''
+            }
+        })()
+        const headNow = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+        if (remoteMain !== headNow) {
+            console.error(`[index-docs] sweep refused: main moved to ${remoteMain.slice(0, 7) || 'unknown'} during the run (HEAD ${headNow.slice(0, 7)})`)
+            process.exit(2)
+        }
+        let lastMutation = null
+        for (const ids of batches(orphans)) {
+            const mutationId = await deleteByIds(ids)
+            if (!mutationId) throw new Error('delete_by_ids returned no mutationId; stopping (re-run --sweep --dry-run)')
+            lastMutation = mutationId
+            console.log(`[index-docs] sweep: delete accepted for ${ids.length} ids (mutation ${mutationId})`)
+        }
+        if (lastMutation) {
+            const processed = await waitForProcessing(sweepStarted)
+            if (!processed) {
+                console.error(`[index-docs] sweep: deletes accepted (last mutation ${lastMutation}) but processing is not confirmed yet; read the index info again later`)
+                process.exit(3)
+            }
+        }
+        const after = await indexInfo()
+        console.log(`[index-docs] sweep: index reports ${after.vectorCount} vectors after (planned deletions ${orphans.length})`)
+        if (after.vectorCount > before.vectorCount - orphans.length) {
+            console.error(`[index-docs] sweep: expected at most ${before.vectorCount - orphans.length} vectors after, found ${after.vectorCount} (concurrent upsert, or a delete that did not apply)`)
+            process.exit(3)
+        }
+    }
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -198,8 +302,9 @@ async function listMdx(root) {
         let entries
         try {
             entries = await readdir(dir, { withFileTypes: true })
-        } catch {
-            return
+        } catch (err) {
+            // Never skip silently: a missing directory's pages would read as orphans to the sweep.
+            throw new Error(`cannot read ${dir}: ${err.message}`)
         }
         for (const e of entries) {
             if (e.name.startsWith('.') || e.name === 'node_modules') continue
@@ -300,6 +405,56 @@ async function embedBatch(texts) {
         throw new Error(`embed error: ${JSON.stringify(json.errors)}`)
     }
     return json.result.data
+}
+
+async function cfJson(path, init = {}) {
+    const r = await fetch(`${cfBase}${path}`, { ...init, headers: { ...cfHeaders, ...(init.headers ?? {}) } })
+    if (!r.ok) {
+        const body = await r.text()
+        throw new Error(`${init.method ?? 'GET'} ${path} ${r.status}: ${body.slice(0, 200)}`)
+    }
+    const json = await r.json()
+    if (!json.success) throw new Error(`${path} error: ${JSON.stringify(json.errors)}`)
+    return json.result
+}
+
+async function indexInfo() {
+    return cfJson(`/vectorize/v2/indexes/${INDEX_NAME}/info`)
+}
+
+async function listPage(cursor) {
+    const q = new URLSearchParams({ count: String(LIST_PAGE) })
+    if (cursor) q.set('cursor', cursor)
+    return cfJson(`/vectorize/v2/indexes/${INDEX_NAME}/list?${q}`)
+}
+
+async function deleteByIds(ids) {
+    const result = await cfJson(`/vectorize/v2/indexes/${INDEX_NAME}/delete_by_ids`, {
+        method: 'POST',
+        body: JSON.stringify({ ids }),
+    })
+    return result?.mutationId ?? null
+}
+
+async function getByIds(ids) {
+    const result = await cfJson(`/vectorize/v2/indexes/${INDEX_NAME}/get_by_ids`, {
+        method: 'POST',
+        body: JSON.stringify({ ids }),
+    })
+    const out = new Map()
+    for (const v of Array.isArray(result) ? result : []) out.set(v.id, v.metadata ?? {})
+    return out
+}
+
+// Deletion is asynchronous, and mutation ids are not ordered: wait until the index reports processing past the
+// moment our first delete was sent. Returns false on timeout (accepted, not yet confirmed).
+async function waitForProcessing(since, { attempts = 60, delayMs = 5000 } = {}) {
+    for (let i = 0; i < attempts; i++) {
+        const info = await indexInfo()
+        if (info.processedUpToDatetime && new Date(info.processedUpToDatetime) >= since) return true
+        await new Promise((r) => setTimeout(r, delayMs))
+    }
+    return false
 }
 
 async function upsert(ndjson) {

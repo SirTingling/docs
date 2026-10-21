@@ -7,6 +7,8 @@ on:
       - '**/*.mdx'
       - 'docs.json'
       - 'scripts/index-docs.mjs'
+      - 'scripts/index-docs-sweep.mjs'
+      - 'scripts/index-docs.test.mjs'
       - '.github/workflows/index-docs.yml'
   workflow_dispatch:
 
@@ -27,6 +29,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Test the stale-chunk sweep (fixtures only)
+        run: node --test scripts/index-docs.test.mjs
 
       - name: Walk MDX → embed → upsert
         env:
