@@ -84,7 +84,7 @@ imagePull:
 helm install aegis-shield takumo/aegis-shield -n takumo -f pull-values.yaml
 ```
 
-Prefer the Secret above. With `deployToken` the token is stored in the release history (`helm get values`, `helm get manifest`), printed by `--dry-run` and `--debug` (so it lands in CI logs), kept in a ConfigMap readable by anyone with the `view` role when Helm uses `HELM_DRIVER=configmap`, and in your shell history if you type it. Never pass it with `--set`, and do not combine it with `imagePull.existingSecret`.
+Prefer the Secret above. With `deployToken` the token is stored in the release history (`helm get values`, `helm get manifest`), printed by `helm template`, `--dry-run` and `--debug` (so it lands in CI logs), kept in a ConfigMap readable by anyone with the `view` role when Helm uses `HELM_DRIVER=configmap`, or in the database rows with `HELM_DRIVER=sql`, and in your shell history if you type it. Never pass it with `--set`, and do not combine it with `imagePull.existingSecret`.
 
 ### Docker / Podman
 

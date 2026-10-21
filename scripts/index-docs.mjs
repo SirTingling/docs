@@ -249,6 +249,19 @@ if (sweepArgs.sweep) {
             console.error(`[index-docs] sweep refused: ${mismatch}`)
             process.exit(1)
         }
+        // Re-check just before deleting: a push to main during this run would make its new chunks look like orphans.
+        const remoteMain = (() => {
+            try {
+                return execFileSync('git', ['ls-remote', 'origin', 'refs/heads/main'], { encoding: 'utf8' }).split('\t')[0]
+            } catch {
+                return ''
+            }
+        })()
+        const headNow = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+        if (remoteMain !== headNow) {
+            console.error(`[index-docs] sweep refused: main moved to ${remoteMain.slice(0, 7) || 'unknown'} during the run (HEAD ${headNow.slice(0, 7)})`)
+            process.exit(2)
+        }
         let lastMutation = null
         for (const ids of batches(orphans)) {
             const mutationId = await deleteByIds(ids)
