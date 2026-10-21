@@ -64,11 +64,14 @@ For organizations that need full control over where their data flows. Deploy the
     [Deploy Tokens](/dashboard/deploy-tokens).
 
     ```bash
-    read -rs TAKUMO_DEPLOY_TOKEN
-    printf '{"auths":{"cr.takumo.io":{"username":"%s","password":"%s"}}}' "<workspace-id>" "$TAKUMO_DEPLOY_TOKEN" \
-      | kubectl create secret generic takumo-pull-secret -n takumo \
-          --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
-    unset TAKUMO_DEPLOY_TOKEN
+    (
+      printf 'Paste the deploy token, then press Enter: ' >&2
+      read -rs TAKUMO_DEPLOY_TOKEN || exit 1
+      echo >&2
+      printf '{"auths":{"cr.takumo.io":{"username":"%s","password":"%s"}}}' "<workspace-id>" "$TAKUMO_DEPLOY_TOKEN" \
+        | kubectl create secret generic takumo-pull-secret -n takumo \
+            --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
+    )
     ```
 
     The charts check at install time that `takumo-pull-secret` exists in the

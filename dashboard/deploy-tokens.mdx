@@ -36,21 +36,24 @@ Tokens look like `tkdt_<prefix>_<secret>`:
 tkdt_a1b2c3d4_<56 hex chars>
 ```
 
-The first 8 hex chars after `tkdt_` are the displayed prefix. You see it in the dashboard listing, so you can identify the token without decrypting anything. The remaining 56 chars are the secret portion. Only `sha256(token)` is stored server-side; the plaintext lives nowhere after the create dialog closes.
+The first 8 hex chars after `tkdt_` are the displayed prefix. You see it in the dashboard listing, so you can identify the token without the secret. The remaining 56 chars are the secret portion. Only `sha256(token)` is stored server-side; the plaintext lives nowhere after the create dialog closes.
 
 ## Using a Token
 
 ### Kubernetes (Helm install)
 
-Create the namespace and the pull Secret, then install the chart. The token is read without echo, so it never lands in shell history, on screen, or in a process's arguments (`printf` is a shell builtin, so the token travels over the pipe):
+Create the namespace and the pull Secret, then install the chart. Paste the whole block at once: the parentheses make the shell read all of it before it asks for the token, so the token you paste next is never run as a command. It is read without echo, so it never lands in shell history, on screen, or in a process's arguments (`printf` is a shell builtin, so the token travels over the pipe):
 
 ```bash
 kubectl create namespace takumo
-read -rs TAKUMO_DEPLOY_TOKEN
-printf '{"auths":{"cr.takumo.io":{"username":"%s","password":"%s"}}}' "<workspace-id>" "$TAKUMO_DEPLOY_TOKEN" \
-  | kubectl create secret generic takumo-pull-secret -n takumo \
-      --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
-unset TAKUMO_DEPLOY_TOKEN
+(
+  printf 'Paste the deploy token, then press Enter: ' >&2
+  read -rs TAKUMO_DEPLOY_TOKEN || exit 1
+  echo >&2
+  printf '{"auths":{"cr.takumo.io":{"username":"%s","password":"%s"}}}' "<workspace-id>" "$TAKUMO_DEPLOY_TOKEN" \
+    | kubectl create secret generic takumo-pull-secret -n takumo \
+        --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
+)
 
 # Pods use takumo-pull-secret by default.
 helm install aegis-shield takumo/aegis-shield -n takumo
@@ -86,9 +89,12 @@ Prefer the Secret above. With `deployToken` the token is stored in the release h
 ### Docker / Podman
 
 ```bash
-read -rs TAKUMO_DEPLOY_TOKEN
-printf '%s' "$TAKUMO_DEPLOY_TOKEN" | docker login cr.takumo.io --username <workspace-id> --password-stdin
-unset TAKUMO_DEPLOY_TOKEN
+(
+  printf 'Paste the deploy token, then press Enter: ' >&2
+  read -rs TAKUMO_DEPLOY_TOKEN || exit 1
+  echo >&2
+  printf '%s' "$TAKUMO_DEPLOY_TOKEN" | docker login cr.takumo.io --username "<workspace-id>" --password-stdin
+)
 
 docker pull cr.takumo.io/aegis-shield:latest
 ```

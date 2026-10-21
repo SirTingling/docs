@@ -8,9 +8,12 @@
  * were removed). Guards:
  *   - it refuses when the orphans exceed MAX_FRACTION of the listed ids (a partial upsert must never empty the
  *     index);
- *   - the real delete runs only with --expect <n> equal to the orphan count a prior --dry-run printed;
+ *   - the real delete runs only with --expect <n>:<digest> equal to what a prior --dry-run printed: the orphan
+ *     count and a digest of the exact orphan id set, so a run that would delete a different set refuses;
  *   - an empty listing or an empty upsert set refuses outright.
  */
+
+import { createHash } from 'node:crypto'
 
 export const MAX_FRACTION = 0.25
 export const LIST_PAGE = 1000
@@ -24,16 +27,19 @@ export function parseSweepArgs(argv) {
     const i = argv.indexOf('--expect')
     if (i !== -1) {
         const raw = argv[i + 1]
-        if (raw === undefined || !/^\d+$/.test(raw)) {
-            throw new Error(`--expect needs a non-negative integer, got ${raw === undefined ? 'nothing' : JSON.stringify(raw)}`)
+        const m = raw === undefined ? null : /^(\d+):([0-9a-f]{12})$/.exec(raw)
+        if (!m) {
+            throw new Error(
+                `--expect needs <count>:<digest> as printed by --sweep --dry-run, got ${raw === undefined ? 'nothing' : JSON.stringify(raw)}`,
+            )
         }
-        expect = Number(raw)
+        expect = { count: Number(m[1]), digest: m[2] }
     }
     if (!sweep && (dryRun || expect !== null)) {
         throw new Error('--dry-run and --expect only apply with --sweep')
     }
     if (sweep && !dryRun && expect === null) {
-        throw new Error('a real sweep needs --expect <n>, the orphan count printed by a --sweep --dry-run run')
+        throw new Error('a real sweep needs --expect <count>:<digest>, as printed by a --sweep --dry-run run')
     }
     return { sweep, dryRun, expect }
 }
@@ -60,10 +66,27 @@ export function planSweep({ listedIds, upsertedIds, maxFraction = MAX_FRACTION }
     return { orphans, refused: null }
 }
 
-/** The real delete runs only when --expect matches the planned orphan count exactly. */
-export function checkExpect(orphanCount, expect) {
+/** 12 hex of sha256 over the sorted, de-duplicated orphan ids: binds --expect to the exact set. */
+export function orphanDigest(orphans) {
+    const ids = [...new Set(orphans)].sort()
+    return createHash('sha256').update(ids.join('\n')).digest('hex').slice(0, 12)
+}
+
+/** The real delete runs only when --expect matches the planned orphan count and set exactly. */
+export function checkExpect(orphans, expect) {
     if (expect === null || expect === undefined) return 'no --expect given'
-    if (expect !== orphanCount) return `--expect ${expect} does not match the ${orphanCount} orphans planned now; re-run --sweep --dry-run`
+    const digest = orphanDigest(orphans)
+    if (expect.count !== orphans.length || expect.digest !== digest) {
+        return `--expect ${expect.count}:${expect.digest} does not match the ${orphans.length} orphans planned now (${orphans.length}:${digest}); re-run --sweep --dry-run`
+    }
+    return null
+}
+
+/** The sweep only runs from a clean checkout of exactly origin/main, so it never deletes newer pages. */
+export function checkoutRefusal({ head, originMain, porcelain }) {
+    if (!head || !originMain) return 'cannot read HEAD or origin/main'
+    if (head !== originMain) return `HEAD ${head.slice(0, 7)} is not origin/main ${originMain.slice(0, 7)}; fetch and check out origin/main first`
+    if (porcelain.trim() !== '') return 'the working tree has uncommitted changes'
     return null
 }
 

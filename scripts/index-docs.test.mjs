@@ -2,7 +2,7 @@
 // Fixture ids only; nothing here touches the network or the production index.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseSweepArgs, planSweep, checkExpect, listAllIds, batches, MAX_FRACTION } from './index-docs-sweep.mjs'
+import { parseSweepArgs, planSweep, checkExpect, checkoutRefusal, orphanDigest, listAllIds, batches, MAX_FRACTION } from './index-docs-sweep.mjs'
 
 const live = Array.from({ length: 20 }, (_, i) => `live-${String(i).padStart(2, '0')}`)
 
@@ -38,20 +38,38 @@ test('empty upsert set or empty listing refuses outright', () => {
     assert.match(planSweep({ listedIds: [], upsertedIds: live }).refused, /listing is empty/)
 })
 
-test('a wrong --expect refuses; the right one passes', () => {
-    assert.match(checkExpect(3, 4), /does not match the 3 orphans/)
-    assert.match(checkExpect(3, null), /no --expect/)
-    assert.equal(checkExpect(3, 3), null)
-    assert.equal(checkExpect(0, 0), null)
+test('a wrong --expect refuses (count or set); the right one passes', () => {
+    const orphans = ['o1', 'o2', 'o3']
+    const digest = orphanDigest(orphans)
+    assert.match(digest, /^[0-9a-f]{12}$/)
+    assert.equal(orphanDigest(['o3', 'o1', 'o2', 'o1']), digest, 'order and duplicates do not change the digest')
+    assert.match(checkExpect(orphans, { count: 4, digest }), /does not match the 3 orphans/)
+    assert.match(checkExpect(['o1', 'o2', 'live-07'], { count: 3, digest }), /does not match/, 'same count, different set')
+    assert.match(checkExpect(orphans, null), /no --expect/)
+    assert.equal(checkExpect(orphans, { count: 3, digest }), null)
+    assert.equal(checkExpect([], { count: 0, digest: orphanDigest([]) }), null)
+})
+
+test('the sweep refuses any checkout other than a clean origin/main', () => {
+    const sha = 'a'.repeat(40)
+    assert.equal(checkoutRefusal({ head: sha, originMain: sha, porcelain: '' }), null)
+    assert.match(checkoutRefusal({ head: sha, originMain: 'b'.repeat(40), porcelain: '' }), /is not origin\/main/)
+    assert.match(checkoutRefusal({ head: sha, originMain: sha, porcelain: ' M installation.mdx\n' }), /uncommitted/)
+    assert.match(checkoutRefusal({ head: '', originMain: sha, porcelain: '' }), /cannot read/)
 })
 
 test('flags: a real sweep needs --expect; --expect must be an integer; --dry-run needs --sweep', () => {
     assert.deepEqual(parseSweepArgs([]), { sweep: false, dryRun: false, expect: null })
     assert.deepEqual(parseSweepArgs(['--sweep', '--dry-run']), { sweep: true, dryRun: true, expect: null })
-    assert.deepEqual(parseSweepArgs(['--sweep', '--expect', '7']), { sweep: true, dryRun: false, expect: 7 })
+    assert.deepEqual(parseSweepArgs(['--sweep', '--expect', '7:0123456789ab']), {
+        sweep: true,
+        dryRun: false,
+        expect: { count: 7, digest: '0123456789ab' },
+    })
     assert.throws(() => parseSweepArgs(['--sweep']), /needs --expect/)
-    assert.throws(() => parseSweepArgs(['--sweep', '--expect', 'x']), /non-negative integer/)
-    assert.throws(() => parseSweepArgs(['--sweep', '--expect']), /non-negative integer/)
+    assert.throws(() => parseSweepArgs(['--sweep', '--expect', '7']), /<count>:<digest>/)
+    assert.throws(() => parseSweepArgs(['--sweep', '--expect', 'x']), /<count>:<digest>/)
+    assert.throws(() => parseSweepArgs(['--sweep', '--expect']), /<count>:<digest>/)
     assert.throws(() => parseSweepArgs(['--dry-run']), /only apply with --sweep/)
 })
 
