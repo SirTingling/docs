@@ -208,7 +208,15 @@ The default image registry is `cr.takumo.io` and requires a per-tenant Takumo de
 
 **Check these:**
 1. `kubectl describe pod -n takumo <pod>`: the Events section names the exact reason (`401 Unauthorized`, `manifest unknown`, image not found, etc).
-2. Confirm the `takumo-pull-secret` exists in the namespace and decodes to a `cr.takumo.io` registry entry: `kubectl get secret -n takumo takumo-pull-secret -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d`. If it's empty or wrong, recreate it with a fresh deploy token from the Takumo dashboard (Settings → Deploy Tokens).
+2. Confirm the `takumo-pull-secret` exists in the namespace, has the right type, and holds a `cr.takumo.io` entry. None of these commands print the token:
+
+   ```bash
+   kubectl get secret -n takumo takumo-pull-secret -o jsonpath='{.type}{"\n"}'
+   kubectl describe secret -n takumo takumo-pull-secret
+   kubectl get secret -n takumo takumo-pull-secret -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d | grep -o '"cr.takumo.io"'
+   ```
+
+   The first prints `kubernetes.io/dockerconfigjson`. The second lists the `.dockerconfigjson` key with its size in bytes, not its value. The third prints `"cr.takumo.io"` and nothing else. If the Secret is missing, the type is wrong or the third command prints nothing, recreate it with a fresh deploy token from the Takumo dashboard (**Settings > Deploy Tokens**).
 3. Confirm the `image.tag` in your Helm values matches a real tag: `helm template ... | grep image:` shows what's pinned, then verify the tag exists.
 4. From any pod in the cluster: `curl -I https://cr.takumo.io/v2/` should return `401` with a `WWW-Authenticate: Bearer realm=...` header. If you get `403` or `connection refused`, check egress firewall + DNS resolution for `cr.takumo.io`.
 5. If you've overridden `image.repository` to your own mirrored registry, make sure `secrets.imagePull.secretName` points to the secret holding that registry's credentials.

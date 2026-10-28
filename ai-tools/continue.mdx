@@ -6,7 +6,7 @@ icon: "play"
 
 # Continue.dev
 
-Continue is open source and lets you configure custom provider endpoints. Point it at your Takumo gateway and every chat, autocomplete, and edit request is protected.
+Continue is open source and lets you configure custom provider endpoints. Point it at your Takumo gateway and every request to an Anthropic or OpenAI model is protected.
 
 ## Setup
 
@@ -58,20 +58,8 @@ Continue is open source and lets you configure custom provider endpoints. Point 
 
     Self-hosted gateway users: replace the URL with your own.
   </Step>
-  <Step title="Configure autocomplete (optional)">
-    If you use tab autocomplete, route that through Takumo too:
-
-    ```json
-    {
-      "tabAutocompleteModel": {
-        "title": "Codestral via Takumo",
-        "provider": "mistral",
-        "model": "codestral-latest",
-        "apiBase": "https://gateway.takumo.io/v1",
-        "apiKey": "your-takumo-api-key"
-      }
-    }
-    ```
+  <Step title="Check your autocomplete model">
+    The gateway proxies two routes: `/v1/messages` for Anthropic and `/v1/chat/completions` for OpenAI. Mistral (including Codestral) and other providers are not supported yet, so a `tabAutocompleteModel` that uses them can't go through Takumo, and its requests are not scanned.
   </Step>
   <Step title="Test it">
     Open a file with secrets. Ask Continue a question about the code. Check the [dashboard](https://cloud.takumo.io/dashboard) for detections.
@@ -80,7 +68,7 @@ Continue is open source and lets you configure custom provider endpoints. Point 
 
 ## Full config example
 
-Here's a complete `config.json` with multiple models routed through Takumo:
+Here's a complete `config.json` with an Anthropic and an OpenAI model routed through Takumo:
 
 ```json
 {
@@ -99,20 +87,13 @@ Here's a complete `config.json` with multiple models routed through Takumo:
       "apiBase": "https://gateway.takumo.io/v1",
       "apiKey": "your-takumo-api-key"
     }
-  ],
-  "tabAutocompleteModel": {
-    "title": "Codestral (Takumo)",
-    "provider": "mistral",
-    "model": "codestral-latest",
-    "apiBase": "https://gateway.takumo.io/v1",
-    "apiKey": "your-takumo-api-key"
-  }
+  ]
 }
 ```
 
 ## Usage
 
-Once configured, Continue works exactly the same as before. Chat, autocomplete, and slash commands all route through the gateway transparently.
+Once configured, Continue works exactly the same as before. Chat and slash commands on these models route through the gateway transparently.
 
 ```
 You: @config.ts Why is the database connection timing out?
@@ -156,12 +137,12 @@ This lets you pull the API key from an environment variable instead of hardcodin
 
   1. The gateway URL is correct and reachable: `curl https://gateway.takumo.io/health`
   2. Your API key is valid (check the dashboard)
-  3. The `provider` field matches what you're actually using (anthropic, openai, mistral, etc.)
+  3. The `provider` field is `anthropic` or `openai`. The gateway does not serve other providers yet
   4. Restart VS Code after config changes
 </Accordion>
 
 <Accordion title="Autocomplete not going through Takumo">
-  Autocomplete uses a separate config key (`tabAutocompleteModel`). Make sure you've set `apiBase` there too, not just in `models`.
+  Autocomplete uses a separate config key (`tabAutocompleteModel`), so `apiBase` in `models` doesn't apply to it. Takumo can only proxy it if it uses an Anthropic or OpenAI model, with `apiBase` set to the gateway in that block too.
 </Accordion>
 
 <Accordion title="Secrets not being detected">

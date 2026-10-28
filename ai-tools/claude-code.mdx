@@ -111,11 +111,11 @@ Then `cd` into the project and the variables are set automatically. Leave the pr
 ## Troubleshooting
 
 <Accordion title="Claude Code ignoring the environment variables">
-  Check that the variables are actually set:
+  Check that the variables are actually set. The second line prints `set` rather than the key itself:
 
   ```bash
   echo $ANTHROPIC_BASE_URL
-  echo $ANTHROPIC_API_KEY
+  echo ${ANTHROPIC_API_KEY:+set}
   ```
 
   If they're empty:

@@ -40,6 +40,8 @@ The first 8 hex chars after `tkdt_` are the displayed prefix. You see it in the 
 
 ## Using a Token
 
+<Note>The blocks below read the token with `read -rs`, which needs bash or zsh. Run them in one of those shells, not `sh`.</Note>
+
 ### Kubernetes (Helm install)
 
 Create the namespace and the pull Secret, then install the chart. Replace `<workspace-id>`, paste the whole block, then paste the token when asked. The token is read without echo, so it stays out of shell history, the screen and process arguments:

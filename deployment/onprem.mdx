@@ -37,6 +37,8 @@ For organizations that need full control over where their data flows. Deploy the
     `postgres://USER:PASSWORD@HOST:5432/takumo`. They are read without echo, so
     the password stays out of shell history:
 
+    <Note>The blocks in this step that read input use `read -rs` and `<(...)`, which need bash or zsh. Run them in one of those shells, not `sh`.</Note>
+
     ```bash
     (
       printf 'Pooled database URL: ' >&2; read -rs DB_URL || exit 1; echo >&2

@@ -15,6 +15,7 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo update
 helm install takumo-monitoring prometheus-community/kube-prometheus-stack \
   --namespace takumo \
+  --create-namespace \
   --version 72.6.2 \
   --set prometheus.prometheusSpec.retention=7d \
   --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
@@ -22,7 +23,7 @@ helm install takumo-monitoring prometheus-community/kube-prometheus-stack \
   --set grafana.sidecar.dashboards.searchNamespace=ALL
 ```
 
-The two `NilUsesHelmValues=false` flags make Prometheus pick up every ServiceMonitor and PrometheusRule, not only those labelled with this release. `searchNamespace=ALL` lets the Grafana sidecar load dashboard ConfigMaps from any namespace. If the cluster already has the Prometheus Operator CRDs (for example from an earlier install), Helm 4 stops with a CRD `conflict occurred while applying object` error; add `--skip-crds` to the install. If you already run Prometheus Operator, skip this step and make sure its selectors match the Takumo resources, or set `serviceMonitor.additionalLabels` to the labels it selects.
+The `--version 72.6.2` pin is deliberate: it is the kube-prometheus-stack version Takumo's own monitoring chart depends on. Newer releases exist. Move to one only after checking its upgrade notes. `--create-namespace` creates the `takumo` namespace if it doesn't exist yet and does nothing if it does. The two `NilUsesHelmValues=false` flags make Prometheus pick up every ServiceMonitor and PrometheusRule, not only those labelled with this release. `searchNamespace=ALL` lets the Grafana sidecar load dashboard ConfigMaps from any namespace. If the cluster already has the Prometheus Operator CRDs (for example from an earlier install), Helm 4 stops with a CRD `conflict occurred while applying object` error; add `--skip-crds` to the install. If you already run Prometheus Operator, skip this step and make sure its selectors match the Takumo resources, or set `serviceMonitor.additionalLabels` to the labels it selects.
 
 ## Enabling metrics collection
 
