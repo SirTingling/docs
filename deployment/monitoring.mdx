@@ -6,6 +6,24 @@ icon: "zap"
 
 The gateway and coordinator expose Prometheus metrics on `/metrics`. The Helm charts include ServiceMonitor resources, PrometheusRule alert definitions, and optional Grafana dashboard ConfigMaps.
 
+## Deploying the monitoring stack
+
+Takumo does not publish its monitoring chart in the `takumo` Helm repository. Use the upstream kube-prometheus-stack chart (Prometheus Operator, Prometheus, Grafana, Alertmanager), which is what Takumo's own monitoring is built on. Install it before you enable the ServiceMonitors below, because it also installs the `ServiceMonitor` and `PrometheusRule` resource types the charts create:
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install takumo-monitoring prometheus-community/kube-prometheus-stack \
+  --namespace takumo \
+  --version 72.6.2 \
+  --set prometheus.prometheusSpec.retention=7d \
+  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
+  --set prometheus.prometheusSpec.ruleSelectorNilUsesHelmValues=false \
+  --set grafana.sidecar.dashboards.searchNamespace=ALL
+```
+
+The two `NilUsesHelmValues=false` flags make Prometheus pick up every ServiceMonitor and PrometheusRule, not only those labelled with this release. `searchNamespace=ALL` lets the Grafana sidecar load dashboard ConfigMaps from any namespace. If the cluster already has the Prometheus Operator CRDs (for example from an earlier install), Helm 4 stops with a CRD `conflict occurred while applying object` error; add `--skip-crds` to the install. If you already run Prometheus Operator, skip this step and make sure its selectors match the Takumo resources, or set `serviceMonitor.additionalLabels` to the labels it selects.
+
 ## Enabling metrics collection
 
 Both the gateway and coordinator charts have a `serviceMonitor` section:
@@ -18,40 +36,27 @@ serviceMonitor:
   additionalLabels: {}
 ```
 
-Enable it during installation:
+Turn it on for releases you have already installed:
 
 ```bash
-helm install aegis-shield takumo/aegis-shield \
+helm upgrade aegis-shield takumo/aegis-shield \
   --namespace takumo \
+  --reuse-values \
   --set serviceMonitor.enabled=true
 ```
 
 ```bash
-helm install gateway-coordinator takumo/gateway-coordinator \
+helm upgrade gateway-coordinator takumo/gateway-coordinator \
   --namespace takumo \
+  --reuse-values \
   --set serviceMonitor.enabled=true
 ```
 
-The ServiceMonitor resources are automatically discovered by Prometheus Operator.
-
-## Deploying the monitoring stack
-
-The monitoring chart deploys kube-prometheus-stack (Prometheus, Grafana, Alertmanager) with Takumo-specific defaults:
-
-```bash
-helm install takumo-monitoring takumo/monitoring \
-  --namespace takumo
-```
-
-This provisions:
-
-- **Prometheus** with 7-day retention, 10Gi storage, and cross-namespace ServiceMonitor discovery
-- **Grafana** with 2Gi persistent storage and a sidecar that auto-loads dashboard ConfigMaps from all namespaces
-- **Alertmanager** with 120-hour retention and 1Gi storage
+Prometheus Operator discovers the ServiceMonitor resources automatically.
 
 ### Enabling Grafana dashboards
 
-The gateway chart includes pre-built Grafana dashboards as ConfigMaps:
+The gateway chart includes pre-built Grafana dashboards as ConfigMaps labelled `grafana_dashboard: "1"`, the label the kube-prometheus-stack Grafana sidecar watches:
 
 ```bash
 helm upgrade aegis-shield takumo/aegis-shield \

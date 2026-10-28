@@ -4,9 +4,9 @@ description: Team overview with member stats and seat usage
 icon: "users"
 ---
 
-The Team page gives you a high-level view of your organization's members -- who is active, how many scans each person has run, seat utilization, and pending invitations.
+The Team page gives you a high-level view of your organization's members: who is active, how many scans each person has run, seat utilization, and pending invitations.
 
-<Note>This is not the same as **Settings > Members**, which is where you invite and manage members. The Team page is a read-oriented overview of your team's activity.</Note>
+<Note>This is not the same as **Settings > Members & Roles**, which is where you invite and manage members. The Team page is a read-oriented overview of your team's activity.</Note>
 
 ---
 
@@ -33,7 +33,7 @@ Each row shows:
 - **Role** (Owner, Admin, Security Lead, Billing Admin, Member, Viewer)
 - **Status** (Active, Pending)
 - **Last active** timestamp
-- **Scan count** -- total scans attributed to this member, including scans made via API keys the member created
+- **Scan count**: total scans attributed to this member, including scans made via API keys the member created
 
 Scan counts are aggregated from `CreditUsage` records for `shield_scan`, `sentinel_review`, and `policy_eval` operations. API-key-attributed scans (no direct user ID) are resolved back to the key's creator.
 
@@ -51,12 +51,12 @@ Scan counts are aggregated from `CreditUsage` records for `shield_scan`, `sentin
 
 Depending on your role, you can perform actions directly from the member table:
 
-- **Change role** -- reassign a member's role (subject to anti-escalation rules)
-- **Remove member** -- remove a member from the organization
-- **Resend invitation** -- re-send the invite email for pending members
-- **Revoke invitation** -- cancel a pending invitation
+- **Change role**: reassign a member's role (subject to anti-escalation rules)
+- **Remove member**: remove a member from the organization
+- **Resend invitation**: re-send the invite email for pending members
+- **Revoke invitation**: cancel a pending invitation
 
-These actions use the same endpoints as **Settings > Members**.
+These actions use the same endpoints as **Settings > Members & Roles**.
 
 ---
 

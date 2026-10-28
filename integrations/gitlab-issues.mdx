@@ -4,7 +4,7 @@ description: Create GitLab issues directly from scan findings
 icon: "eye"
 ---
 
-Connect GitLab Issues to automatically create issues in your projects when Takumo detects security findings. This is a separate integration from the GitLab source code connection — it focuses specifically on issue tracking.
+Connect GitLab Issues to automatically create issues in your projects when Takumo detects security findings. This is a separate integration from the GitLab source code connection and covers issue tracking only.
 
 ---
 
@@ -18,7 +18,7 @@ Connect GitLab Issues to automatically create issues in your projects when Takum
     Copy the token (starts with `glpat-`). GitLab only shows it once.
   </Step>
   <Step title="Connect in Takumo">
-    Go to **Dashboard → Settings → Integrations → GitLab Issues**. Paste the token and click **Connect**. For self-hosted GitLab, also enter your instance URL.
+    Go to **Dashboard > Integrations > GitLab Issues**. Paste the token and click **Connect**. For self-hosted GitLab, also enter your instance URL.
   </Step>
   <Step title="Select a project">
     Choose which GitLab project receives Takumo issues.
@@ -42,10 +42,10 @@ Takumo uses the custom API base URL for all issue creation calls. Leave the inst
 When Takumo detects an issue that meets your notification threshold:
 
 1. Maps the issue to a GitLab issue format:
-   - **Title** — Issue title with severity and category
-   - **Description** — Full details in Markdown, including file location, detection context, and remediation guidance
-   - **Labels** — `takumo`, severity level, category
-   - **Confidential** — Set to true for critical and high severity findings
+   - **Title**: Issue title with severity and category
+   - **Description**: Full details in Markdown, including file location, detection context, and remediation guidance
+   - **Labels**: `takumo`, severity level, category
+   - **Confidential**: Set to true for critical and high severity findings
 
 2. Creates the issue via the GitLab REST API
 
@@ -82,9 +82,9 @@ You can use both simultaneously. The source code integration handles scanning; t
 
 ## Limitations
 
-- **One project per org** — All Takumo issues go to a single GitLab project. Use GitLab triage policies for further routing.
-- **No bidirectional sync** — Closing the GitLab issue does not automatically resolve the Takumo issue (webhook support planned).
-- **Self-hosted must be reachable** — Your GitLab instance must be accessible from Takumo Cloud (or from your on-prem deployment).
+- **One project per org**: All Takumo issues go to a single GitLab project. Use GitLab triage policies for further routing.
+- **No bidirectional sync**: Closing the GitLab issue does not automatically resolve the Takumo issue (webhook support planned).
+- **Self-hosted must be reachable**: Your GitLab instance must be accessible from Takumo Cloud (or from your on-prem deployment).
 
 ---
 

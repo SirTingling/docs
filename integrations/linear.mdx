@@ -18,7 +18,7 @@ Connect Linear to automatically create issues when Takumo detects security findi
     Name it (e.g. "Takumo"), set permissions to **Full access**, and click **Create**. Copy the key (starts with `lin_api_`).
   </Step>
   <Step title="Connect in Takumo">
-    Go to **Dashboard > Settings > Integrations > Linear**. Paste the API key in the connection form.
+    Go to **Dashboard > Integrations > Linear**. Paste the API key in the connection form.
   </Step>
 </Steps>
 
@@ -29,11 +29,11 @@ Connect Linear to automatically create issues when Takumo detects security findi
 When Takumo detects a finding that meets your notification threshold:
 
 1. Maps the finding to a Linear issue:
-   - **Title** -- Finding title with severity and category
-   - **Description** -- Full details in Markdown, including file location, detection context, and remediation guidance
-   - **Priority** -- Mapped from Takumo severity (Critical -> Urgent, High -> High, Medium -> Medium, Low -> Low)
-   - **Labels** -- `takumo`, severity level, category
-   - **Team** -- Assigned based on your team mapping configuration
+   - **Title**: Finding title with severity and category
+   - **Description**: Full details in Markdown, including file location, detection context, and remediation guidance
+   - **Priority**: Mapped from Takumo severity (Critical -> Urgent, High -> High, Medium -> Medium, Low -> Low)
+   - **Labels**: `takumo`, severity level, category
+   - **Team**: Assigned based on your team mapping configuration
 
 2. Creates the issue via Linear's GraphQL API
 
@@ -54,7 +54,7 @@ Linear workflow states are matched automatically. If your team uses custom state
 
 ## Team assignment
 
-Configure team mapping in **Dashboard > Settings > Integrations > Linear** after connecting:
+Configure team mapping in **Dashboard > Integrations > Linear** after connecting:
 
 | Mapping rule | Example |
 |-------------|---------|
@@ -93,9 +93,9 @@ Credentials are stored encrypted. The API key is never displayed after initial s
 
 ## Limitations
 
-- **Personal API keys only** -- OAuth app authorization is not currently supported.
-- **One workspace per connection** -- Linear API keys are scoped to a single workspace. Connect multiple integrations for multiple workspaces.
-- **No attachment sync** -- Code snippets are included in the issue description, not as attachments.
+- **Personal API keys only**: OAuth app authorization is not currently supported.
+- **One workspace per connection**: Linear API keys are scoped to a single workspace. Connect multiple integrations for multiple workspaces.
+- **No attachment sync**: Code snippets are included in the issue description, not as attachments.
 
 ---
 

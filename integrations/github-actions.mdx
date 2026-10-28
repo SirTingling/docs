@@ -18,7 +18,7 @@ Run Takumo scans as GitHub Actions workflow steps. Takumo discovers your workflo
     Generate a new token with scopes: **repo**, **workflow**, **read:org**. Copy the token (starts with `ghp_`).
   </Step>
   <Step title="Connect in Takumo">
-    Go to **Dashboard > Settings > Integrations > GitHub Actions**. Paste the token in the connection form.
+    Go to **Dashboard > Integrations > GitHub Actions**. Paste the token in the connection form.
   </Step>
   <Step title="Automatic discovery">
     Takumo will automatically discover all GitHub Actions workflows in your repositories.
@@ -46,10 +46,10 @@ Takumo analyzes your GitHub Actions workflows for security risks:
 
 When connected, Takumo tracks workflow runs and flags security-relevant events:
 
-1. **Credential detection** -- Scans workflow logs for accidentally exposed secrets
-2. **Permission drift** -- Alerts when a workflow's permissions change in a commit
-3. **Action version changes** -- Tracks when third-party actions are updated without SHA pinning
-4. **Failed security jobs** -- Highlights when security-related steps fail in a run
+1. **Credential detection**: Scans workflow logs for accidentally exposed secrets
+2. **Permission drift**: Alerts when a workflow's permissions change in a commit
+3. **Action version changes**: Tracks when third-party actions are updated without SHA pinning
+4. **Failed security jobs**: Highlights when security-related steps fail in a run
 
 ---
 
@@ -74,9 +74,9 @@ Credentials are stored encrypted. The token is never displayed after initial set
 
 ## Limitations
 
-- **Classic tokens only** -- Fine-grained PATs don't yet support the `workflow` scope needed for full analysis.
-- **Read-only** -- Takumo analyzes workflows but does not modify them. Auto-remediation PRs are created via the [GitHub source code integration](/integrations/github) if connected.
-- **GitHub.com and GHES** -- Works with github.com. For GitHub Enterprise Server, ensure the API endpoint is reachable from Takumo.
+- **Classic tokens only**: Fine-grained PATs don't yet support the `workflow` scope needed for full analysis.
+- **Read-only**: Takumo analyzes workflows but does not modify them. Auto-remediation PRs are created via the [GitHub source code integration](/integrations/github) if connected.
+- **GitHub.com and GHES**: Works with github.com. For GitHub Enterprise Server, ensure the API endpoint is reachable from Takumo.
 
 ---
 

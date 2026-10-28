@@ -18,7 +18,7 @@ Claude Code reads environment variables for its API connection. Set two variable
     Two variables. That's the whole setup.
 
     ```bash
-    export ANTHROPIC_BASE_URL="https://gateway.takumo.io/v1"
+    export ANTHROPIC_BASE_URL="https://gateway.takumo.io"
     export ANTHROPIC_API_KEY="your-takumo-api-key"
     ```
   </Step>
@@ -42,7 +42,7 @@ Set the variables once so they persist across terminal sessions.
 
 ```bash
 # Add to ~/.bashrc or ~/.bash_profile
-export ANTHROPIC_BASE_URL="https://gateway.takumo.io/v1"
+export ANTHROPIC_BASE_URL="https://gateway.takumo.io"
 export ANTHROPIC_API_KEY="your-takumo-api-key"
 ```
 
@@ -50,7 +50,7 @@ export ANTHROPIC_API_KEY="your-takumo-api-key"
 
 ```bash
 # Add to ~/.zshrc
-export ANTHROPIC_BASE_URL="https://gateway.takumo.io/v1"
+export ANTHROPIC_BASE_URL="https://gateway.takumo.io"
 export ANTHROPIC_API_KEY="your-takumo-api-key"
 ```
 
@@ -58,7 +58,7 @@ export ANTHROPIC_API_KEY="your-takumo-api-key"
 
 ```fish
 # Add to ~/.config/fish/config.fish
-set -gx ANTHROPIC_BASE_URL "https://gateway.takumo.io/v1"
+set -gx ANTHROPIC_BASE_URL "https://gateway.takumo.io"
 set -gx ANTHROPIC_API_KEY "your-takumo-api-key"
 ```
 
@@ -90,7 +90,7 @@ Every file Claude Code reads goes through the gateway. Secrets are tokenized on 
 If you're running your own gateway, point to that instead:
 
 ```bash
-export ANTHROPIC_BASE_URL="https://gateway.your-company.com/v1"
+export ANTHROPIC_BASE_URL="https://gateway.your-company.com"
 export ANTHROPIC_API_KEY="your-takumo-api-key"
 ```
 
@@ -102,7 +102,7 @@ If you only want Takumo on specific projects, set the variables in a `.envrc` fi
 
 ```bash
 # .envrc (in your project root)
-export ANTHROPIC_BASE_URL="https://gateway.takumo.io/v1"
+export ANTHROPIC_BASE_URL="https://gateway.takumo.io"
 export ANTHROPIC_API_KEY="your-takumo-api-key"
 ```
 

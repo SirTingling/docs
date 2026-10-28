@@ -34,10 +34,10 @@ Cursor supports custom API endpoints. Set your Takumo gateway as the base URL, a
     ```
   </Step>
   <Step title="Set your API key">
-    Enter your Takumo API key in the API key field. This replaces your OpenAI/Anthropic key -- the gateway handles provider authentication on your behalf.
+    Enter your Takumo API key in the API key field. This replaces your OpenAI/Anthropic key. The gateway handles provider authentication on your behalf.
   </Step>
   <Step title="Test it">
-    Open a file that has a secret in it. Send it to Chat or Composer. Check the [Takumo dashboard](https://cloud.takumo.io/dashboard) -- you should see the detection logged.
+    Open a file that has a secret in it. Send it to Chat or Composer. Check the [Takumo dashboard](https://cloud.takumo.io/dashboard). You should see the detection logged.
   </Step>
 </Steps>
 
@@ -84,7 +84,7 @@ if (!stripe) throw new Error("Stripe client not initialized");
 ```
 
 <Note>
-  Cursor routes requests through the gateway automatically. You don't need to change how you use Cursor -- just how it connects.
+  Cursor routes requests through the gateway automatically. You don't need to change how you use Cursor, only how it connects.
 </Note>
 
 ## Troubleshooting
@@ -101,7 +101,7 @@ if (!stripe) throw new Error("Stripe client not initialized");
   If you're on a self-hosted gateway, make sure it's reachable from your machine. Try:
 
   ```bash
-  curl https://gateway.your-company.com/v1/health
+  curl https://gateway.your-company.com/health
   ```
 </Accordion>
 
@@ -120,7 +120,7 @@ if (!stripe) throw new Error("Stripe client not initialized");
 
   If latency is consistently high:
 
-  1. Check your gateway region -- pick one close to you
+  1. Check your gateway region and pick one close to you
   2. Self-hosted gateways eliminate the network hop to Takumo's infrastructure
   3. The dashboard shows per-request latency so you can see where time is spent
 </Accordion>

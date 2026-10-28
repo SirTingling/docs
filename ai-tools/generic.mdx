@@ -36,12 +36,10 @@ Here's what to replace:
 
 | Provider | Default URL | Takumo URL |
 |----------|-------------|------------|
-| Anthropic | `https://api.anthropic.com` | `https://gateway.takumo.io/v1` |
+| Anthropic | `https://api.anthropic.com` | `https://gateway.takumo.io` |
 | OpenAI | `https://api.openai.com` | `https://gateway.takumo.io/v1` |
-| Mistral | `https://api.mistral.ai` | `https://gateway.takumo.io/v1` |
-| Google AI | `https://generativelanguage.googleapis.com` | `https://gateway.takumo.io/v1` |
 
-The gateway auto-detects which provider you're targeting based on the model name in the request.
+The gateway picks the provider from the request path: `/v1/messages` goes to Anthropic and `/v1/chat/completions` goes to OpenAI. Anthropic SDKs add `/v1/messages` to the base URL themselves, so their base URL has no `/v1`. Other providers are not supported yet.
 
 ## Environment variable pattern
 
@@ -49,7 +47,7 @@ For CLI tools, the integration is usually two environment variables:
 
 ```bash
 # Anthropic-based tools
-export ANTHROPIC_BASE_URL="https://gateway.takumo.io/v1"
+export ANTHROPIC_BASE_URL="https://gateway.takumo.io"
 export ANTHROPIC_API_KEY="your-takumo-api-key"
 
 # OpenAI-based tools
@@ -81,7 +79,7 @@ If you're building your own integration with an AI SDK:
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  baseURL: "https://gateway.takumo.io/v1",
+  baseURL: "https://gateway.takumo.io",
   apiKey: "your-takumo-api-key",
 });
 
@@ -98,7 +96,7 @@ const response = await client.messages.create({
 import anthropic
 
 client = anthropic.Anthropic(
-    base_url="https://gateway.takumo.io/v1",
+    base_url="https://gateway.takumo.io",
     api_key="your-takumo-api-key",
 )
 
@@ -141,5 +139,5 @@ After configuring any tool, verify secrets are being caught:
 
 1. Open a file with a known secret (database URL, API key, etc.)
 2. Send it to your AI tool
-3. Check the [Takumo dashboard](https://cloud.takumo.io/dashboard) -- you should see the request logged with detections
+3. Check the [Takumo dashboard](https://cloud.takumo.io/dashboard). You should see the request logged with detections
 4. If the detection count is zero, check [Supported Patterns](/patterns/supported)

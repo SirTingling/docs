@@ -15,10 +15,10 @@ Connect GitHub Issues to automatically create issues in your repositories when T
     Go to [GitHub token settings](https://github.com/settings/tokens/new) and generate a new classic token. Select the **repo** scope (needed to create and manage issues).
   </Step>
   <Step title="Copy the token">
-    Copy the token (starts with `ghp_`). Store it somewhere safe — GitHub only shows it once.
+    Copy the token (starts with `ghp_`). Store it somewhere safe. GitHub only shows it once.
   </Step>
   <Step title="Connect in Takumo">
-    Go to **Dashboard → Settings → Integrations → GitHub Issues**. Paste the token and click **Connect**.
+    Go to **Dashboard > Integrations > GitHub Issues**. Paste the token and click **Connect**.
   </Step>
   <Step title="Select a repository">
     Choose which repository receives Takumo issues. You can also configure default labels.
@@ -32,10 +32,10 @@ Connect GitHub Issues to automatically create issues in your repositories when T
 When Takumo detects an issue that meets your notification threshold:
 
 1. Maps the issue to a GitHub issue format:
-   - **Title** — Issue title with severity and category
-   - **Body** — Full details in Markdown, including file location, detection context, and remediation guidance
-   - **Labels** — `takumo`, severity level, category
-   - **Assignees** — Mapped from CODEOWNERS if available
+   - **Title**: Issue title with severity and category
+   - **Body**: Full details in Markdown, including file location, detection context, and remediation guidance
+   - **Labels**: `takumo`, severity level, category
+   - **Assignees**: Mapped from CODEOWNERS if available
 
 2. Creates the issue via the GitHub REST API
 
@@ -71,9 +71,9 @@ You can use both simultaneously. The GitHub App handles code scanning; the GitHu
 
 ## Limitations
 
-- **Classic PAT only** — Fine-grained tokens are not yet supported for issue creation.
-- **One repository per org** — All Takumo issues go to a single GitHub repository. Use GitHub Actions or issue templates for further routing.
-- **No bidirectional sync** — Closing the GitHub issue does not automatically resolve the Takumo issue (webhook support planned).
+- **Classic PAT only**: Fine-grained tokens are not yet supported for issue creation.
+- **One repository per org**: All Takumo issues go to a single GitHub repository. Use GitHub Actions or issue templates for further routing.
+- **No bidirectional sync**: Closing the GitHub issue does not automatically resolve the Takumo issue (webhook support planned).
 
 ---
 

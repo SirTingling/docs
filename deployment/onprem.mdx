@@ -13,7 +13,7 @@ For organizations that need full control over where their data flows. Deploy the
 | Kubernetes | 1.27+ |
 | Helm | 3.x |
 | PostgreSQL | 15+ (or Neon Postgres) |
-| Redis | 7+ |
+| Redis | None to provide: the gateway chart runs its own Redis 7 (`redis.enabled: true`) |
 | Container registry access | Outbound HTTPS to `cr.takumo.io` (Takumo's authenticated container registry, per-tenant deploy token) |
 
 ## Deployment
@@ -31,13 +31,27 @@ For organizations that need full control over where their data flows. Deploy the
     kubectl create namespace takumo
     ```
 
-    Create the database credentials for the coordinator:
+    Create the database credentials for the coordinator. `database-url` is the
+    pooled connection string and `database-url-direct` the direct one (use the
+    same URL twice if you have no pooler). Paste each when asked, in the form
+    `postgres://USER:PASSWORD@HOST:5432/takumo`. They are read without echo, so
+    the password stays out of shell history:
 
     ```bash
-    kubectl create secret generic coordinator-database \
-      --namespace takumo \
-      --from-literal=database-url="postgres://user:pass@host:5432/takumo" \
-      --from-literal=database-url-direct="postgres://user:pass@host:5432/takumo"
+    (
+      printf 'Pooled database URL: ' >&2; read -rs DB_URL || exit 1; echo >&2
+      printf 'Direct database URL: ' >&2; read -rs DB_URL_DIRECT || exit 1; echo >&2
+      kubectl create secret generic coordinator-database -n takumo \
+        --from-file=database-url=<(printf '%s' "$DB_URL") \
+        --from-file=database-url-direct=<(printf '%s' "$DB_URL_DIRECT")
+    )
+    ```
+
+    Generate the coordinator's JWT key pair. The coordinator signs ES256 tokens, so it needs a P-256 key, and the private key must be PKCS#8 (`BEGIN PRIVATE KEY`):
+
+    ```bash
+    openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out signing.pem
+    openssl pkey -in signing.pem -pubout -out verification.pem
     ```
 
     Create the JWT signing and verification keys for the coordinator:
@@ -57,25 +71,46 @@ For organizations that need full control over where their data flows. Deploy the
       --from-file=public.pem=./verification.pem
     ```
 
-    Create the image pull secret for `cr.takumo.io`. Issue a deploy token
-    from the Takumo dashboard (Settings → Deploy Tokens) — the username is
-    your workspace ID, the password is the token value. Tokens can be
-    revoked at any time. Full reference:
+    Create the image pull Secret for `cr.takumo.io`. Issue a deploy token
+    in the Takumo dashboard (**Settings > Deploy Tokens**). The username is
+    your workspace ID, which that page shows, and the password is the token.
+    Replace `<workspace-id>` below, paste the whole block, then paste the
+    token when asked. The token is read without echo, so it stays out of
+    shell history, the screen and process arguments. Full reference:
     [Deploy Tokens](/dashboard/deploy-tokens).
 
     ```bash
-    kubectl create secret docker-registry takumo-pull-secret \
-      --namespace takumo \
-      --docker-server=cr.takumo.io \
-      --docker-username=YOUR_TAKUMO_WORKSPACE_ID \
-      --docker-password=YOUR_TAKUMO_DEPLOY_TOKEN
+    (
+      printf 'Paste the deploy token, then press Enter: ' >&2
+      read -rs TAKUMO_DEPLOY_TOKEN || exit 1
+      echo >&2
+      printf '{"auths":{"cr.takumo.io":{"username":"%s","password":"%s"}}}' "<workspace-id>" "$TAKUMO_DEPLOY_TOKEN" \
+        | kubectl create secret generic takumo-pull-secret -n takumo \
+            --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
+    )
     ```
 
     **Air-gapped:** if your cluster has no egress to `cr.takumo.io`, mirror
     the four service images (`aegis-shield`, `gateway-coordinator`,
     `sentinel-service`, `vault-service`) plus `mirror/redis` into your
-    internal registry, override `image.repository` in your values file,
-    and supply that registry's pull credentials in this secret instead.
+    internal registry. Override `image.repository` in your values file, and
+    `redis.image.repository` for the gateway's Redis, then put that
+    registry's pull credentials in this Secret instead.
+  </Step>
+
+  <Step title="Download the charts">
+    The on-prem values overlay, `values-onprem.yaml`, ships inside each
+    chart. Pull both charts and unpack them into a local folder:
+
+    ```bash
+    helm pull takumo/gateway-coordinator --version 0.1.2 --untar --untardir ./takumo-charts
+    helm pull takumo/aegis-shield --version 0.2.2 --untar --untardir ./takumo-charts
+    ```
+
+    `helm show values` prints only the base `values.yaml`, not the overlay,
+    so use the files from `./takumo-charts`. To find newer chart versions,
+    run `helm search repo takumo --versions` and use the same version in
+    every command on this page.
   </Step>
 
   <Step title="Deploy the coordinator">
@@ -86,14 +121,21 @@ For organizations that need full control over where their data flows. Deploy the
     ```bash
     helm install gateway-coordinator takumo/gateway-coordinator \
       --namespace takumo \
-      --values https://charts.takumo.io/gateway-coordinator/values-onprem.yaml \
-      --set secrets.joinKey.enabled=false
+      --version 0.1.2 \
+      --values ./takumo-charts/gateway-coordinator/values-onprem.yaml \
+      --set secrets.joinKey.enabled=false \
+      --set secrets.imagePull.enabled=true \
+      --set secrets.imagePull.secretName=takumo-pull-secret
     ```
 
-    This sets:
+    The overlay sets:
     - `secrets.provider: manual`
     - `secrets.database.enabled: true` with secret name `coordinator-database`
     - `secrets.jwtSigning.enabled: true` with secret name `coordinator-jwt-signing`
+
+    The overlay turns the image pull Secret off, so the two `secrets.imagePull`
+    flags point the pods at `takumo-pull-secret`. Without them the pods cannot
+    pull from `cr.takumo.io`.
 
     <Note>The base chart defaults to `cloud-database` for the database secret name. The on-prem values overlay changes this to `coordinator-database` to match the secret created above.</Note>
 
@@ -105,14 +147,20 @@ For organizations that need full control over where their data flows. Deploy the
   </Step>
 
   <Step title="Deploy the gateway">
+    Deploy with the join key disabled here too, since its Secret does not exist yet:
+
     ```bash
     helm install aegis-shield takumo/aegis-shield \
       --namespace takumo \
-      --values https://charts.takumo.io/aegis-shield/values-onprem.yaml \
-      --set connector.grpcUrl="gateway-coordinator.takumo.svc.cluster.local:9090"
+      --version 0.2.2 \
+      --values ./takumo-charts/aegis-shield/values-onprem.yaml \
+      --set connector.grpcUrl="gateway-coordinator.takumo.svc.cluster.local:9090" \
+      --set secrets.joinKey.enabled=false \
+      --set secrets.imagePull.enabled=true \
+      --set secrets.imagePull.secretName=takumo-pull-secret
     ```
 
-    This configures the gateway to connect to the coordinator via gRPC on port 9090 and disables the cloud connector (`cloud.enabled: false`).
+    This configures the gateway to connect to the coordinator over gRPC on port 9090 and disables the cloud connector (`cloud.enabled: false`).
 
     Verify the gateway is running:
 
@@ -122,20 +170,23 @@ For organizations that need full control over where their data flows. Deploy the
   </Step>
 
   <Step title="Create a join key in the dashboard">
-    Go to **Settings > Gateway** in the dashboard and click **Create Join Key**. Give it a name (e.g., `production-cluster`). Copy the key immediately.
+    Go to **Settings > Gateway** in the dashboard and click **Create join key**. Give it a name (for example `production-cluster`). Copy the key immediately.
   </Step>
 
   <Step title="Configure the gateway and coordinator with the join key">
-    Create the join key secrets for both the gateway and the coordinator:
+    Create the join key Secrets for both the gateway and the coordinator. Paste
+    the join key when asked; it is read without echo:
 
     ```bash
-    kubectl create secret generic aegis-join-key \
-      --namespace takumo \
-      --from-literal=join-key="your-join-key-here"
-
-    kubectl create secret generic coordinator-join-key \
-      --namespace takumo \
-      --from-literal=join-key="your-join-key-here"
+    (
+      printf 'Paste the join key, then press Enter: ' >&2
+      read -rs TAKUMO_JOIN_KEY || exit 1
+      echo >&2
+      for name in aegis-join-key coordinator-join-key; do
+        printf '%s' "$TAKUMO_JOIN_KEY" \
+          | kubectl create secret generic "$name" -n takumo --from-file=join-key=/dev/stdin
+      done
+    )
     ```
 
     Upgrade the gateway to use it:
@@ -143,6 +194,7 @@ For organizations that need full control over where their data flows. Deploy the
     ```bash
     helm upgrade aegis-shield takumo/aegis-shield \
       --namespace takumo \
+      --version 0.2.2 \
       --reuse-values \
       --set secrets.joinKey.enabled=true \
       --set secrets.joinKey.secretName=aegis-join-key
@@ -153,6 +205,7 @@ For organizations that need full control over where their data flows. Deploy the
     ```bash
     helm upgrade gateway-coordinator takumo/gateway-coordinator \
       --namespace takumo \
+      --version 0.1.2 \
       --reuse-values \
       --set secrets.joinKey.enabled=true
     ```
@@ -195,8 +248,9 @@ For organizations that need full control over where their data flows. Deploy the
 
 The gateway needs outbound access to:
 
-- Your AI provider (e.g., `api.anthropic.com`, `api.openai.com`)
+- Your AI provider (for example `api.anthropic.com`, `api.openai.com`)
 - The coordinator gRPC endpoint (port 9090)
+- Its own Redis (port 6379)
 
 The coordinator needs:
 
@@ -205,3 +259,5 @@ The coordinator needs:
 - Inbound HTTP for health checks (port 8080)
 
 Both services create NetworkPolicy resources by default (`networkPolicy.enabled: true`).
+
+<Warning>The gateway's NetworkPolicy in chart 0.2.2 allows egress only on ports 53 and 443. If your CNI enforces NetworkPolicy, it blocks the gateway's connections to the coordinator on 9090 and to its Redis on 6379. Add a NetworkPolicy that allows that egress from the gateway pods, or install the gateway with `--set networkPolicy.enabled=false` and apply your own.</Warning>
