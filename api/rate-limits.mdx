@@ -30,7 +30,7 @@ In addition to the sliding-window rate limiter, Sentinel AI reviews have Redis-b
 - **Concurrency slots**: Per-org limit on simultaneous AI reviews. Configurable per plan via `maxDailyAIReviews`. Slot TTL is 10 minutes as a safety fallback.
 - **PR dedup**: 5-minute cooldown per PR per org. Prevents redundant reviews when multiple pushes happen in quick succession.
 
-Both controls fail open on Redis errors -- a review will proceed rather than block.
+Both controls fail open on Redis errors: a review will proceed rather than block.
 
 ## Per-plan operation limits
 

@@ -105,13 +105,13 @@ When SSO is enforced:
 
 ## SCIM 2.0 provisioning
 
-SCIM automates user lifecycle management — when someone is added or removed in your IdP, Takumo mirrors the change automatically.
+SCIM automates user lifecycle management. When someone is added or removed in your IdP, Takumo mirrors the change automatically.
 
 ### Setup
 
 <Steps>
   <Step title="Generate a SCIM token">
-    Go to **Dashboard > Settings > Authentication > SCIM**. Click **Generate Token**. Copy the bearer token — it's shown once.
+    Go to **Dashboard > Settings > Authentication > SCIM**. Click **Generate Token**. Copy the bearer token. It's shown once.
   </Step>
   <Step title="Configure your IdP">
     In your IdP's SCIM provisioning settings:
@@ -148,7 +148,7 @@ SCIM automates user lifecycle management — when someone is added or removed in
 ### Security
 
 - SCIM tokens are hashed with HMAC-SHA256 before storage
-- IP allowlist support — restrict SCIM access to your IdP's IP range
+- IP allowlist support: restrict SCIM access to your IdP's IP range
 - All SCIM operations are logged in the audit log
 
 ---

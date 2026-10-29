@@ -14,16 +14,16 @@ Sits between your AI tool and the AI provider. Detects secrets in outbound reque
 
 Runs Sentinel inbound scanning on AI responses. Security vulnerabilities, license issues, and custom rule violations are flagged or blocked depending on policy.
 
-Runs as a Kubernetes deployment or standalone binary. Stateless by default — session vaults are held in memory per-request. Redis is used for distributed rate limiting and token revocation propagation across replicas.
+Runs as a Kubernetes deployment or standalone binary. Stateless by default: session vaults are held in memory per-request. Redis is used for distributed rate limiting and token revocation propagation across replicas.
 
 ### Gateway Coordinator (Rust)
 
 gRPC server that manages gateway instances. Four responsibilities:
 
-- **Audit shipping** — Collects audit events from gateways and writes them to the dashboard database in batches (configurable via `telemetryBatchSize`, default 500 events per batch).
-- **Policy sync** — Streams policy updates from the dashboard to gateways in real-time. When you change a policy in the dashboard, the coordinator pushes the update within `policyDebounceMs` (default 500ms).
-- **Health tracking** — Receives health reports from gateways. Marks a gateway as stale after `healthStaleSecs` (default 120 seconds) without a report.
-- **NATS publishing** — Publishes detection events to NATS JetStream for downstream processing by the Cloud Worker and Stream pipeline.
+- **Audit shipping**: Collects audit events from gateways and writes them to the dashboard database in batches (configurable via `telemetryBatchSize`, default 500 events per batch).
+- **Policy sync**: Streams policy updates from the dashboard to gateways in real-time. When you change a policy in the dashboard, the coordinator pushes the update within `policyDebounceMs` (default 500ms).
+- **Health tracking**: Receives health reports from gateways. Marks a gateway as stale after `healthStaleSecs` (default 120 seconds) without a report.
+- **NATS publishing**: Publishes detection events to NATS JetStream for downstream processing by the Cloud Worker and Stream pipeline.
 
 Exposes both HTTP (port 8080) and gRPC (port 9090).
 

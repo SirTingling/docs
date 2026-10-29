@@ -37,11 +37,11 @@ icon: "zap"
 
 Takumo finds secrets three ways:
 
-**Pattern matching** — Known formats like AWS keys (`AKIA...`), Stripe keys (`sk_live_...`), JWTs (`eyJ...`)
+**Pattern matching**: Known formats like AWS keys (`AKIA...`), Stripe keys (`sk_live_...`), JWTs (`eyJ...`)
 
-**Context analysis** — Variables named `password`, `secret`, `api_key`, etc.
+**Context analysis**: Variables named `password`, `secret`, `api_key`, etc.
 
-**Config file parsing** — Special handling for `.env`, YAML, JSON, TOML files
+**Config file parsing**: Special handling for `.env`, YAML, JSON, TOML files
 
 All detection happens locally. Nothing is sent anywhere during this step.
 

@@ -4,7 +4,7 @@ description: Query compliance framework status
 icon: "shield"
 ---
 
-Retrieve the latest compliance snapshots for your organization -- the most recent assessment per framework, with control-level details.
+Retrieve the latest compliance snapshots for your organization: the most recent assessment per framework, with control-level details.
 
 <Note>Requires Custom plan and `scan:read` scope on the API key.</Note>
 
@@ -33,7 +33,7 @@ const result = await response.json();
 
 ### Response
 
-Returns the latest snapshot per framework. No pagination -- all matching snapshots are returned in a single response.
+Returns the latest snapshot per framework. No pagination. All matching snapshots are returned in a single response.
 
 ```json
 {

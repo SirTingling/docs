@@ -17,7 +17,7 @@ The Repositories page lists all connected repos with their security posture, det
 | **Posture score** | Security posture rating (A through D) based on Brain analysis |
 | **Open issues** | Number of unresolved security issues |
 | **Last scanned** | Most recent Shield or Sentinel scan |
-| **Brain status** | Indexing status — Indexed, Indexing, Not indexed |
+| **Brain status** | Indexing status: Indexed, Indexing, Not indexed |
 
 ---
 
@@ -28,8 +28,8 @@ Click a repo to see its full security profile:
 ### Security overview
 
 - **Total detections** over time (chart)
-- **Severity distribution** — Critical, High, Medium, Low breakdown
-- **Most common categories** — Top detection types for this repo
+- **Severity distribution**: Critical, High, Medium, Low breakdown
+- **Most common categories**: Top detection types for this repo
 
 ### Open issues
 
@@ -39,16 +39,16 @@ Filtered list of issues specific to this repository. Same interface as the [Issu
 
 If the repo is indexed by Brain:
 
-- **Patterns discovered** — Code patterns Brain has identified
-- **Architecture map** — Module boundaries and dependency relationships
-- **Posture factors** — What contributes to the security score
+- **Patterns discovered**: Code patterns Brain has identified
+- **Architecture map**: Module boundaries and dependency relationships
+- **Posture factors**: What contributes to the security score
 
 ### Pipeline status
 
 If CI/CD pipelines are detected:
 
-- **Pipeline findings** — Security issues in workflow files
-- **Recent runs** — Pipeline execution history with security status
+- **Pipeline findings**: Security issues in workflow files
+- **Recent runs**: Pipeline execution history with security status
 
 ---
 
@@ -58,9 +58,9 @@ Repositories are connected through integrations:
 
 | Provider | How to connect |
 |----------|---------------|
-| **GitHub** | Install the [GitHub App](/integrations/github) — repos sync automatically |
-| **GitLab** | Connect via [OAuth](/integrations/gitlab) — select repos to sync |
-| **Bitbucket** | Connect via [OAuth or App Password](/integrations/bitbucket) — repos sync automatically |
+| **GitHub** | Install the [GitHub App](/integrations/github). Repos sync automatically |
+| **GitLab** | Connect via [OAuth](/integrations/gitlab), then select repos to sync |
+| **Bitbucket** | Connect via [OAuth or App Password](/integrations/bitbucket). Repos sync automatically |
 
 Once connected, Takumo monitors push events via webhooks and scans on every code change.
 

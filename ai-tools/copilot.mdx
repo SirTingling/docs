@@ -19,7 +19,7 @@ Use the Takumo CLI to tokenize files before Copilot reads them. This works for a
     ```bash
     npm install -g @takumo/aegis
     ```
-    The Aegis CLI is currently in early access — email [support@takumo.io](mailto:support@takumo.io) if the package isn't yet published.
+    The Aegis CLI is currently in early access. Email [support@takumo.io](mailto:support@takumo.io) if the package isn't yet published.
   </Step>
   <Step title="Tokenize your file">
     Before opening a file that has secrets, tokenize it:
@@ -40,7 +40,7 @@ Use the Takumo CLI to tokenize files before Copilot reads them. This works for a
     ```
   </Step>
   <Step title="Work with the tokenized file">
-    Open the tokenized file in your editor. Copilot's suggestions are based on this file -- it never sees your real secrets.
+    Open the tokenized file in your editor. Copilot's suggestions are based on this file, so it never sees your real secrets.
   </Step>
   <Step title="Rehydrate when done">
     When you're finished, restore the real values:
@@ -104,7 +104,7 @@ Route Copilot's API calls through a local proxy that sends them through the Taku
 ## Troubleshooting
 
 <Accordion title="Tokenized files confuse Copilot suggestions">
-  Copilot uses surrounding code for context. Tokens look like strings to Copilot, so suggestions still work. If you're getting odd completions, make sure only the secret values are tokenized -- the rest of the code should be unchanged.
+  Copilot uses surrounding code for context. Tokens look like strings to Copilot, so suggestions still work. If you're getting odd completions, make sure only the secret values are tokenized. The rest of the code should be unchanged.
 </Accordion>
 
 <Accordion title="Proxy not intercepting Copilot traffic">

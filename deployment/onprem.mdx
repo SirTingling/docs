@@ -6,6 +6,8 @@ icon: "server"
 
 For organizations that need full control over where their data flows. Deploy the gateway and coordinator in your Kubernetes cluster.
 
+<Warning>Authenticating a self-hosted gateway with Takumo API keys or join keys is not yet available. The steps on this page deploy the coordinator and gateway, but developers can't send requests through the gateway with their Takumo API keys, and the gateway does not appear on the **Fleet** page. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+
 ## Prerequisites
 
 | Requirement | Minimum Version |
@@ -172,6 +174,8 @@ For organizations that need full control over where their data flows. Deploy the
   </Step>
 
   <Step title="Create a join key in the dashboard">
+    <Warning>Registering a self-hosted gateway with a join key is not yet available, so a self-hosted gateway does not appear on the **Fleet** page. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+
     Go to **Settings > Gateway** in the dashboard and click **Create join key**. Give it a name (for example `production-cluster`). Copy the key immediately.
   </Step>
 
@@ -213,20 +217,39 @@ For organizations that need full control over where their data flows. Deploy the
     ```
   </Step>
 
-  <Step title="Verify the connection">
-    Check the **Fleet** page in the dashboard. Your gateway instance should appear with a **Connected** state.
-
-    You can also verify locally:
-
-    ```bash
-    kubectl logs -n takumo -l app.kubernetes.io/name=aegis-shield --tail=20
-    ```
-
-    Look for a log line indicating successful registration with the coordinator.
-  </Step>
 </Steps>
 
 <Warning>The join key is shown once. Store it in your secrets management system (Vault, AWS Secrets Manager, etc.) before closing the dialog.</Warning>
+
+## Add the Anthropic provider key
+
+<Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+
+The gateway calls Anthropic with a provider key you store in a Secret, so developers' tools send no Anthropic key.
+
+Create the Secret in bash or zsh. Paste your Anthropic API key when asked; it is read without echo:
+
+```bash
+(
+  printf 'Paste your Anthropic API key, then press Enter: ' >&2
+  read -rs ANTHROPIC_PROVIDER_KEY || exit 1
+  echo >&2
+  printf '%s' "$ANTHROPIC_PROVIDER_KEY" \
+    | kubectl create secret generic aegis-provider-anthropic-key -n takumo --from-file=api-key=/dev/stdin
+)
+```
+
+Upgrade the gateway to use it:
+
+```bash
+helm upgrade aegis-shield takumo/aegis-shield \
+  --namespace takumo \
+  --version 0.2.2 \
+  --reuse-values \
+  --set secrets.providerKeys.anthropic.enabled=true
+```
+
+A request that carries its own `x-api-key` header uses that key instead of this one.
 
 ## Required secrets reference
 
@@ -244,6 +267,7 @@ For organizations that need full control over where their data flows. Deploy the
 |------------|------|-------------|
 | `aegis-jwt-key` | `public.pem` | JWT public key for auth verification |
 | `aegis-join-key` | `join-key` | Join key for coordinator registration |
+| `aegis-provider-anthropic-key` | `api-key` | Anthropic API key the gateway uses upstream (optional, see [Add the Anthropic provider key](#add-the-anthropic-provider-key)) |
 | `takumo-pull-secret` | Docker registry credentials | Image pull secret for `cr.takumo.io` (per-tenant deploy token from Takumo dashboard) |
 
 ## Network requirements

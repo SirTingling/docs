@@ -6,7 +6,7 @@ icon: "zap"
 
 # Brain Intelligence
 
-Brain is Takumo's code intelligence layer. It indexes your repos and provides contextual information — relevant functions, established patterns, architecture boundaries — to the extension and gateway.
+Brain is Takumo's code intelligence layer. It indexes your repos and provides contextual information (relevant functions, established patterns, architecture boundaries) to the extension and gateway.
 
 ---
 
@@ -16,7 +16,7 @@ Brain is Takumo's code intelligence layer. It indexes your repos and provides co
 |---------|-------------|
 | **Relevant functions** | Functions in your codebase related to the file you're editing. Ranked by relevance score. |
 | **Established patterns** | Recurring coding patterns across your repos (error handling, auth, validation). Usage counts show how established each pattern is. |
-| **Architecture boundaries** | Security and structural boundaries — auth layers, API boundaries, trust zones. |
+| **Architecture boundaries** | Security and structural boundaries: auth layers, API boundaries, trust zones. |
 | **Dependency context** | Dependencies relevant to the current file with version and usage info. |
 
 ---
@@ -38,7 +38,7 @@ graph LR
 
 ### Brain Indexer
 
-Scans connected repos. Extracts function signatures, detects patterns, maps architectural boundaries. Indexing is automatic after repo connection and incremental — only changed files are re-indexed.
+Scans connected repos. Extracts function signatures, detects patterns, maps architectural boundaries. Indexing is automatic after repo connection and incremental. Only changed files are re-indexed.
 
 ### Brain Embedding
 
@@ -88,7 +88,7 @@ Results appear in the side panel. Requires authentication.
 
 ### In the gateway
 
-Brain context enriches Sentinel scans. When Sentinel evaluates AI-generated code, Brain provides architectural context to reduce false positives — e.g., knowing that a function is behind an auth boundary.
+Brain context enriches Sentinel scans. When Sentinel evaluates AI-generated code, Brain provides architectural context to reduce false positives, for example knowing that a function is behind an auth boundary.
 
 ---
 

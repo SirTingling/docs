@@ -136,7 +136,7 @@ Complete reference for configuring all Takumo services. All values are set via H
 | `LOG_FORMAT` | `log.format` | `json` | Log format (`json` or `pretty`) |
 | `RUST_LOG` | `log.level` | `info,takumo=debug` | Rust log level directive |
 
-<Note>The `DATABASE_URL` and `NATS_NKEY_SEED` are mounted from Kubernetes secrets, not from the ConfigMap. Stream Postgres migrations live in `crates/takumo-stream-ingest/sql/V*.sql`. The cloud Prisma client is a read-only consumer — never run `prisma migrate` or `prisma db push` against the stream database.</Note>
+<Note>The `DATABASE_URL` and `NATS_NKEY_SEED` are mounted from Kubernetes secrets, not from the ConfigMap. Stream Postgres migrations live in `crates/takumo-stream-ingest/sql/V*.sql`. The cloud Prisma client is a read-only consumer. Never run `prisma migrate` or `prisma db push` against the stream database.</Note>
 
 ## Stream Router
 
@@ -338,7 +338,7 @@ Most charts include HPA configuration. The scale-down policy is consistent acros
 | Brain Embedding | 4 | 12 | 60% | - |
 | Brain Query | 4 | 16 | 70% | - |
 
-<Note>NATS runs as a StatefulSet (default 3 replicas) and brain-pattern runs as a CronJob — neither uses HPA.</Note>
+<Note>NATS runs as a StatefulSet (default 3 replicas) and brain-pattern runs as a CronJob. Neither uses HPA.</Note>
 
 ## Resource defaults
 

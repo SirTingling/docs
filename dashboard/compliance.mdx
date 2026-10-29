@@ -4,7 +4,7 @@ description: Track framework compliance status
 icon: "shield"
 ---
 
-The Compliance page tracks your organization's posture against security frameworks — SOC 2, PCI-DSS, HIPAA, and ISO 27001.
+The Compliance page tracks your organization's posture against security frameworks: SOC 2, PCI-DSS, HIPAA, and ISO 27001.
 
 <Note>Compliance tracking is an Custom feature.</Note>
 
@@ -14,12 +14,12 @@ The Compliance page tracks your organization's posture against security framewor
 
 Takumo maps its detections and controls to compliance framework requirements. Each framework has a set of controls. Takumo checks which controls are satisfied based on:
 
-- **Secret detection coverage** — Are secrets being caught before they reach AI providers?
-- **Policy enforcement** — Are governance policies active and enforced?
-- **Audit logging** — Is the audit trail complete and tamper-evident?
-- **Access controls** — Are RBAC roles properly configured?
-- **Encryption** — Is data encrypted at rest and in transit?
-- **Incident response** — Are notifications configured for security events?
+- **Secret detection coverage**: Are secrets being caught before they reach AI providers?
+- **Policy enforcement**: Are governance policies active and enforced?
+- **Audit logging**: Is the audit trail complete and tamper-evident?
+- **Access controls**: Are RBAC roles properly configured?
+- **Encryption**: Is data encrypted at rest and in transit?
+- **Incident response**: Are notifications configured for security events?
 
 ---
 
@@ -47,10 +47,10 @@ Maps to Trust Services Criteria:
 
 | Criteria | Takumo controls |
 |----------|----------------|
-| CC6.1 — Logical access | RBAC roles, API key scoping, SSO enforcement |
-| CC6.6 — Encryption | TLS 1.3 in transit, AES-256 at rest |
-| CC7.2 — System monitoring | Audit log, real-time detection, alert delivery |
-| CC8.1 — Change management | Sentinel PR reviews, policy enforcement |
+| CC6.1: Logical access | RBAC roles, API key scoping, SSO enforcement |
+| CC6.6: Encryption | TLS 1.3 in transit, AES-256 at rest |
+| CC7.2: System monitoring | Audit log, real-time detection, alert delivery |
+| CC8.1: Change management | Sentinel PR reviews, policy enforcement |
 
 ### PCI-DSS
 
@@ -58,9 +58,9 @@ Relevant requirements:
 
 | Requirement | Takumo controls |
 |-------------|----------------|
-| 3.4 — Render PAN unreadable | Secret tokenization in AI prompts |
-| 6.5 — Secure development | Sentinel vulnerability scanning |
-| 10.2 — Audit trails | Comprehensive audit logging |
+| 3.4: Render PAN unreadable | Secret tokenization in AI prompts |
+| 6.5: Secure development | Sentinel vulnerability scanning |
+| 10.2: Audit trails | Comprehensive audit logging |
 
 ### HIPAA
 
@@ -74,9 +74,9 @@ Relevant requirements:
 
 | Control | Takumo controls |
 |---------|----------------|
-| A.9 — Access control | RBAC, API key scoping, member management |
-| A.10 — Cryptography | AES-256 at rest, TLS 1.3 in transit |
-| A.12 — Operations security | Detection pipeline, incident response |
+| A.9: Access control | RBAC, API key scoping, member management |
+| A.10: Cryptography | AES-256 at rest, TLS 1.3 in transit |
+| A.12: Operations security | Detection pipeline, incident response |
 
 ---
 

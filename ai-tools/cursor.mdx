@@ -8,6 +8,8 @@ icon: "play"
 
 Cursor supports custom API endpoints. Set your Takumo gateway as the base URL, and every Chat, Composer, and inline edit request gets protected.
 
+<Warning>Routing Cursor through the gateway uses the OpenAI-compatible route (`/v1/chat/completions`), which is temporarily unavailable. Don't configure Cursor to use the gateway yet.</Warning>
+
 ## Setup
 
 <Steps>
@@ -32,6 +34,8 @@ Cursor supports custom API endpoints. Set your Takumo gateway as the base URL, a
     ```
     https://gateway.your-company.com/v1
     ```
+
+    <Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
   </Step>
   <Step title="Set your API key">
     Enter your Takumo API key in the API key field. This replaces your OpenAI/Anthropic key. The gateway handles provider authentication on your behalf.

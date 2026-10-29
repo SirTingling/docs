@@ -87,7 +87,7 @@ session.destroy();
 
 - No vault data is written to disk
 - No vault data is sent over the network
-- Each session is isolated — sessions cannot access each other's vaults
+- Each session is isolated. Sessions cannot access each other's vaults
 - When the process ends, the vault is garbage collected
 
 ### What if someone intercepts tokenized code?
@@ -141,7 +141,7 @@ When tokenized code is sent to AI providers (Claude, GPT, Copilot, etc.):
 
 | Concern | How Takumo addresses it |
 |---------|------------------------|
-| AI sees my secrets | Impossible — secrets are tokenized before transmission |
+| AI sees my secrets | Impossible: secrets are tokenized before transmission |
 | AI provider stores my code | Tokenized code only; no secrets present. Enterprise providers offer zero-retention APIs |
 | AI provider trains on my code | Enterprise API agreements prohibit training. Tokenized code has no secret value regardless |
 | AI hallucinates credentials | Sentinel (inbound) catches hardcoded secrets in AI responses |
@@ -192,7 +192,7 @@ We believe in being honest about scope:
 | Framework | Status |
 |-----------|--------|
 | SOC 2 Type II | In progress |
-| GDPR | Compliant — DPA available on request |
+| GDPR | Compliant. DPA available on request |
 | CCPA | Compliant |
 | HIPAA | Available for Custom plans with BAA |
 
@@ -222,12 +222,12 @@ Please do not disclose vulnerabilities publicly until we've had a reasonable opp
 
 Takumo is one layer of defense. We recommend:
 
-1. **Never commit secrets to version control** — use `.env` files and `.gitignore`
-2. **Use a secrets manager** for production — HashiCorp Vault, AWS Secrets Manager, or similar
-3. **Review AI-generated code** before merging — Sentinel helps, but human review is still important
+1. **Never commit secrets to version control**: use `.env` files and `.gitignore`
+2. **Use a secrets manager** for production: HashiCorp Vault, AWS Secrets Manager, or similar
+3. **Review AI-generated code** before merging. Sentinel helps, but human review is still important
 4. **Enable ZDR mode** if your organization handles sensitive data
-5. **Rotate credentials regularly** — even with Takumo, credential rotation limits blast radius
-6. **Keep Takumo updated** — security improvements ship in every release
+5. **Rotate credentials regularly**: even with Takumo, credential rotation limits blast radius
+6. **Keep Takumo updated**: security improvements ship in every release
 
 ## Related
 

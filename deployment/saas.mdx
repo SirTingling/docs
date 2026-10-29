@@ -16,14 +16,16 @@ The fastest path. Sign up, get an API key, point your tool at the gateway. No in
     After signing in, create a new organization. This is where your team, API keys, policies, and audit log live.
   </Step>
   <Step title="Create an API key">
-    Navigate to **Settings > API Keys** and click **Create Key**. Give it a name that identifies where it will be used (for example `cursor-laptop`, `ci-pipeline`). Copy the key immediately. It is shown once.
+    Navigate to **API Keys** and click **Create Key**. Give it a name that identifies where it will be used (for example `cursor-laptop`, `ci-pipeline`). Copy the key immediately. It is shown once.
   </Step>
   <Step title="Configure your AI tool">
-    Set the API base URL in your AI tool to:
+    <Warning>The OpenAI-compatible route (`/v1/chat/completions`) is temporarily unavailable. Don't configure OpenAI-based tools to use the gateway yet. Anthropic tools are not affected.</Warning>
+
+    For Anthropic tools, set the API base URL in your AI tool to:
     ```
-    https://gateway.takumo.io/v1
+    https://gateway.takumo.io
     ```
-    Set your Takumo API key as the authentication credential. See [AI Tools](/ai-tools/overview) for tool-specific instructions.
+    Send your Takumo API key as `Authorization: Bearer`, the only header the gateway reads it from. Use the auth token or bearer token setting rather than the API key setting where the tool has both, because some tools send the API key as `x-api-key`, which the gateway rejects with `401`. The gateway calls Anthropic with Takumo's provider key. See [AI Tools](/ai-tools/overview) for tool-specific instructions.
   </Step>
   <Step title="Set the API key">
     ```bash
@@ -47,7 +49,7 @@ All requests go through a single endpoint:
 https://gateway.takumo.io/v1
 ```
 
-This URL replaces the AI provider's API base URL in your tool configuration. The gateway sends `/v1/chat/completions` requests to OpenAI and `/v1/messages` requests to Anthropic. Anthropic SDKs and Claude Code add `/v1/messages` themselves, so for them use `https://gateway.takumo.io` without `/v1`.
+This URL replaces the AI provider's API base URL in your tool configuration. The gateway sends `/v1/chat/completions` requests to OpenAI (temporarily unavailable, see the warning above) and `/v1/messages` requests to Anthropic. Anthropic SDKs and Claude Code add `/v1/messages` themselves, so for them use `https://gateway.takumo.io` without `/v1`.
 
 ## What you get
 

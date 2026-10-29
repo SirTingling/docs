@@ -12,7 +12,7 @@ Takumo works with any AI tool that lets you set a custom API endpoint. Point it 
 
 <Steps>
   <Step title="Your code">
-    You write code. It has secrets in it -- API keys, database URLs, tokens.
+    You write code. It has secrets in it: API keys, database URLs, tokens.
   </Step>
   <Step title="Gateway tokenizes">
     Your AI tool sends requests through the Takumo gateway. The gateway detects secrets and replaces them with tokens before forwarding to the AI provider.
@@ -44,15 +44,15 @@ Takumo works with any AI tool that lets you set a custom API endpoint. Point it 
 <Note>
   The gateway proxy approach requires zero plugins. You change one URL in your AI tool's settings and every request goes through your gateway. That's it.
 
-  For deeper integration — real-time scanning, secret quick-fixes, AI transforms, and Brain context — install [Takumo Studio](/studio/overview), the VS Code / Cursor extension.
+  For deeper integration (real-time scanning, secret quick-fixes, AI transforms and Brain context), install [Takumo Studio](/studio/overview), the VS Code / Cursor extension.
 </Note>
 
 ## What the gateway does
 
 Every request that passes through the gateway gets the same treatment:
 
-1. **Outbound** -- Scans your code for secrets, replaces them with tokens, forwards to the AI provider
-2. **Inbound** -- Scans the AI response for tokens, replaces them with your real secrets, returns to your tool
+1. **Outbound**: Scans your code for secrets, replaces them with tokens, forwards to the AI provider
+2. **Inbound**: Scans the AI response for tokens, replaces them with your real secrets, returns to your tool
 
 The AI provider never sees your credentials. Your tool never knows the difference.
 

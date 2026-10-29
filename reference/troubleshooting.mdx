@@ -13,7 +13,7 @@ Your API key is invalid, expired, or revoked.
 
 **Check these:**
 - Is the key correct? Copy-paste errors are common. Watch for trailing whitespace.
-- Has it been revoked? Check **Settings > API Keys** in the dashboard.
+- Has it been revoked? Check its status on the **API Keys** page in the dashboard.
 - Is it for the right environment? `tk_live_` keys don't work in test mode and vice versa.
 - Is the `Authorization` header formatted correctly? It should be `Bearer tk_live_...`.
 
@@ -30,7 +30,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 Your API key doesn't have the required scope, or your plan doesn't include the feature you're trying to use.
 
 **Check these:**
-- Key scopes: go to **Settings > API Keys**, click the key, check its scopes.
+- Key scopes: go to **API Keys**, open the key's menu and click **View Permissions**.
 - Plan limits: you might have hit your monthly credit or request limit. Check **Settings > Billing**.
 - The error response body includes the specific reason. Read the `message` field.
 </Accordion>
@@ -102,6 +102,8 @@ curl -v https://gateway.takumo.io/health
 </Accordion>
 
 <Accordion title="Gateway not appearing in fleet">
+<Warning>Registering a self-hosted gateway with a join key is not yet available, so a self-hosted gateway does not appear on the **Fleet** page. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+
 The gateway needs a valid join key to register with the coordinator.
 
 **Check these:**
