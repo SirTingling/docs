@@ -10,8 +10,6 @@ Windsurf supports custom API endpoints. Set your Takumo gateway as the base URL,
 
 <Warning>Connecting AI tools through the Takumo gateway with an API key is not available yet, on `gateway.takumo.io` or on a self-hosted gateway. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) for early access.</Warning>
 
-<Warning>Routing Windsurf through the gateway uses the OpenAI-compatible route (`/v1/chat/completions`), which is temporarily unavailable. Don't configure Windsurf to use the gateway yet.</Warning>
-
 ## Setup
 
 <Steps>
@@ -36,7 +34,7 @@ Windsurf supports custom API endpoints. Set your Takumo gateway as the base URL,
     <Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
   </Step>
   <Step title="Set your API key">
-    <Warning>This step is not available while the OpenAI-compatible route is temporarily unavailable. See the warning at the top of this page.</Warning>
+    Enter your Takumo API key in the API key field. OpenAI-compatible tools send it as `Authorization: Bearer`, the header the gateway reads it from. On `gateway.takumo.io` the gateway calls OpenAI with Takumo's provider key, so you don't need an OpenAI key. An OpenAI key of your own is not used: only Anthropic requests can bring their own provider key.
   </Step>
   <Step title="Test it">
     Open a file with secrets. Use Cascade or an inline edit. Check the [dashboard](https://cloud.takumo.io/dashboard) to confirm detections are logged.
