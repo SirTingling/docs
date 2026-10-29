@@ -10,8 +10,6 @@ Any AI tool that lets you set a custom API endpoint works with Takumo. The patte
 
 <Warning>Connecting AI tools through the Takumo gateway with an API key is not available yet, on `gateway.takumo.io` or on a self-hosted gateway. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) for early access.</Warning>
 
-<Warning>The OpenAI-compatible route (`/v1/chat/completions`) is temporarily unavailable. Don't configure OpenAI-based tools to use the gateway yet. Anthropic tools are not affected.</Warning>
-
 ## Three steps
 
 <Steps>
@@ -32,7 +30,7 @@ Any AI tool that lets you set a custom API endpoint works with Takumo. The patte
     <Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
   </Step>
   <Step title="Set your API key">
-    For Anthropic tools, send your Takumo API key as `Authorization: Bearer`, the only header the gateway reads it from. Use the auth token or bearer token setting rather than the API key setting where the tool has both, because some tools send the API key as `x-api-key`, which the gateway rejects with `401`. On `gateway.takumo.io` the gateway calls Anthropic with Takumo's provider key.
+    For Anthropic tools, send your Takumo API key as `Authorization: Bearer`, the only header the gateway reads it from. Use the auth token or bearer token setting rather than the API key setting where the tool has both, because some tools send the API key as `x-api-key`. On its own, the gateway rejects `x-api-key` with `401`. Next to a Bearer token, the gateway never sends a Takumo API key in `x-api-key` to Anthropic: once it has authenticated you, it refuses the request with `400 takumo_key_in_upstream_header`. On `gateway.takumo.io` the gateway calls Anthropic with Takumo's provider key.
   </Step>
 </Steps>
 

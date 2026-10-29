@@ -249,7 +249,33 @@ helm upgrade aegis-shield takumo/aegis-shield \
   --set secrets.providerKeys.anthropic.enabled=true
 ```
 
-A request that carries its own `x-api-key` header uses that key instead of this one.
+A request that carries its own `x-api-key` header uses that key instead of this one, unless the value is a Takumo key (a `tk_live_` or `tk_test_` key, a 64-character hex dashboard key, or a JWT). The gateway refuses that request with `400 takumo_key_in_upstream_header` and never sends the key to Anthropic.
+
+## Add the OpenAI provider key
+
+The gateway calls OpenAI on `/v1/chat/completions` with a provider key you store in a Secret. OpenAI requests always use this key, never a key from the request. Without it, `/v1/chat/completions` returns `503 provider_key_not_configured`.
+
+Create the Secret in bash or zsh. Paste your OpenAI API key when asked; it is read without echo:
+
+```bash
+(
+  printf 'Paste your OpenAI API key, then press Enter: ' >&2
+  read -rs OPENAI_PROVIDER_KEY || exit 1
+  echo >&2
+  printf '%s' "$OPENAI_PROVIDER_KEY" \
+    | kubectl create secret generic aegis-provider-openai-key -n takumo --from-file=api-key=/dev/stdin
+)
+```
+
+Upgrade the gateway to use it:
+
+```bash
+helm upgrade aegis-shield takumo/aegis-shield \
+  --namespace takumo \
+  --version 0.2.2 \
+  --reuse-values \
+  --set secrets.providerKeys.openai.enabled=true
+```
 
 ## Required secrets reference
 
@@ -268,6 +294,7 @@ A request that carries its own `x-api-key` header uses that key instead of this 
 | `aegis-jwt-key` | `public.pem` | JWT public key for auth verification |
 | `aegis-join-key` | `join-key` | Join key for coordinator registration |
 | `aegis-provider-anthropic-key` | `api-key` | Anthropic API key the gateway uses upstream (optional, see [Add the Anthropic provider key](#add-the-anthropic-provider-key)) |
+| `aegis-provider-openai-key` | `api-key` | OpenAI API key the gateway uses upstream (optional, see [Add the OpenAI provider key](#add-the-openai-provider-key)) |
 | `takumo-pull-secret` | Docker registry credentials | Image pull secret for `cr.takumo.io` (per-tenant deploy token from Takumo dashboard) |
 
 ## Network requirements

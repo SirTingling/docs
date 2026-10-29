@@ -10,8 +10,6 @@ Continue is open source and lets you configure custom provider endpoints. Point 
 
 <Warning>Connecting AI tools through the Takumo gateway with an API key is not available yet, on `gateway.takumo.io` or on a self-hosted gateway. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) for early access.</Warning>
 
-<Warning>The OpenAI-compatible route (`/v1/chat/completions`) is temporarily unavailable. Don't configure OpenAI models in Continue to use the gateway yet. Anthropic models are not affected.</Warning>
-
 ## Setup
 
 <Steps>
@@ -135,7 +133,7 @@ This lets you pull both keys from environment variables instead of hardcoding th
 
   1. The gateway URL is correct and reachable: `curl https://gateway.takumo.io/health`
   2. Your Takumo API key is valid (check the dashboard), and it is in the `Authorization` header, not in `apiKey`
-  3. The `provider` field is `anthropic`. The OpenAI-compatible route is temporarily unavailable, and the gateway does not serve other providers yet
+  3. The `provider` field is `anthropic`. The gateway does not serve other providers yet
   4. Restart VS Code after config changes
 </Accordion>
 
