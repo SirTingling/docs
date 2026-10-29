@@ -31,6 +31,8 @@ Any AI tool that lets you set a custom API endpoint works with Takumo. The patte
   </Step>
   <Step title="Set your API key">
     For Anthropic tools, send your Takumo API key as `Authorization: Bearer`, the only header the gateway reads it from. Use the auth token or bearer token setting rather than the API key setting where the tool has both, because some tools send the API key as `x-api-key`. On its own, the gateway rejects `x-api-key` with `401`. Next to a Bearer token, the gateway never sends a Takumo API key in `x-api-key` to Anthropic: once it has authenticated you, it refuses the request with `400 takumo_key_in_upstream_header`. On `gateway.takumo.io` the gateway calls Anthropic with Takumo's provider key.
+
+    For OpenAI tools, enter your Takumo API key as the tool's API key. OpenAI-compatible tools send it as `Authorization: Bearer`. On `gateway.takumo.io` the gateway calls OpenAI with Takumo's provider key, and an OpenAI key of your own is not used: only Anthropic requests can bring their own provider key. A self-hosted gateway uses the OpenAI key its operator stores, and returns `503 provider_key_not_configured` without one. See [Add the OpenAI provider key](/deployment/onprem#add-the-openai-provider-key).
   </Step>
 </Steps>
 
@@ -55,6 +57,10 @@ For CLI tools, the integration is usually two environment variables:
 # Anthropic-based tools (leave ANTHROPIC_API_KEY unset)
 export ANTHROPIC_BASE_URL="https://gateway.takumo.io"
 export ANTHROPIC_AUTH_TOKEN="your-takumo-api-key"
+
+# OpenAI-based tools
+export OPENAI_BASE_URL="https://gateway.takumo.io/v1"
+export OPENAI_API_KEY="your-takumo-api-key"
 ```
 
 Any tool that reads these standard environment variables will route through Takumo without any code changes.
@@ -73,7 +79,7 @@ For tools with JSON or YAML configuration:
 }
 ```
 
-The exact field names vary by tool. Set the base URL to your gateway, and send your Takumo API key as `Authorization: Bearer` through an auth token field or a custom header. Don't put it in a field the tool sends as `x-api-key`, such as `apiKey` in Continue's Anthropic provider or `ANTHROPIC_API_KEY` in Claude Code. For a tool that always sends `x-api-key`, see [Continue.dev](/ai-tools/continue) for a setup that works.
+The exact field names vary by tool. Set the base URL to your gateway, with or without `/v1` as the [Change the URL](#three-steps) step describes, and send your Takumo API key as `Authorization: Bearer` through an auth token field or a custom header. Don't put it in a field the tool sends as `x-api-key`, such as `apiKey` in Continue's Anthropic provider or `ANTHROPIC_API_KEY` in Claude Code. For a tool that always sends `x-api-key`, see [Continue.dev](/ai-tools/continue) for a setup that works.
 
 ## SDK pattern
 
