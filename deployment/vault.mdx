@@ -4,7 +4,7 @@ description: Deploy the secret fingerprinting service
 icon: "lock"
 ---
 
-The Vault Service handles secret fingerprinting — storing split-salt hashes of detected secrets so Takumo can track recurrence across scans without ever storing the secret itself.
+The Vault Service handles secret fingerprinting: it stores split-salt hashes of detected secrets so Takumo can track recurrence across scans without ever storing the secret itself.
 
 ---
 
@@ -81,7 +81,7 @@ resources:
 
 The Vault Service uses the Cloud database. It reads/writes `VaultFingerprint`, `VaultSalt`, and `VaultSaltRotation` tables.
 
-<Warning>The Vault Service shares the Cloud database. Do not deploy it against a separate database — the fingerprints must be accessible to the Cloud API for issue correlation.</Warning>
+<Warning>The Vault Service shares the Cloud database. Do not deploy it against a separate database. The fingerprints must be accessible to the Cloud API for issue correlation.</Warning>
 
 ---
 
@@ -107,8 +107,8 @@ The Vault Service exposes 9 gRPC RPCs:
 
 | Endpoint | Port | Method |
 |----------|------|--------|
-| `/healthz` | `8080` | Liveness — is the process alive? |
-| `/readyz` | `8080` | Readiness — are database and KMS connections healthy? |
+| `/healthz` | `8080` | Liveness: is the process alive? |
+| `/readyz` | `8080` | Readiness: are database and KMS connections healthy? |
 
 ---
 
@@ -116,9 +116,9 @@ The Vault Service exposes 9 gRPC RPCs:
 
 The Vault Service is lightweight. 2 replicas handle most workloads. Scale based on:
 
-- **CPU** — Fingerprint hashing is CPU-bound but fast
-- **Memory** — Mostly connection pool overhead
-- **gRPC concurrency** — `maxConcurrentRpcs` limits in-flight requests (default 500)
+- **CPU**: Fingerprint hashing is CPU-bound but fast
+- **Memory**: Mostly connection pool overhead
+- **gRPC concurrency**: `maxConcurrentRpcs` limits in-flight requests (default 500)
 
 The janitor runs every 5 minutes to clean up fingerprints older than `staleFingerprintDays`.
 

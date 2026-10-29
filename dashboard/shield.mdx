@@ -4,7 +4,7 @@ description: Outbound protection overview and stats
 icon: "shield"
 ---
 
-The Shield page shows how Aegis Shield is performing across your organization — scans processed, secrets caught, tokenization stats, and protection trends.
+The Shield page shows how Aegis Shield is performing across your organization: scans processed, secrets caught, tokenization stats, and protection trends.
 
 ---
 
@@ -23,11 +23,11 @@ The Shield page shows how Aegis Shield is performing across your organization �
 
 A chart shows detection volume by category over time:
 
-- **API keys** — AWS, Stripe, GitHub, generic API keys
-- **Connection strings** — Database URLs, Redis URIs
-- **Tokens** — JWTs, bearer tokens, session tokens
+- **API keys**: AWS, Stripe, GitHub, generic API keys
+- **Connection strings**: Database URLs, Redis URIs
+- **Tokens**: JWTs, bearer tokens, session tokens
 - **Passwords** �� Hardcoded passwords in variable assignments
-- **Hostnames** — Internal hostnames and private URLs
+- **Hostnames**: Internal hostnames and private URLs
 
 Each category links to the full [Supported Patterns](/patterns/supported) reference.
 
@@ -37,9 +37,9 @@ Each category links to the full [Supported Patterns](/patterns/supported) refere
 
 The timeline chart visualizes Shield activity over 7, 30, or 90 days:
 
-- **Scans per day** — Volume of code passing through Shield
-- **Secrets per day** — Detection volume trend
-- **Top sources** — Which AI tools generate the most traffic (Cursor, Copilot, Claude Code, etc.)
+- **Scans per day**: Volume of code passing through Shield
+- **Secrets per day**: Detection volume trend
+- **Top sources**: Which AI tools generate the most traffic (Cursor, Copilot, Claude Code, etc.)
 
 ---
 
@@ -52,7 +52,7 @@ Shield metrics come from the gateway. Every request that passes through the Taku
 3. Number of tokens rehydrated in the inbound response
 4. Latency added by tokenization/rehydration
 
-No secret values are ever transmitted — only metadata (category, count, timing).
+No secret values are ever transmitted, only metadata (category, count, timing).
 
 ---
 

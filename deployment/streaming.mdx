@@ -93,7 +93,7 @@ server:
   adminGrpcPort: 9091
 ```
 
-<Warning>The `ROUTER_KMS_KEY_B64` encrypts destination credentials at rest. Losing this key means you cannot decrypt existing credentials — you'll need to re-enter them.</Warning>
+<Warning>The `ROUTER_KMS_KEY_B64` encrypts destination credentials at rest. Losing this key means you cannot decrypt existing credentials, and you'll need to re-enter them.</Warning>
 
 ### NATS
 
@@ -117,7 +117,7 @@ persistence:
   size: 50Gi
 ```
 
-<Note>If running behind Linkerd, add `config.linkerd.io/opaque-ports: "4222"` to the NATS service. NATS uses raw TCP, not HTTP — Linkerd's protocol detection will break the connection without this annotation.</Note>
+<Note>If running behind Linkerd, add `config.linkerd.io/opaque-ports: "4222"` to the NATS service. NATS uses raw TCP, not HTTP, and Linkerd's protocol detection will break the connection without this annotation.</Note>
 
 ---
 
@@ -156,7 +156,7 @@ Store seeds as Kubernetes secrets. Use SealedSecrets or an external secrets oper
 
 Stream Postgres migrations live in `crates/takumo-stream-ingest/sql/V*.sql`. They run on Ingest startup.
 
-<Warning>Never run `prisma migrate` or `prisma db push` against the Stream database. The Cloud Prisma client is a read-only consumer — migrations are owned by the Rust services.</Warning>
+<Warning>Never run `prisma migrate` or `prisma db push` against the Stream database. The Cloud Prisma client is a read-only consumer. Migrations are owned by the Rust services.</Warning>
 
 ---
 

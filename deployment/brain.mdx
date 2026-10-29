@@ -28,7 +28,7 @@ graph TD
 
 ### Brain Indexer
 
-Clones repos, extracts function signatures, detects patterns, maps architectural boundaries. Indexing is triggered by webhook push events and runs incrementally — only changed files are re-processed.
+Clones repos, extracts function signatures, detects patterns, maps architectural boundaries. Indexing is triggered by webhook push events and runs incrementally. Only changed files are re-processed.
 
 | Port | Protocol | Purpose |
 |------|----------|---------|
@@ -66,7 +66,7 @@ resources:
 
 ### Brain Embedding
 
-Generates vector embeddings for semantic code search. Runs an ONNX model locally — no external AI API calls.
+Generates vector embeddings for semantic code search. Runs an ONNX model locally, with no external AI API calls.
 
 | Port | Protocol | Purpose |
 |------|----------|---------|
@@ -113,7 +113,7 @@ Both are disabled by default. Enable in values.
 
 ### Brain Pattern
 
-Analyzes repos for repeated coding patterns — error handling, auth, validation, data access. Runs as a **CronJob**, not a long-running service.
+Analyzes repos for repeated coding patterns: error handling, auth, validation, data access. Runs as a **CronJob**, not a long-running service.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -141,7 +141,7 @@ resources:
     memory: 2Gi
 ```
 
-<Note>Pattern is CPU-intensive during analysis but runs on a schedule — it does not consume resources between runs. No HTTP or gRPC ports.</Note>
+<Note>Pattern is CPU-intensive during analysis but runs on a schedule, so it does not consume resources between runs. No HTTP or gRPC ports.</Note>
 
 ### Brain Query
 
@@ -247,10 +247,10 @@ circuitBreaker:
 
 | Service | Strategy |
 |---------|----------|
-| **Indexer** | 3 replicas default. Scale with repo count — add replicas for 100+ repos. HPA on CPU or custom `brain_index_queue_depth` metric. |
-| **Embedding** | 4 replicas default. Scale horizontally — each replica processes batches independently. CPU-bound with ONNX model. |
+| **Indexer** | 3 replicas default. Scale with repo count: add replicas for 100+ repos. HPA on CPU or custom `brain_index_queue_depth` metric. |
+| **Embedding** | 4 replicas default. Scale horizontally. Each replica processes batches independently. CPU-bound with ONNX model. |
 | **Pattern** | CronJob, single pod per run. Increase `derivation.concurrency` for faster analysis. |
-| **Query** | 4 replicas default. Scale with request volume. Low latency — 4 replicas handle thousands of queries/min. |
+| **Query** | 4 replicas default. Scale with request volume. Low latency: 4 replicas handle thousands of queries/min. |
 
 ---
 

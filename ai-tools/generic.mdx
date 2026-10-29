@@ -24,7 +24,7 @@ Any AI tool that lets you set a custom API endpoint works with Takumo. The patte
     Self-hosted: use your own gateway URL instead.
   </Step>
   <Step title="Set your API key">
-    Use your Takumo API key wherever the tool asks for a provider API key. The gateway handles provider authentication on your behalf.
+    Use your Takumo API key as the tool's credential. The gateway reads it only from the `Authorization: Bearer` header. For Anthropic tools, use the auth token or bearer token setting rather than the API key setting where the tool has both, because some send the API key as `x-api-key`, which the gateway rejects with `401`. On `gateway.takumo.io` the gateway calls Anthropic with Takumo's provider key.
   </Step>
 </Steps>
 
@@ -46,9 +46,9 @@ The gateway picks the provider from the request path: `/v1/messages` goes to Ant
 For CLI tools, the integration is usually two environment variables:
 
 ```bash
-# Anthropic-based tools
+# Anthropic-based tools (leave ANTHROPIC_API_KEY unset)
 export ANTHROPIC_BASE_URL="https://gateway.takumo.io"
-export ANTHROPIC_API_KEY="your-takumo-api-key"
+export ANTHROPIC_AUTH_TOKEN="your-takumo-api-key"
 
 # OpenAI-based tools
 export OPENAI_BASE_URL="https://gateway.takumo.io/v1"
@@ -80,7 +80,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
   baseURL: "https://gateway.takumo.io",
-  apiKey: "your-takumo-api-key",
+  authToken: "your-takumo-api-key",
 });
 
 const response = await client.messages.create({
@@ -97,7 +97,7 @@ import anthropic
 
 client = anthropic.Anthropic(
     base_url="https://gateway.takumo.io",
-    api_key="your-takumo-api-key",
+    auth_token="your-takumo-api-key",
 )
 
 response = client.messages.create(
@@ -106,6 +106,8 @@ response = client.messages.create(
     messages=[{"role": "user", "content": code_with_secrets}],
 )
 ```
+
+Pass the key as `authToken` (`auth_token` in Python), which the SDKs send as `Authorization: Bearer`. Some SDK versions send `apiKey` as `x-api-key`, which the gateway rejects with `401`.
 
 ## If your tool doesn't support custom endpoints
 

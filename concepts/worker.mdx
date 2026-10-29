@@ -65,7 +65,7 @@ The bridge (`lib/shield-bridge.ts`) converts raw detections into Issue records:
 
 Runs every 30 minutes. Queries for `TelemetryEvent` records where `bridged = false` and `createdAt` is within the last 24 hours (with a 5-minute grace period to avoid racing the NATS consumer).
 
-Uses optimistic locking — updates `bridged: false → true` atomically so multiple workers don't double-process. Batch size: 100 events per run.
+Uses optimistic locking: it updates `bridged: false → true` atomically so multiple workers don't double-process. Batch size: 100 events per run.
 
 ### Dead letter handling
 
@@ -85,7 +85,7 @@ node worker/dist/index.js
 |------|---------|
 | `3001` | Health server (`/health`, `/metrics`) |
 
-Requires `NATS_URL` — the worker will fail to start without a NATS connection.
+Requires `NATS_URL`. The worker will fail to start without a NATS connection.
 
 <Warning>The worker and the Cloud API share the same database. Do not run the worker against a different database than the API.</Warning>
 

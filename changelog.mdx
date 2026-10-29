@@ -7,7 +7,7 @@ icon: "clock"
 # Changelog
 
 <AccordionGroup>
-  <Accordion title="v1.3.0 — Documentation Overhaul">
+  <Accordion title="v1.3.0: Documentation Overhaul">
     Complete rewrite of the documentation site. 113 pages across 8 tabs, all verified against source code.
 
     - 80+ new pages: API endpoints, dashboard guides, integrations, Studio, deployment, concepts
@@ -21,7 +21,7 @@ icon: "clock"
     - Roadmap updated: Vault service and Jira sync are now shipped
   </Accordion>
 
-  <Accordion title="v1.2.0 — Takumo Stream">
+  <Accordion title="v1.2.0: Takumo Stream">
     Event pipeline for real-time routing and delivery. Destinations, subscriptions, dead letter queue, and receipt tracking.
 
     - Stream Ingest service receives events via HTTP/gRPC, writes to NATS JetStream
@@ -33,7 +33,7 @@ icon: "clock"
     - 3 new permissions: `streaming.read`, `streaming.write`, `streaming.admin`
   </Accordion>
 
-  <Accordion title="v1.1.0 — Brain Intelligence">
+  <Accordion title="v1.1.0: Brain Intelligence">
     Workspace-aware code intelligence. 4 services that index your repos and serve contextual information to the extension and gateway.
 
     - Brain Indexer scans repos, extracts functions, patterns, and boundaries
@@ -44,10 +44,10 @@ icon: "clock"
     - Relevant functions, established patterns, architecture boundaries, dependency context
   </Accordion>
 
-  <Accordion title="v1.0.0 — Cloud Worker + Sentinel CI/CD">
+  <Accordion title="v1.0.0: Cloud Worker + Sentinel CI/CD">
     Sentinel now runs on pull requests. The Cloud Worker consumes detection events and bridges GitHub, GitLab, and Bitbucket.
 
-    - GitHub App integration — Sentinel scans PR diffs, posts check run annotations
+    - GitHub App integration: Sentinel scans PR diffs and posts check run annotations
     - Cloud Worker consumes NATS detection events for durable processing
     - Bitbucket webhook sync
     - Catch-up cron for missed events
@@ -55,7 +55,7 @@ icon: "clock"
     - Webhook relay at webhook.takumo.io/github fans out to all environments
   </Accordion>
 
-  <Accordion title="v0.9.0 — Vault Service">
+  <Accordion title="v0.9.0: Vault Service">
     Cryptographic fingerprinting and salt management for deterministic tokenization.
 
     - 9 gRPC+HTTP RPCs: fingerprint CRUD, salt management, rotation, verification
@@ -64,18 +64,18 @@ icon: "clock"
     - 30 unit tests, 19 integration tests
   </Accordion>
 
-  <Accordion title="v0.8.0 — Extension v0.5.x">
+  <Accordion title="v0.8.0: Extension v0.5.x">
     Major extension update with org policies, circuit breakers, and runtime daemon validation.
 
     - Org policies auto-fetched on sign-in and daemon startup
     - Daemon v0.3.0: circuit breaker (gateway + cloud), retry with full jitter, Prometheus metrics
-    - Runtime daemon version validation — stale daemons from previous sessions are detected and restarted
+    - Runtime daemon version validation: stale daemons from previous sessions are detected and restarted
     - Transform preview opens VS Code's native inline diff view
     - All daemon HTTP calls retry up to 3 times with exponential backoff
     - Device flow sign-in with browser-based authentication
   </Accordion>
 
-  <Accordion title="v0.7.0 — Extension v0.4.x">
+  <Accordion title="v0.7.0: Extension v0.4.x">
     Enterprise daemon distribution and demo mode. Platform-specific VSIXs for VS Code Marketplace.
 
     - Enterprise daemon distribution with platform-specific VSIXs (macOS Intel/ARM, Linux x64/ARM, Windows)
@@ -92,7 +92,7 @@ icon: "clock"
     - 64 unit tests across 8 core modules
   </Accordion>
 
-  <Accordion title="v0.6.0 — Cloud Coordinator">
+  <Accordion title="v0.6.0: Cloud Coordinator">
     Gateway Coordinator connects your gateways to the dashboard over gRPC. You can now see all running instances, their health, and manage join keys from a single page.
 
     - Fleet management page shows connected gateways with live health status
@@ -103,7 +103,7 @@ icon: "clock"
     - Organizations choose SaaS or On-Prem deployment mode at creation
   </Accordion>
 
-  <Accordion title="v0.5.0 — Redis + Token Revocation">
+  <Accordion title="v0.5.0: Redis + Token Revocation">
     Distributed state across gateway instances. Rate limiting and circuit breakers now share state via Redis, so scaling horizontally works without sticky sessions.
 
     - Redis-backed rate limiting across the gateway fleet
@@ -112,7 +112,7 @@ icon: "clock"
     - Circuit breaker state shared across instances via Redis
   </Accordion>
 
-  <Accordion title="v0.4.0 — Enterprise Infrastructure">
+  <Accordion title="v0.4.0: Enterprise Infrastructure">
     Production-grade deployment tooling. Helm charts, CI/CD pipelines, and monitoring out of the box.
 
     - Helm charts for Aegis Shield, Gateway Coordinator, and monitoring stack
@@ -123,7 +123,7 @@ icon: "clock"
     - HPA autoscaling with configurable thresholds
   </Accordion>
 
-  <Accordion title="v0.3.0 — Gateway MVP">
+  <Accordion title="v0.3.0: Gateway MVP">
     The Aegis Shield gateway, fully functional with 11 modules and 369 tests. This is the core proxy that sits between your AI tools and upstream providers.
 
     - Transparent HTTP/HTTPS proxy for AI provider APIs
@@ -138,7 +138,7 @@ icon: "clock"
     - Liveness and readiness health probes
   </Accordion>
 
-  <Accordion title="v0.2.0 — Core Engine">
+  <Accordion title="v0.2.0: Core Engine">
     The detection and tokenization engine. This is the foundation everything else builds on.
 
     - 13+ secret types detected: AWS, Stripe, GitHub, database URLs, JWTs, and more
@@ -149,7 +149,7 @@ icon: "clock"
     - SHA-256 based token generation with truncated hashes
   </Accordion>
 
-  <Accordion title="v0.1.0-alpha — Initial Release">
+  <Accordion title="v0.1.0-alpha: Initial Release">
     First alpha release with the Aegis Shield CLI and programmatic API.
 
     - CLI with `scan`, `tokenize`, and `shield` commands

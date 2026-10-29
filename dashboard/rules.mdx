@@ -18,7 +18,7 @@ Every policy has a type that determines what kind of rules it can contain:
 |------|-------------|
 | **Security** | CVE thresholds, secret detection, malicious package flags, scan freshness requirements |
 | **License** | Banned/allowed license lists, unknown license handling |
-| **Operational Risk** | Dependency health — inactivity, contributor count, download volume, version lag, deprecation |
+| **Operational Risk** | Dependency health: inactivity, contributor count, download volume, version lag, deprecation |
 
 ---
 
@@ -32,7 +32,7 @@ A policy moves through three statuses:
 | **Active** | Enforced across matching repositories. Violations are tracked. |
 | **Paused** | Temporarily disabled. Rules remain configured but do not trigger. |
 
-Policies are soft-deleted — deleting a policy removes it from the list and stops enforcement, but the record is preserved in the database.
+Policies are soft-deleted. Deleting a policy removes it from the list and stops enforcement, but the record is preserved in the database.
 
 ---
 
@@ -99,10 +99,10 @@ Clicking a stat card filters the policy list to the relevant subset.
 
 The policy list supports filtering by:
 
-- **Type** — Security, License, Ops Risk
-- **Status** — Active, Paused, Draft
-- **Enforcement** — Block, Warn, Notify, Monitor
-- **Search** — Text search across policy name, description, and rule names
+- **Type**: Security, License, Ops Risk
+- **Status**: Active, Paused, Draft
+- **Enforcement**: Block, Warn, Notify, Monitor
+- **Search**: Text search across policy name, description, and rule names
 
 Active filters appear as removable chips below the filter bar.
 
@@ -113,10 +113,10 @@ Active filters appear as removable chips below the filter bar.
 From the policy list, you can:
 
 - **Expand** a policy card to see its rules, scope, version history, and metadata
-- **Edit** — opens the policy in the create/edit sheet with all fields pre-populated
-- **Toggle status** — switch between active, paused, and draft
-- **Duplicate** — creates a copy of the policy in draft status
-- **Delete** — soft-deletes the policy
+- **Edit**: opens the policy in the create/edit sheet with all fields pre-populated
+- **Toggle status**: switch between active, paused, and draft
+- **Duplicate**: creates a copy of the policy in draft status
+- **Delete**: soft-deletes the policy
 
 ---
 

@@ -228,6 +228,34 @@ For organizations that need full control over where their data flows. Deploy the
 
 <Warning>The join key is shown once. Store it in your secrets management system (Vault, AWS Secrets Manager, etc.) before closing the dialog.</Warning>
 
+## Add the Anthropic provider key
+
+Developers authenticate to your gateway with their Takumo API key, so their tools send no Anthropic key. The gateway calls Anthropic with a provider key you store in a Secret. Without it, Anthropic requests return `401` after the Takumo key is accepted.
+
+Create the Secret in bash or zsh. Paste your Anthropic API key when asked; it is read without echo:
+
+```bash
+(
+  printf 'Paste your Anthropic API key, then press Enter: ' >&2
+  read -rs ANTHROPIC_PROVIDER_KEY || exit 1
+  echo >&2
+  printf '%s' "$ANTHROPIC_PROVIDER_KEY" \
+    | kubectl create secret generic aegis-provider-anthropic-key -n takumo --from-file=api-key=/dev/stdin
+)
+```
+
+Upgrade the gateway to use it:
+
+```bash
+helm upgrade aegis-shield takumo/aegis-shield \
+  --namespace takumo \
+  --version 0.2.2 \
+  --reuse-values \
+  --set secrets.providerKeys.anthropic.enabled=true
+```
+
+A request that carries its own `x-api-key` header uses that key instead of this one.
+
 ## Required secrets reference
 
 ### Coordinator
@@ -244,6 +272,7 @@ For organizations that need full control over where their data flows. Deploy the
 |------------|------|-------------|
 | `aegis-jwt-key` | `public.pem` | JWT public key for auth verification |
 | `aegis-join-key` | `join-key` | Join key for coordinator registration |
+| `aegis-provider-anthropic-key` | `api-key` | Anthropic API key the gateway uses upstream (optional, see [Add the Anthropic provider key](#add-the-anthropic-provider-key)) |
 | `takumo-pull-secret` | Docker registry credentials | Image pull secret for `cr.takumo.io` (per-tenant deploy token from Takumo dashboard) |
 
 ## Network requirements

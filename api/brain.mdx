@@ -4,7 +4,7 @@ description: Query AI code intelligence context
 icon: "zap"
 ---
 
-Retrieve contextual code intelligence from Brain -- patterns, function signatures, architectural boundaries, and dependency context for a given file in a repository.
+Retrieve contextual code intelligence from Brain: patterns, function signatures, architectural boundaries, and dependency context for a given file in a repository.
 
 **Base URL:** `https://cloud.takumo.io/api/v1/brain`
 
@@ -120,7 +120,7 @@ const context = await response.json();
 
 ## POST /brain/sentinel-context
 
-Fetch context tuned for Sentinel analysis and Phase 4 transform prompts. Wire-compatible with `/brain/context` (same response shape) but optimized for rewrite relevance -- patterns and architectural boundaries rather than code completion.
+Fetch context tuned for Sentinel analysis and Phase 4 transform prompts. Wire-compatible with `/brain/context` (same response shape) but optimized for rewrite relevance: patterns and architectural boundaries rather than code completion.
 
 Used internally by Sentinel when reviewing pull requests.
 

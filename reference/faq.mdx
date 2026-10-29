@@ -17,7 +17,7 @@ Takumo scans your code to find secrets. The code is processed in memory, never s
 </Accordion>
 
 <Accordion title="What AI providers are supported?">
-Any provider with an HTTP API. Anthropic and OpenAI are the primary targets. The gateway proxies requests transparently — it doesn't care what's on the other end. If your AI tool sends HTTP requests, Takumo can sit in front of it.
+Any provider with an HTTP API. Anthropic and OpenAI are the primary targets. The gateway proxies requests transparently. It doesn't care what's on the other end. If your AI tool sends HTTP requests, Takumo can sit in front of it.
 </Accordion>
 
 <Accordion title="Does it work with streaming responses?">
@@ -53,7 +53,7 @@ VS Code, Cursor, Windsurf, and any VS Code-compatible editor. The extension is p
 </Accordion>
 
 <Accordion title="What is the daemon?">
-The daemon is a local HTTP server (written in Rust) that handles scanning, secret detection, AI transforms, and communication with Takumo's cloud services. It runs on your machine, starts automatically when the extension activates, and runs detached — it outlives the extension process. Default port: 19532.
+The daemon is a local HTTP server (written in Rust) that handles scanning, secret detection, AI transforms, and communication with Takumo's cloud services. It runs on your machine, starts automatically when the extension activates, and runs detached, so it outlives the extension process. Default port: 19532.
 </Accordion>
 
 <Accordion title="Do I need an account to use the extension?">
@@ -61,7 +61,7 @@ No. Demo mode activates automatically on first install when no API key is config
 </Accordion>
 
 <Accordion title="How does the extension authenticate?">
-Device flow. Run **Takumo: Sign In with Browser** — the extension opens your browser, shows a code, and you approve the device on cloud.takumo.io. Credentials are stored in your OS keychain via VS Code's SecretStorage API. Never written to disk in plaintext.
+Device flow. Run **Takumo: Sign In with Browser**. The extension opens your browser, shows a code, and you approve the device on cloud.takumo.io. Credentials are stored in your OS keychain via VS Code's SecretStorage API. Never written to disk in plaintext.
 </Accordion>
 
 <Accordion title="What happens if the daemon crashes?">
@@ -93,7 +93,7 @@ Brain is Takumo's code intelligence layer. It indexes your connected repos and p
 </Accordion>
 
 <Accordion title="How does Brain index my code?">
-After you connect a repo (via GitHub, GitLab, or Bitbucket integration), Brain Indexer scans the repository. It extracts function signatures, detects patterns, maps architectural boundaries, and generates vector embeddings for semantic search. Indexing is automatic and incremental — only changed files are re-indexed.
+After you connect a repo (via GitHub, GitLab, or Bitbucket integration), Brain Indexer scans the repository. It extracts function signatures, detects patterns, maps architectural boundaries, and generates vector embeddings for semantic search. Indexing is automatic and incremental. Only changed files are re-indexed.
 </Accordion>
 
 ## Streaming

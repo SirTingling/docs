@@ -6,7 +6,7 @@ icon: "server"
 
 # The Daemon
 
-The daemon is a local HTTP server that does the actual work. Scanning, secret detection, transforms, auth — handled by a single Rust binary running on your machine.
+The daemon is a local HTTP server that does the actual work. Scanning, secret detection, transforms and auth are handled by a single Rust binary running on your machine.
 
 ---
 
@@ -44,7 +44,7 @@ The daemon starts automatically when the extension activates:
 
 ### Detached process
 
-The daemon spawns detached and outlives the extension. Close VS Code — the daemon keeps running. Reopen it — the extension finds the existing daemon via health check. No restart needed.
+The daemon spawns detached and outlives the extension. Close VS Code and the daemon keeps running. Reopen it and the extension finds the existing daemon via health check. No restart needed.
 
 ### Stopping
 

@@ -6,7 +6,7 @@ icon: "lock"
 
 # Vault Service
 
-Takumo Vault handles cryptographic fingerprinting and secret salt management. It's what makes deterministic tokenization work — same secret, same token, every time.
+Takumo Vault handles cryptographic fingerprinting and secret salt management. It's what makes deterministic tokenization work: same secret, same token, every time.
 
 ---
 
@@ -15,7 +15,7 @@ Takumo Vault handles cryptographic fingerprinting and secret salt management. It
 | Function | Description |
 |----------|-------------|
 | **Fingerprinting** | Identify secrets without storing them. A fingerprint is a one-way hash that tells you "this is the same secret" without revealing the value. |
-| **Salt management** | Salts add entropy to token generation. Rotation provides forward secrecy — old tokens can't decode new secrets. |
+| **Salt management** | Salts add entropy to token generation. Rotation provides forward secrecy: old tokens can't decode new secrets. |
 | **Verification** | Confirm whether a value matches a known fingerprint without storing either. |
 
 ---

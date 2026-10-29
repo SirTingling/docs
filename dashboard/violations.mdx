@@ -4,7 +4,7 @@ description: Policy violation events and history
 icon: "shield"
 ---
 
-The Violations page shows every time a governance policy was triggered. Violations are separate from Issues — an Issue is a security finding, a Violation is a policy enforcement event.
+The Violations page shows every time a governance policy was triggered. Violations are separate from Issues. An Issue is a security finding and a Violation is a policy enforcement event.
 
 ---
 
@@ -38,11 +38,11 @@ Each violation records the policy that fired, the enforcement mode, and the cont
 
 Filter by:
 
-- **Policy** — Select specific policies
-- **Enforcement mode** — Block, Warn, Monitor
-- **Repository** — One or all repos
-- **Date range** — Start and end dates
-- **Actor** — Specific user or API key
+- **Policy**: Select specific policies
+- **Enforcement mode**: Block, Warn, Monitor
+- **Repository**: One or all repos
+- **Date range**: Start and end dates
+- **Actor**: Specific user or API key
 
 Results use cursor pagination for efficient access to large violation histories.
 
@@ -52,11 +52,11 @@ Results use cursor pagination for efficient access to large violation histories.
 
 Click a violation to see:
 
-- **Full context** — The code that triggered the violation
-- **Policy configuration** — The rule definition and thresholds
-- **Enforcement result** — What happened (code blocked, warning issued, or silently logged)
-- **Related detections** — If the violation was caused by a secret or vulnerability detection
-- **Actions taken** — Acknowledgements, remediation status
+- **Full context**: The code that triggered the violation
+- **Policy configuration**: The rule definition and thresholds
+- **Enforcement result**: What happened (code blocked, warning issued, or silently logged)
+- **Related detections**: If the violation was caused by a secret or vulnerability detection
+- **Actions taken**: Acknowledgements, remediation status
 
 ---
 
