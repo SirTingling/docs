@@ -66,6 +66,8 @@ Continue is open source and lets you configure custom provider endpoints. Point 
     ```
 
     Self-hosted gateway users: replace the URL with your own.
+
+    <Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
   </Step>
   <Step title="Check your autocomplete model">
     The gateway proxies two routes: `/v1/messages` for Anthropic and `/v1/chat/completions` for OpenAI. Mistral (including Codestral) and other providers are not supported yet, so a `tabAutocompleteModel` that uses them can't go through Takumo, and its requests are not scanned.

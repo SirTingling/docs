@@ -6,6 +6,8 @@ icon: "server"
 
 For organizations that need full control over where their data flows. Deploy the gateway and coordinator in your Kubernetes cluster.
 
+<Warning>Authenticating a self-hosted gateway with Takumo API keys or join keys is not yet available. The steps on this page deploy the coordinator and gateway, but developers can't send requests through the gateway with their Takumo API keys, and the gateway does not appear on the **Fleet** page. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+
 ## Prerequisites
 
 | Requirement | Minimum Version |
@@ -172,6 +174,8 @@ For organizations that need full control over where their data flows. Deploy the
   </Step>
 
   <Step title="Create a join key in the dashboard">
+    <Warning>Registering a self-hosted gateway with a join key is not yet available, so a self-hosted gateway does not appear on the **Fleet** page. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+
     Go to **Settings > Gateway** in the dashboard and click **Create join key**. Give it a name (for example `production-cluster`). Copy the key immediately.
   </Step>
 
@@ -213,24 +217,15 @@ For organizations that need full control over where their data flows. Deploy the
     ```
   </Step>
 
-  <Step title="Verify the connection">
-    Check the **Fleet** page in the dashboard. Your gateway instance should appear with a **Connected** state.
-
-    You can also verify locally:
-
-    ```bash
-    kubectl logs -n takumo -l app.kubernetes.io/name=aegis-shield --tail=20
-    ```
-
-    Look for a log line indicating successful registration with the coordinator.
-  </Step>
 </Steps>
 
 <Warning>The join key is shown once. Store it in your secrets management system (Vault, AWS Secrets Manager, etc.) before closing the dialog.</Warning>
 
 ## Add the Anthropic provider key
 
-Developers authenticate to your gateway with their Takumo API key, so their tools send no Anthropic key. The gateway calls Anthropic with a provider key you store in a Secret. Without it, Anthropic requests return `401` after the Takumo API key is accepted.
+<Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+
+The gateway calls Anthropic with a provider key you store in a Secret, so developers' tools send no Anthropic key.
 
 Create the Secret in bash or zsh. Paste your Anthropic API key when asked; it is read without echo:
 

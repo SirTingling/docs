@@ -24,6 +24,8 @@ Any AI tool that lets you set a custom API endpoint works with Takumo. The patte
     ```
 
     Self-hosted: use your own gateway URL instead.
+
+    <Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
   </Step>
   <Step title="Set your API key">
     For Anthropic tools, send your Takumo API key as `Authorization: Bearer`, the only header the gateway reads it from. Use the auth token or bearer token setting rather than the API key setting where the tool has both, because some tools send the API key as `x-api-key`, which the gateway rejects with `401`. On `gateway.takumo.io` the gateway calls Anthropic with Takumo's provider key.

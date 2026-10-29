@@ -67,6 +67,8 @@ This installs the `takumo-aegis` binary globally with both the CLI and the API.
 
 For teams deploying Takumo in their own infrastructure.
 
+<Warning>Authenticating a self-hosted gateway with Takumo API keys or join keys is not yet available. The steps below deploy the gateway, but developers can't send requests through the gateway with their Takumo API keys, and the gateway does not appear on the **Fleet** page. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+
 <Note>The block below reads the token with `read -rs`, which needs bash or zsh. Run it in one of those shells, not `sh`.</Note>
 
 ```bash

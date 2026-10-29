@@ -91,6 +91,8 @@ Every file Claude Code reads goes through the gateway. Secrets are tokenized on 
 
 ## Self-hosted gateway
 
+<Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+
 If you're running your own gateway, point to that instead:
 
 ```bash
@@ -98,7 +100,7 @@ export ANTHROPIC_BASE_URL="https://gateway.your-company.com"
 export ANTHROPIC_AUTH_TOKEN="your-takumo-api-key"
 ```
 
-Same two variables, different URL. A self-hosted gateway calls Anthropic with the provider key its operator configures. See [Add the Anthropic provider key](/deployment/onprem#add-the-anthropic-provider-key). Without it, the gateway accepts your Takumo API key and then returns `401`.
+Same two variables, different URL. A self-hosted gateway calls Anthropic with the provider key its operator configures. See [Add the Anthropic provider key](/deployment/onprem#add-the-anthropic-provider-key).
 
 ## Per-project configuration
 
@@ -135,7 +137,7 @@ Then `cd` into the project and the variables are set automatically. Leave the pr
 
   1. Check that your Takumo API key is valid and active on the **API Keys** page
   2. Put the Takumo API key in `ANTHROPIC_AUTH_TOKEN`, not `ANTHROPIC_API_KEY`, and leave `ANTHROPIC_API_KEY` unset
-  3. On a self-hosted gateway, check that the operator has [added the Anthropic provider key](/deployment/onprem#add-the-anthropic-provider-key)
+  3. On a self-hosted gateway, Takumo API keys are not accepted yet. See [Self-hosted gateway](#self-hosted-gateway)
 </Accordion>
 
 <Accordion title="Secrets not being detected">
