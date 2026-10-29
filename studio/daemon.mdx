@@ -44,7 +44,7 @@ The daemon starts automatically when the extension activates:
 
 ### Detached process
 
-The daemon spawns detached and outlives the extension. Close VS Code and the daemon keeps running. Reopen it and the extension finds the existing daemon via health check. No restart needed.
+The daemon spawns detached and outlives the extension. When you close VS Code, the daemon keeps running. When you reopen VS Code, the extension finds the running daemon with a health check and reuses it, so you don't need to restart it.
 
 ### Stopping
 

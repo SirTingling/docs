@@ -8,11 +8,13 @@ icon: "play"
 
 Continue is open source and lets you configure custom provider endpoints. Point it at your Takumo gateway and every request to an Anthropic or OpenAI model is protected.
 
+<Warning>The OpenAI-compatible route (`/v1/chat/completions`) is temporarily unavailable. Don't configure OpenAI models in Continue to use the gateway yet. Anthropic models are not affected.</Warning>
+
 ## Setup
 
 <Steps>
   <Step title="Get your API key">
-    Log into [cloud.takumo.io](https://cloud.takumo.io) and copy your API key from the dashboard.
+    Log into [cloud.takumo.io](https://cloud.takumo.io) and copy your Takumo API key from the dashboard. For Claude models you also need your own Anthropic API key.
   </Step>
   <Step title="Open your Continue config">
     Continue stores its configuration at `~/.continue/config.json` (or `config.ts` if you prefer TypeScript).
@@ -24,7 +26,7 @@ Continue is open source and lets you configure custom provider endpoints. Point 
     ```
   </Step>
   <Step title="Set the provider endpoint">
-    Set `apiBase` to your Takumo gateway URL and `apiKey` to your Takumo API key:
+    Set `apiBase` to your Takumo gateway URL and send your Takumo API key as an `Authorization: Bearer` header:
 
     ```json
     {
@@ -34,13 +36,20 @@ Continue is open source and lets you configure custom provider endpoints. Point 
           "provider": "anthropic",
           "model": "claude-sonnet-4-5-20250929",
           "apiBase": "https://gateway.takumo.io/v1",
-          "apiKey": "your-takumo-api-key"
+          "apiKey": "your-anthropic-api-key",
+          "requestOptions": {
+            "headers": {
+              "Authorization": "Bearer your-takumo-api-key"
+            }
+          }
         }
       ]
     }
     ```
 
-    For OpenAI models:
+    Continue's Anthropic provider always sends `apiKey` as `x-api-key` and won't send a request without it, and the gateway doesn't accept a Takumo API key in `x-api-key`. So put your Anthropic API key in `apiKey` and your Takumo API key in the `Authorization` header under `requestOptions`. The gateway authenticates you with the Takumo API key and calls Anthropic with your Anthropic key.
+
+    For OpenAI models (temporarily unavailable, see the warning above):
 
     ```json
     {
@@ -68,7 +77,7 @@ Continue is open source and lets you configure custom provider endpoints. Point 
 
 ## Full config example
 
-Here's a complete `config.json` with an Anthropic and an OpenAI model routed through Takumo:
+Here's a complete `config.json` with an Anthropic model routed through Takumo:
 
 ```json
 {
@@ -78,14 +87,12 @@ Here's a complete `config.json` with an Anthropic and an OpenAI model routed thr
       "provider": "anthropic",
       "model": "claude-sonnet-4-5-20250929",
       "apiBase": "https://gateway.takumo.io/v1",
-      "apiKey": "your-takumo-api-key"
-    },
-    {
-      "title": "GPT-4o (Takumo)",
-      "provider": "openai",
-      "model": "gpt-4o",
-      "apiBase": "https://gateway.takumo.io/v1",
-      "apiKey": "your-takumo-api-key"
+      "apiKey": "your-anthropic-api-key",
+      "requestOptions": {
+        "headers": {
+          "Authorization": "Bearer your-takumo-api-key"
+        }
+      }
     }
   ]
 }
@@ -121,14 +128,17 @@ export function modifyConfig(config: ContinueConfig): ContinueConfig {
       provider: "anthropic",
       model: "claude-sonnet-4-5-20250929",
       apiBase: "https://gateway.takumo.io/v1",
-      apiKey: process.env.TAKUMO_API_KEY,
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      requestOptions: {
+        headers: { Authorization: `Bearer ${process.env.TAKUMO_API_KEY}` },
+      },
     },
   ];
   return config;
 }
 ```
 
-This lets you pull the API key from an environment variable instead of hardcoding it.
+This lets you pull both keys from environment variables instead of hardcoding them.
 
 ## Troubleshooting
 
@@ -136,7 +146,7 @@ This lets you pull the API key from an environment variable instead of hardcodin
   Check the basics:
 
   1. The gateway URL is correct and reachable: `curl https://gateway.takumo.io/health`
-  2. Your API key is valid (check the dashboard)
+  2. Your Takumo API key is valid (check the dashboard), and it is in the `Authorization` header, not in `apiKey`
   3. The `provider` field is `anthropic` or `openai`. The gateway does not serve other providers yet
   4. Restart VS Code after config changes
 </Accordion>

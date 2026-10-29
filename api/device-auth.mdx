@@ -34,7 +34,7 @@ Start a new device authorization flow. Returns a user code and verification URL.
 
 **Auth:** None (rate-limited by IP address)
 
-**Rate limit:** `authRateLimiter` -- 10 requests per 60s per IP
+**Rate limit:** `authRateLimiter`, 10 requests per 60s per IP
 
 ### Request body
 
@@ -113,7 +113,7 @@ When the user has approved the request:
 }
 ```
 
-The `access_token` is a Takumo API key. It can only be retrieved **once** -- subsequent polls for the same device code return `expired_token`.
+The `access_token` is a Takumo API key. It can only be retrieved **once**. Subsequent polls for the same device code return `expired_token`.
 
 ### Error responses (RFC 8628 compliant)
 
@@ -189,7 +189,7 @@ Approve a pending device authorization request. Creates an API key for the speci
 
 ### Side effects
 
-- Creates an API key named `Device Flow -- <user_code>` with no scope restrictions.
+- Creates an API key named `Device Flow — <user_code>` with no scope restrictions.
 - Sends a `team` notification to the organization: "&lt;user name&gt; connected Takumo Studio".
 - Logs an audit event: `device_flow.authorized`.
 
@@ -276,7 +276,7 @@ const poll = setInterval(async () => {
     case "slow_down":
       interval += 5000; // increase interval per RFC 8628
       clearInterval(poll);
-      // restart with new interval (simplified -- real code would re-setInterval)
+      // restart with new interval (simplified: real code would re-setInterval)
       break;
     case "access_denied":
     case "expired_token":

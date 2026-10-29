@@ -8,6 +8,8 @@ icon: "cloud"
 
 Windsurf supports custom API endpoints. Set your Takumo gateway as the base URL, and Cascade, Flows, and inline edits are all protected.
 
+<Warning>Routing Windsurf through the gateway uses the OpenAI-compatible route (`/v1/chat/completions`), which is temporarily unavailable. Don't configure Windsurf to use the gateway yet.</Warning>
+
 ## Setup
 
 <Steps>
@@ -57,9 +59,9 @@ The AI never saw your real API keys or database URLs. You got working code back.
 Multi-step Flows work transparently. The gateway maintains session state, so the same secret always gets the same token across all steps.
 
 ```typescript
-// Step 1: AI refactors auth.ts -- secrets tokenized
-// Step 2: AI updates middleware.ts -- same tokens reused
-// Step 3: AI updates routes.ts -- consistent tokens throughout
+// Step 1: AI refactors auth.ts, secrets tokenized
+// Step 2: AI updates middleware.ts, same tokens reused
+// Step 3: AI updates routes.ts, consistent tokens throughout
 ```
 
 The AI sees that the same database URL appears in three files because it gets the same token in all three. It understands they're connected.
