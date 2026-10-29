@@ -6,7 +6,7 @@ icon: "lock"
 
 <Note>Requires an Custom plan.</Note>
 
-Connect HashiCorp Vault to correlate leaked secrets with Vault-managed credentials. When Takumo detects a secret in your code, it checks whether the credential is managed by Vault -- enabling instant rotation and reducing mean time to remediation.
+Connect HashiCorp Vault to correlate leaked secrets with Vault-managed credentials. When Takumo detects a secret in your code, it checks whether the credential is managed by Vault, which speeds up rotation and remediation.
 
 ---
 
@@ -25,7 +25,7 @@ Connect HashiCorp Vault to correlate leaked secrets with Vault-managed credentia
     For AppRole: note the Role ID and generate a Secret ID. For token auth: copy the Vault token.
   </Step>
   <Step title="Connect in Takumo">
-    Enter the Vault address, mount path, and credentials in **Dashboard > Settings > Integrations > HashiCorp Vault**, then click **Connect**.
+    Enter the Vault address, mount path, and credentials in **Dashboard > Integrations > HashiCorp Vault**, then click **Connect**.
   </Step>
 </Steps>
 

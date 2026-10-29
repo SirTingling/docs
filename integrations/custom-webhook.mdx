@@ -15,7 +15,7 @@ Forward security events to any HTTP endpoint. Use this integration when your des
     Create an HTTP endpoint that accepts POST requests with JSON payloads. The endpoint should return a `2xx` status code on success.
   </Step>
   <Step title="Connect in Takumo">
-    Go to **Dashboard > Settings > Integrations > Custom Webhook**. Enter your webhook URL and (optionally) an HMAC signing secret.
+    Go to **Dashboard > Integrations > Custom Webhook**. Enter your webhook URL and (optionally) an HMAC signing secret.
   </Step>
   <Step title="Verify connection">
     Takumo sends a `HEAD` request to the webhook URL to verify reachability. No authentication is used for the health check.

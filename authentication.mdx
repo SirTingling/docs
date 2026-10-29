@@ -19,13 +19,13 @@ Keys authenticate your tools and track usage per organization.
     Go to [cloud.takumo.io](https://cloud.takumo.io) and sign in to your account.
   </Step>
   <Step title="Open API Keys">
-    Navigate to **Settings > API Keys** in the sidebar.
+    Navigate to **API Keys** in the sidebar.
   </Step>
   <Step title="Create a key">
     Click **Create Key**. Give it a name that tells you where it's used (`cursor-laptop`, `ci-pipeline`, `team-shared`).
   </Step>
   <Step title="Select scopes">
-    Choose what the key can do. Start with `security.read` and `issues.read` for basic secret detection.
+    Pick a preset or **Custom** permissions. Scopes gate Cloud API routes; see [Key scopes](#key-scopes) below for the six the API checks.
   </Step>
   <Step title="Copy the key">
     Copy the key immediately. It's shown once. You won't see it again.
@@ -53,36 +53,7 @@ API keys are 64-character hex strings with a prefix for identification:
 
 ### Key scopes
 
-Scopes control what an API key can do. Assign the minimum scopes needed. Permissions use dot notation.
-
-| Scope | What it controls |
-|-------|-----------------|
-| `org.read` | View organization settings |
-| `org.settings.edit` | Update organization settings |
-| `members.read` | View team members |
-| `members.invite` | Invite new members |
-| `members.remove` | Remove members |
-| `apikeys.read` | List API keys |
-| `apikeys.create` | Create new API keys |
-| `apikeys.revoke` | Revoke existing keys |
-| `policies.read` | View security policies |
-| `policies.create` | Create policies |
-| `policies.edit` | Edit policies |
-| `policies.delete` | Delete policies |
-| `issues.read` | View detected issues |
-| `issues.triage` | Triage and manage issues |
-| `violations.read` | View violations |
-| `fleet.read` | View gateway fleet status |
-| `fleet.manage` | Register and manage gateways |
-| `audit.read` | Read audit log entries |
-| `audit.export` | Export audit data |
-| `integrations.read` | View integrations |
-| `integrations.manage` | Configure integrations |
-| `billing.read` | View billing information |
-| `streaming.read` | View streaming configuration |
-| `streaming.write` | Manage streaming destinations |
-
-See [API Keys](/dashboard/api-keys) for the full list of all 60 permissions across 18 categories.
+Scopes control what an API key can do. Assign the minimum scopes needed. The Cloud API checks six scopes, in colon notation: `scan:read`, `audit:read`, `policies:write`, `reports:read`, `reports:write` and `notifications:write`. See [Key scopes](/api/authentication#key-scopes) for the routes each one unlocks and [API Keys](/dashboard/api-keys#permission-scopes) for how the dashboard assigns them.
 
 ### Rotation
 

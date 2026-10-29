@@ -18,11 +18,11 @@ Your API key is invalid, expired, or revoked.
 - Is the `Authorization` header formatted correctly? It should be `Bearer tk_live_...`.
 
 ```bash
-# Verify your key works
+# Verify your key works (the gateway's /health needs no key, so test against the API)
 curl -s -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer $TAKUMO_API_KEY" \
-  https://gateway.takumo.io/v1/health
-# Should return 200
+  https://cloud.takumo.io/api/v1/rules
+# 200 means the key is valid; 401 means it is missing, wrong or revoked
 ```
 </Accordion>
 
@@ -97,7 +97,7 @@ The gateway is unreachable.
 
 ```bash
 # Test connectivity
-curl -v https://gateway.takumo.io/v1/health
+curl -v https://gateway.takumo.io/health
 ```
 </Accordion>
 
@@ -105,11 +105,12 @@ curl -v https://gateway.takumo.io/v1/health
 The gateway needs a valid join key to register with the coordinator.
 
 **Check these:**
-- Is the join key correct? Copy it from **Settings > Fleet > Join Keys** in the dashboard.
+- Is the join key correct? Join keys are shown once, so if you are unsure, create a new one under **Settings > Gateway** in the dashboard and update the `aegis-join-key` and `coordinator-join-key` Secrets.
 - Has the join key been revoked? Revoked keys are rejected immediately.
 - Can the gateway reach the coordinator's gRPC endpoint? The gateway initiates the connection.
 - Check gateway logs for connection errors: `kubectl logs -n takumo deployment/aegis-gateway`.
 - Verify the coordinator's gRPC port (default: 9090) is accessible from the gateway's network.
+- If your CNI enforces NetworkPolicy, the gateway chart's own policy blocks egress on 9090. See [Network requirements](/deployment/onprem#network-requirements).
 </Accordion>
 
 ## Extension (Studio)
@@ -130,7 +131,7 @@ The extension can't reach the daemon.
 1. Open the Takumo output channel for error details.
 2. Binary not found? The daemon auto-downloads on first activation. If behind a corporate proxy, the download may fail. Email [support@takumo.io](mailto:support@takumo.io) for the air-gapped daemon binary and set `takumo.daemon.binaryPath`.
 3. Permission denied? On macOS/Linux, the extension sets executable permission automatically. If it fails, run: `chmod +x ~/.vscode/globalStorage/takumo.takumo/daemon/takumo-daemon`
-4. Checksum verification failed? The downloaded binary didn't match the expected SHA256 hash. Retry — the download may have been corrupted.
+4. Checksum verification failed? The downloaded binary didn't match the expected SHA256 hash. Retry, since the download may have been corrupted.
 5. On macOS, you may need to allow the binary in **System Settings > Privacy & Security** on first run.
 </Accordion>
 
@@ -206,9 +207,17 @@ If a Kubernetes Secret was created before the SealedSecret controller was instal
 The default image registry is `cr.takumo.io` and requires a per-tenant Takumo deploy token. ImagePullBackOff usually means the pull secret is missing or holds a stale/revoked token, the tag doesn't exist, your cluster can't reach `cr.takumo.io`, or you've overridden `image.repository` without updating the pull secret.
 
 **Check these:**
-1. `kubectl describe pod -n takumo <pod>` — the Events section will name the exact reason (`401 Unauthorized`, `manifest unknown`, image not found, etc).
-2. Confirm the `takumo-pull-secret` exists in the namespace and decodes to a `cr.takumo.io` registry entry: `kubectl get secret -n takumo takumo-pull-secret -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d`. If it's empty or wrong, recreate it with a fresh deploy token from the Takumo dashboard (Settings → Deploy Tokens).
-3. Confirm the `image.tag` in your Helm values matches a real tag — `helm template ... | grep image:` to see what's pinned, then verify the tag exists.
+1. `kubectl describe pod -n takumo <pod>`: the Events section names the exact reason (`401 Unauthorized`, `manifest unknown`, image not found, etc).
+2. Confirm the `takumo-pull-secret` exists in the namespace, has the right type, and holds a `cr.takumo.io` entry. None of these commands print the token:
+
+   ```bash
+   kubectl get secret -n takumo takumo-pull-secret -o jsonpath='{.type}{"\n"}'
+   kubectl describe secret -n takumo takumo-pull-secret
+   kubectl get secret -n takumo takumo-pull-secret -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d | grep -o '"cr.takumo.io"'
+   ```
+
+   The first prints `kubernetes.io/dockerconfigjson`. The second lists the `.dockerconfigjson` key with its size in bytes, not its value. The third prints `"cr.takumo.io"` and nothing else. If the Secret is missing, the type is wrong or the third command prints nothing, recreate it with a fresh deploy token from the Takumo dashboard (**Settings > Deploy Tokens**).
+3. Confirm the `image.tag` in your Helm values matches a real tag: `helm template ... | grep image:` shows what's pinned, then verify the tag exists.
 4. From any pod in the cluster: `curl -I https://cr.takumo.io/v2/` should return `401` with a `WWW-Authenticate: Bearer realm=...` header. If you get `403` or `connection refused`, check egress firewall + DNS resolution for `cr.takumo.io`.
 5. If you've overridden `image.repository` to your own mirrored registry, make sure `secrets.imagePull.secretName` points to the secret holding that registry's credentials.
 

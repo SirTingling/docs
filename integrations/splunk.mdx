@@ -17,7 +17,7 @@ Stream security events from Takumo to Splunk using the HTTP Event Collector (HEC
     In Splunk, go to **Settings > Data Inputs > HTTP Event Collector**. Create a new token or use an existing one. Note the HEC endpoint URL (e.g. `https://splunk.example.com:8088`) and the token.
   </Step>
   <Step title="Connect in Takumo">
-    Go to **Dashboard > Settings > Integrations > Splunk**. Enter your HEC endpoint URL and HEC token.
+    Go to **Dashboard > Integrations > Splunk**. Enter your HEC endpoint URL and HEC token.
   </Step>
   <Step title="Verify connection">
     Takumo sends a health check to `HEC_URL/services/collector/health` using bearer auth. If the endpoint is reachable and the token is valid, the integration shows as connected.

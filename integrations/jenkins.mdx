@@ -4,7 +4,7 @@ description: Pipeline security analysis for Jenkins
 icon: "wrench"
 ---
 
-Connect Jenkins to scan pipeline configurations for security risks — hardcoded secrets, insecure plugins, overly permissive permissions.
+Connect Jenkins to scan pipeline configurations for security risks: hardcoded secrets, insecure plugins, overly permissive permissions.
 
 ---
 
@@ -19,7 +19,7 @@ Connect Jenkins to scan pipeline configurations for security risks — hardcoded
     ```
   </Step>
   <Step title="Add API credentials">
-    In Takumo, go to **Dashboard > Settings > Integrations > Jenkins**. Enter your Jenkins instance URL and an API token.
+    In Takumo, go to **Dashboard > Integrations > Jenkins**. Enter your Jenkins instance URL and an API token.
   </Step>
   <Step title="Select pipelines">
     Choose which Jenkins jobs or pipelines Takumo should analyze.
@@ -66,9 +66,9 @@ When Takumo receives a webhook event:
 
 ## Limitations
 
-- **Jenkins 2.x+ only** — Pipeline support requires Jenkins 2.x with Pipeline plugin
-- **Read-only** — Takumo analyzes pipelines but does not create auto-remediation PRs for Jenkins (no native PR model)
-- **No Blue Ocean integration** — Works with classic Jenkins UI and Pipeline DSL
+- **Jenkins 2.x+ only**: Pipeline support requires Jenkins 2.x with Pipeline plugin
+- **Read-only**: Takumo analyzes pipelines but does not create auto-remediation PRs for Jenkins (no native PR model)
+- **No Blue Ocean integration**: Works with classic Jenkins UI and Pipeline DSL
 
 ---
 

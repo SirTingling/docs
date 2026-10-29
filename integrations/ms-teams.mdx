@@ -4,7 +4,7 @@ description: Post security alerts to Teams channels via webhook
 icon: "bell"
 ---
 
-Post security alerts to Microsoft Teams channels. Takumo sends messages when violations are detected -- secrets exposed, policies triggered, or critical issues found.
+Post security alerts to Microsoft Teams channels. Takumo sends messages when violations are detected: secrets exposed, policies triggered, or critical issues found.
 
 ---
 
@@ -15,7 +15,7 @@ Post security alerts to Microsoft Teams channels. Takumo sends messages when vio
     In Microsoft Teams, go to the channel where you want alerts. Click **...** > **Connectors** (or **Workflows** in newer Teams) and add an **Incoming Webhook** connector. Name it (e.g. "Takumo") and copy the webhook URL.
   </Step>
   <Step title="Add to Takumo">
-    Go to **Dashboard > Settings > Integrations > Microsoft Teams**. Paste the webhook URL (starts with `https://outlook.office.com/webhook/...`).
+    Go to **Dashboard > Integrations > Microsoft Teams**. Paste the webhook URL (starts with `https://outlook.office.com/webhook/...`).
   </Step>
   <Step title="Choose alert types">
     Select which events trigger Teams messages:
@@ -66,7 +66,7 @@ Takumo verifies connectivity by POSTing a test MessageCard to the webhook URL:
 }
 ```
 
-If the POST succeeds, the integration shows as connected. No authentication headers are needed -- the webhook URL itself is the credential.
+If the POST succeeds, the integration shows as connected. No authentication headers are needed. The webhook URL itself is the credential.
 
 ---
 
@@ -84,10 +84,10 @@ The webhook URL is stored encrypted. It is never displayed after initial setup.
 
 ## Limitations
 
-- **Webhook-based only** -- Takumo does not use Microsoft Graph or Teams OAuth. No interactive cards, no thread replies, no bot commands.
-- **One channel per webhook** -- To post to multiple channels, configure multiple webhooks.
-- **No bidirectional sync** -- Messages are fire-and-forget. Acknowledging in Teams does not update Takumo.
-- **MessageCard format** -- Uses the legacy MessageCard format for broad compatibility. Adaptive Cards may be supported in the future.
+- **Webhook-based only**: Takumo does not use Microsoft Graph or Teams OAuth. No interactive cards, no thread replies, no bot commands.
+- **One channel per webhook**: To post to multiple channels, configure multiple webhooks.
+- **No bidirectional sync**: Messages are fire-and-forget. Acknowledging in Teams does not update Takumo.
+- **MessageCard format**: Uses the legacy MessageCard format for broad compatibility. Adaptive Cards may be supported in the future.
 
 For richer integrations, use the [Stream pipeline](/concepts/streaming) to build custom Teams workflows via webhook destinations.
 

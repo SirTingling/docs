@@ -4,7 +4,7 @@ description: Create PagerDuty incidents from findings with bidirectional status 
 icon: "bell"
 ---
 
-Connect PagerDuty to create incidents when Takumo detects security issues. Status syncs bidirectionally — resolve in PagerDuty, and Takumo updates the issue.
+Connect PagerDuty to create incidents when Takumo detects security issues. Status syncs both ways: resolve in PagerDuty, and Takumo updates the issue.
 
 ---
 
@@ -18,7 +18,7 @@ Connect PagerDuty to create incidents when Takumo detects security issues. Statu
     Copy the API key (starts with `u+`) and note the email address of a valid PagerDuty user. The email is required by the PagerDuty API for incident creation.
   </Step>
   <Step title="Connect in Takumo">
-    Go to **Dashboard → Settings → Integrations → PagerDuty**. Enter the REST API key and your PagerDuty user email, then click **Connect**.
+    Go to **Dashboard > Integrations > PagerDuty**. Enter the REST API key and your PagerDuty user email, then click **Connect**.
   </Step>
 </Steps>
 
@@ -29,10 +29,10 @@ Connect PagerDuty to create incidents when Takumo detects security issues. Statu
 When Takumo detects an issue that meets your notification threshold:
 
 1. Maps the issue to a PagerDuty incident format:
-   - **Title** — Issue title with severity and category
-   - **Description** — Full details including file location, detection context, and remediation guidance
-   - **Urgency** — Mapped from Takumo severity (Critical/High → high, Medium/Low → low)
-   - **Service** — Routed to the PagerDuty service you configure
+   - **Title**: Issue title with severity and category
+   - **Description**: Full details including file location, detection context, and remediation guidance
+   - **Urgency**: Mapped from Takumo severity (Critical/High → high, Medium/Low → low)
+   - **Service**: Routed to the PagerDuty service you configure
 
 2. Creates the incident via the PagerDuty REST API
 
@@ -60,9 +60,9 @@ When Takumo detects an issue that meets your notification threshold:
 
 ## Limitations
 
-- **PagerDuty REST API only** — Events API v2 (for alerts) is not used. Takumo creates full incidents.
-- **One service per org** — All Takumo incidents go to a single PagerDuty service. Use PagerDuty event rules for further routing.
-- **Read/Write key required** — Read-only keys cannot create incidents.
+- **PagerDuty REST API only**: Events API v2 (for alerts) is not used. Takumo creates full incidents.
+- **One service per org**: All Takumo incidents go to a single PagerDuty service. Use PagerDuty event rules for further routing.
+- **Read/Write key required**: Read-only keys cannot create incidents.
 
 ---
 

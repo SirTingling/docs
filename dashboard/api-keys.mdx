@@ -10,7 +10,7 @@ API keys authenticate your AI tools with Takumo. Each key has scopes that contro
 
 <Steps>
   <Step title="Navigate to API Keys">
-    Go to **Settings > API Keys** in the dashboard sidebar.
+    Go to **API Keys** in the dashboard sidebar.
   </Step>
   <Step title="Click Create Key">
     Hit the **Create Key** button in the top right.
@@ -19,7 +19,7 @@ API keys authenticate your AI tools with Takumo. Each key has scopes that contro
     Give it a descriptive name that identifies its purpose. Examples: `cursor-dev`, `ci-pipeline`, `staging-gateway`.
   </Step>
   <Step title="Select scopes">
-    Choose a preset scope profile -- **workspace**, **organization**, or **read-only** -- or build a custom scope set.
+    Choose a preset, **Full Access**, **Scans Only** or **Read Only**, or pick **Custom** and select permissions one by one. See [Permission Scopes](#permission-scopes) for what each one unlocks.
   </Step>
   <Step title="Copy the key">
     Copy the key immediately. It is shown exactly once. If you lose it, you'll need to create a new one.
@@ -41,105 +41,28 @@ Every API key has the following properties:
 
 ## Permission Scopes
 
-Scopes are granular. You can combine them to build exactly the access profile you need.
+The Cloud API checks six scopes. Each one unlocks the routes listed in [Key scopes](/api/authentication#key-scopes):
 
-<Accordion title="Full scope list">
-  **Organization**
-  - `org.read` -- View organization details
-  - `org.settings.edit` -- Modify organization settings
-  - `org.delete` -- Delete the organization
-  - `org.transfer` -- Transfer ownership
+| Scope | What it unlocks |
+|-------|-----------------|
+| `scan:read` | Read issues, violations, repositories and compliance |
+| `audit:read` | Read the audit log |
+| `policies:write` | Create, update, delete and publish rules |
+| `reports:read` | Read reports and report schedules |
+| `reports:write` | Generate reports and manage report schedules |
+| `notifications:write` | Send the notification digest |
 
-  **Members**
-  - `members.read` -- View team members
-  - `members.invite` -- Invite new members
-  - `members.remove` -- Remove members
-  - `members.role.change` -- Change member roles
-  - `members.suspend` -- Suspend member accounts
+A key with no scopes passes every scope check, so it has the same API access as a key with all six. Give each key only the scopes its tool needs.
 
-  **Roles**
-  - `roles.read` -- View roles
-  - `roles.custom.create` -- Create custom roles
-  - `roles.custom.edit` -- Edit custom roles
-  - `roles.custom.delete` -- Delete custom roles
+The **Custom** picker lists nine permissions. Two of them, `scan:read` and `policies:write`, are scopes the API checks today. The others (`scan:write`, `issues:read`, `issues:write`, `events:read`, `policies:read`, `team:read`, `webhooks:manage`) are stored on the key but no API route checks them yet. The presets map to these permissions:
 
-  **Security**
-  - `security.read` -- View security settings
-  - `security.mfa.manage` -- Manage MFA enforcement
-  - `security.sso.manage` -- Manage SSO configuration
-  - `security.scim.manage` -- Manage SCIM provisioning
-  - `security.domains.manage` -- Manage domain verification
-  - `security.ip.manage` -- Manage IP allowlists
-  - `security.sessions.manage` -- Manage session settings
+| Preset | Permissions |
+|--------|-------------|
+| **Full Access** | All nine |
+| **Scans Only** | `scan:read`, `scan:write` |
+| **Read Only** | `scan:read`, `issues:read`, `events:read` |
 
-  **API Keys**
-  - `apikeys.read` -- View API keys
-  - `apikeys.create` -- Create new keys
-  - `apikeys.revoke` -- Revoke existing keys
-  - `apikeys.manage.all` -- Manage keys created by other members
-
-  **Service Accounts**
-  - `serviceaccounts.read` -- View service accounts
-  - `serviceaccounts.create` -- Create service accounts
-  - `serviceaccounts.delete` -- Delete service accounts
-
-  **Policies**
-  - `policies.read` -- View policies
-  - `policies.create` -- Create new policies
-  - `policies.edit` -- Edit existing policies
-  - `policies.delete` -- Delete policies
-
-  **Issues & Violations**
-  - `issues.read` -- View issues
-  - `issues.triage` -- Triage issues
-  - `violations.read` -- View violations
-  - `violations.manage` -- Manage violations
-
-  **Compliance**
-  - `compliance.read` -- View compliance status
-  - `compliance.export` -- Export compliance data
-
-  **Integrations**
-  - `integrations.read` -- View integrations
-  - `integrations.manage` -- Manage integrations
-
-  **Fleet**
-  - `fleet.read` -- View gateway instances
-  - `fleet.manage` -- Manage instances and join keys
-
-  **Audit**
-  - `audit.read` -- View audit log
-  - `audit.export` -- Export audit data
-  - `audit.webhook.manage` -- Configure audit webhooks
-
-  **Billing**
-  - `billing.read` -- View billing information
-  - `billing.manage` -- Change plans and payment methods
-
-  **Notifications**
-  - `notifications.read` -- View notifications
-  - `notifications.manage` -- Manage notification settings
-
-  **Brain Intelligence**
-  - `brain.read` -- View Brain dashboard
-  - `brain.patterns.approve` -- Approve Brain patterns
-  - `brain.analytics.read` -- View Brain analytics
-  - `brain.break_glass.read` -- View break-glass events
-
-  **Repositories**
-  - `repositories.read` -- View repositories
-  - `repositories.manage` -- Manage repository settings
-
-  **Reports**
-  - `reports.read` -- View reports
-  - `reports.manage` -- Manage report configuration
-  - `reports.developer_activity` -- View developer activity reports
-
-  **Streaming**
-  - `streaming.read` -- View streaming pipeline
-  - `streaming.write` -- Manage destinations and subscriptions
-  - `streaming.admin` -- Full streaming control including admin operations
-</Accordion>
+<Warning>No preset and no **Custom** permission grants `audit:read`, `reports:read`, `reports:write` or `notifications:write`. A key created on this page with any permission selected gets `403` from the audit log, reports and notification digest routes.</Warning>
 
 ## Managing Keys
 

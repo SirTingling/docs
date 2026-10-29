@@ -12,30 +12,30 @@ The Fleet page shows every Aegis Shield gateway instance connected to your organ
 
 The top of the Fleet page shows four counters:
 
-- **Total instances** -- Every gateway instance that has ever connected
-- **Connected** -- Actively communicating with the coordinator right now
-- **Stale** -- Missed the last health check (default threshold: 90 seconds)
-- **Disconnected** -- Offline for an extended period
+- **Total instances**: Every gateway instance that has ever connected
+- **Connected**: Actively communicating with the coordinator right now
+- **Stale**: No health report for 120 seconds (the coordinator's `coordinator.healthStaleSecs` default)
+- **Disconnected**: No health report for 15 minutes
 
 ## Instance States
 
 | State | Meaning |
 |-------|---------|
 | **Connected** | Gateway is actively communicating with the coordinator |
-| **Stale** | Gateway missed its last health report (default: 90 seconds) |
-| **Disconnected** | Gateway has been offline for an extended period |
+| **Stale** | No health report for 120 seconds (default, set by `coordinator.healthStaleSecs`) |
+| **Disconnected** | No health report for 15 minutes |
 
-A gateway transitions from Connected to Stale after missing a single health check. If it remains unresponsive, it moves to Disconnected.
+The coordinator checks every 60 seconds and marks a gateway Stale once its last health report is older than 120 seconds. Takumo Cloud also marks a Connected gateway Stale after 5 minutes without a report, in case the coordinator itself is down, and moves a Stale gateway to Disconnected after 15 minutes.
 
 ## Instance Details
 
 Each instance in the fleet list shows:
 
-- **Instance ID** -- Unique identifier assigned at registration
-- **Version** -- The Aegis Shield version running on this instance
-- **State** -- Current connection state (Connected, Stale, Disconnected)
-- **Last seen** -- Timestamp of the most recent health report
-- **Coordinator ID** -- Which coordinator this instance reports to
+- **Instance ID**: Unique identifier assigned at registration
+- **Version**: The Aegis Shield version running on this instance
+- **State**: Current connection state (Connected, Stale, Disconnected)
+- **Last seen**: Timestamp of the most recent health report
+- **Coordinator ID**: Which coordinator this instance reports to
 
 Click any instance to view its full details and recent activity.
 
@@ -64,11 +64,11 @@ Join keys authenticate gateway instances with the coordinator. A gateway needs a
 
 Each join key shows:
 
-- **Name** -- Human-readable label
-- **Prefix** -- Visible identifier for recognition
-- **Environment** -- Which environment this key is used in
-- **Last used** -- When a gateway last authenticated with this key
-- **Created** -- Creation timestamp
+- **Name**: Human-readable label
+- **Prefix**: Visible identifier for recognition
+- **Environment**: Which environment this key is used in
+- **Last used**: When a gateway last authenticated with this key
+- **Created**: Creation timestamp
 
 ### Revoking a Join Key
 
@@ -78,7 +78,7 @@ Revoking a join key disconnects all gateway instances that authenticated with it
 
 Under **Settings > Gateway**, you can configure:
 
-- **Configuration version** -- An incrementing counter. Bumping this number triggers a policy sync to all connected gateways. When you update policies and want them pushed immediately, increment the configuration version.
-- **Fleet overview totals** -- Summary of total, connected, stale, and disconnected instances.
+- **Configuration version**: An incrementing counter. Bumping this number triggers a policy sync to all connected gateways. When you update policies and want them pushed immediately, increment the configuration version.
+- **Fleet overview totals**: Summary of total, connected, stale, and disconnected instances.
 
-<Warning>Join keys are shown once at creation. Store them securely -- you'll need them in your gateway's deployment configuration.</Warning>
+<Warning>Join keys are shown once at creation. Store them securely. You'll need them in your gateway's deployment configuration.</Warning>

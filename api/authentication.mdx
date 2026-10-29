@@ -11,31 +11,25 @@ Every API request requires an API key in the `Authorization` header.
 Pass your API key as a Bearer token:
 
 ```bash
-curl https://gateway.takumo.io/v1/tokenize \
-  -H "Authorization: Bearer tk_live_your_api_key" \
-  -H "Content-Type: application/json" \
-  -d '{"content": "const key = \"AKIAIOSFODNN7EXAMPLE\"", "filename": "config.ts"}'
+curl https://cloud.takumo.io/api/v1/rules \
+  -H "Authorization: Bearer tk_live_your_api_key"
 ```
 
 In code:
 
 ```typescript
-const response = await fetch("https://gateway.takumo.io/v1/tokenize", {
-  method: "POST",
+const response = await fetch("https://cloud.takumo.io/api/v1/rules", {
   headers: {
-    "Authorization": `Bearer ${process.env.TAKUMO_API_KEY}`,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    content: sourceCode,
-    filename: "config.ts"
-  })
+    "Authorization": `Bearer ${process.env.TAKUMO_API_KEY}`
+  }
 });
 ```
 
+The gateway (`gateway.takumo.io/v1/messages` and `/v1/chat/completions`) takes the same `Authorization: Bearer` header. See [AI Tools](/ai-tools/overview).
+
 ## How keys are validated
 
-1. The gateway receives your key from the `Authorization` header.
+1. Takumo receives your key from the `Authorization` header.
 2. It computes a SHA-256 hash of the raw key.
 3. The hash is looked up in the database.
 4. If found and not revoked, the request proceeds.
@@ -54,36 +48,22 @@ Keys are 64-character hex strings following the prefix.
 
 ## Key scopes
 
-Each key has a set of scopes that control what it can do. A request that requires a scope the key doesn't have returns `403 forbidden`.
+Each key has a set of scopes. A request to a route that needs a scope the key doesn't have returns `403`. Scopes use colon notation:
 
-| Scope | What it controls |
-|-------|-----------------|
-| `org.read` | View organization settings |
-| `org.settings.edit` | Update organization settings |
-| `members.read` | View team members |
-| `members.invite` | Invite new members |
-| `apikeys.read` | List API keys |
-| `apikeys.create` | Create new API keys |
-| `apikeys.revoke` | Revoke existing keys |
-| `policies.read` | View security policies |
-| `policies.create` | Create policies |
-| `policies.edit` | Edit policies |
-| `issues.read` | View detected issues |
-| `issues.triage` | Triage and manage issues |
-| `fleet.read` | View gateway fleet status |
-| `fleet.manage` | Register and manage gateways |
-| `audit.read` | Read audit log entries |
-| `audit.export` | Export audit data |
-| `integrations.read` | View integrations |
-| `integrations.manage` | Configure integrations |
-| `streaming.read` | View streaming configuration |
-| `streaming.write` | Manage streaming destinations |
+| Scope | Routes that check it |
+|-------|----------------------|
+| `scan:read` | `GET /issues`, `/violations`, `/repositories`, `/compliance` |
+| `audit:read` | `GET /audit-log` |
+| `policies:write` | `POST /rules`, `PATCH` and `DELETE /rules/:ruleId`, `POST /rules/:ruleId/publish` |
+| `reports:read` | `GET /reports`, `/reports/:id`, `/reports/schedules` |
+| `reports:write` | `POST /reports/generate`, schedule create, update and delete |
+| `notifications:write` | `POST /notifications/digest` |
 
-Assign the minimum scopes needed. Permissions use dot notation. See [API Keys](/dashboard/api-keys) for the full list of all 60 permissions.
+Routes not listed need a valid key but no scope. Assign the minimum scopes needed. See [API Keys](/dashboard/api-keys) for how to set them.
 
 ## Rate limit headers
 
-Every response includes rate limit headers, regardless of whether the request succeeded:
+Gateway responses (`gateway.takumo.io`) include rate limit headers. The Cloud API does not send the `X-RateLimit-*` headers; on a `429` it sends `Retry-After`.
 
 | Header | Description |
 |--------|-------------|

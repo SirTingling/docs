@@ -4,7 +4,7 @@ description: Create Bitbucket issues from scan findings
 icon: "eye"
 ---
 
-Connect Bitbucket Issues to automatically create issues in your repositories when Takumo detects security findings. This is a separate integration from the Bitbucket source code connection — it focuses specifically on issue tracking.
+Connect Bitbucket Issues to automatically create issues in your repositories when Takumo detects security findings. This is a separate integration from the Bitbucket source code connection and covers issue tracking only.
 
 ---
 
@@ -18,7 +18,7 @@ Connect Bitbucket Issues to automatically create issues in your repositories whe
     Enable scopes: `read:repository:bitbucket` and `write:issue:bitbucket`.
   </Step>
   <Step title="Connect in Takumo">
-    Go to **Dashboard → Settings → Integrations → Bitbucket Issues**. Enter your Atlassian email, the API token, and your Bitbucket workspace slug, then click **Connect**.
+    Go to **Dashboard > Integrations > Bitbucket Issues**. Enter your Atlassian email, the API token, and your Bitbucket workspace slug, then click **Connect**.
   </Step>
   <Step title="Select a repository">
     Choose which repository receives Takumo issues.
@@ -36,11 +36,11 @@ Your workspace slug is the value in the URL: `bitbucket.org/WORKSPACE`.
 When Takumo detects an issue that meets your notification threshold:
 
 1. Maps the issue to a Bitbucket issue format:
-   - **Title** — Issue title with severity and category
-   - **Content** — Full details in Markdown, including file location, detection context, and remediation guidance
-   - **Priority** — Mapped from Takumo severity (Critical → blocker, High → critical, Medium → major, Low → minor)
-   - **Kind** — Set to `bug` for security findings
-   - **Component** — Set to `security` if the component exists in the repository
+   - **Title**: Issue title with severity and category
+   - **Content**: Full details in Markdown, including file location, detection context, and remediation guidance
+   - **Priority**: Mapped from Takumo severity (Critical → blocker, High → critical, Medium → major, Low → minor)
+   - **Kind**: Set to `bug` for security findings
+   - **Component**: Set to `security` if the component exists in the repository
 
 2. Creates the issue via the Bitbucket REST API
 
@@ -78,10 +78,10 @@ You can use both simultaneously. The source code integration handles scanning; t
 
 ## Limitations
 
-- **Bitbucket Cloud only** — Bitbucket Server/Data Center issue tracking is not currently supported via this integration.
-- **Issues must be enabled** — The target repository must have the Bitbucket issue tracker enabled in repository settings.
-- **One repository per org** — All Takumo issues go to a single Bitbucket repository. Use Bitbucket automation for further routing.
-- **No bidirectional sync** — Closing the Bitbucket issue does not automatically resolve the Takumo issue (webhook support planned).
+- **Bitbucket Cloud only**: Bitbucket Server/Data Center issue tracking is not currently supported via this integration.
+- **Issues must be enabled**: The target repository must have the Bitbucket issue tracker enabled in repository settings.
+- **One repository per org**: All Takumo issues go to a single Bitbucket repository. Use Bitbucket automation for further routing.
+- **No bidirectional sync**: Closing the Bitbucket issue does not automatically resolve the Takumo issue (webhook support planned).
 
 ---
 

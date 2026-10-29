@@ -12,13 +12,13 @@ The Takumo GitHub App runs Sentinel on every pull request, enforces custom polic
 
 <Steps>
   <Step title="Install the GitHub App">
-    Go to **Dashboard → Settings → Integrations → GitHub** and click **Install**. You'll be redirected to GitHub to authorize the app.
+    Go to **Dashboard > Integrations > GitHub** and click **Install**. You'll be redirected to GitHub to authorize the app.
   </Step>
   <Step title="Select repositories">
     Choose **All repositories** or select specific ones. Takumo needs read access to code and pull requests, and write access to checks and issues.
   </Step>
   <Step title="Confirm in dashboard">
-    After authorization, you'll see your connected repos in **Dashboard → Settings → Integrations**. Takumo begins syncing branch protection, CODEOWNERS, and security features immediately.
+    After authorization, you'll see your connected repos in **Dashboard > Integrations**. Takumo begins syncing branch protection, CODEOWNERS, and security features immediately.
   </Step>
 </Steps>
 
@@ -48,9 +48,9 @@ sequenceDiagram
 Takumo evaluates your published custom rules against the PR's changed files. Each violation is reported as an inline annotation on the check run.
 
 Enforcement modes:
-- **Block** — Check run concludes as `failure`. PR cannot merge (if branch protection requires the check).
-- **Warn** — Check run concludes as `success` with annotations. Violations are logged but don't block.
-- **Monitor** — Violations are logged silently. No annotations.
+- **Block**: Check run concludes as `failure`. PR cannot merge (if branch protection requires the check).
+- **Warn**: Check run concludes as `success` with annotations. Violations are logged but don't block.
+- **Monitor**: Violations are logged silently. No annotations.
 
 ### Sentinel AI review
 
@@ -71,7 +71,7 @@ Takumo posts a summary comment on the PR (or updates the existing one). The comm
 - Sentinel AI findings with suggested fixes
 - Overall status
 
-The comment is identified by `<!-- takumo-check -->` — Takumo updates the same comment on subsequent pushes rather than creating new ones.
+The comment is identified by `<!-- takumo-check -->`. Takumo updates the same comment on subsequent pushes rather than creating new ones.
 
 ---
 
@@ -93,7 +93,7 @@ These appear in **Dashboard → Sentinel Detections** alongside Takumo's own fin
 
 Takumo syncs your GitHub Actions workflows and analyzes them for security issues:
 
-- `pull_request_target` triggers (dangerous — can expose secrets to forks)
+- `pull_request_target` triggers (dangerous: can expose secrets to forks)
 - `workflow_dispatch` without input validation
 - Third-party actions without SHA pinning
 - `permissions: write-all` (overly broad)
@@ -109,7 +109,7 @@ When Takumo identifies a fixable workflow issue, it can create a PR with the fix
 
 ## Brain indexing
 
-Push events trigger incremental re-indexing. When you push to a connected repo, Brain Indexer processes only the changed files — updating function signatures, patterns, and boundaries.
+Push events trigger incremental re-indexing. When you push to a connected repo, Brain Indexer processes only the changed files and updates function signatures, patterns, and boundaries.
 
 ---
 

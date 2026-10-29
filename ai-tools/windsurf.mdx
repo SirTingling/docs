@@ -81,7 +81,7 @@ if (!stripe) throw new Error("Stripe client failed to initialize");
 ```
 
 <Note>
-  Windsurf routes requests through the gateway automatically once configured. You don't need to change how you use Windsurf -- just how it connects.
+  Windsurf routes requests through the gateway automatically once configured. You don't need to change how you use Windsurf, only how it connects.
 </Note>
 
 ## Troubleshooting
@@ -97,7 +97,7 @@ if (!stripe) throw new Error("Stripe client failed to initialize");
   Test the gateway is reachable:
 
   ```bash
-  curl https://gateway.takumo.io/v1/health
+  curl https://gateway.takumo.io/health
   ```
 </Accordion>
 
@@ -114,7 +114,7 @@ if (!stripe) throw new Error("Stripe client failed to initialize");
 
   If latency stays high:
 
-  1. Check your gateway region -- pick one close to you
+  1. Check your gateway region and pick one close to you
   2. Self-hosted gateways eliminate the extra network hop
   3. The dashboard shows per-request latency breakdown
 </Accordion>
