@@ -66,6 +66,8 @@ Back off for the number of seconds in `Retry-After`. Don't retry in a tight loop
 
 ## Handling errors in code
 
+<Warning>Connecting AI tools through the Takumo gateway with an API key is not available yet, on `gateway.takumo.io` or on a self-hosted gateway. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) for early access.</Warning>
+
 ```typescript
 const response = await fetch("https://gateway.takumo.io/v1/messages", {
   method: "POST",

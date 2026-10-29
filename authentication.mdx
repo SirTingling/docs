@@ -35,21 +35,23 @@ Keys authenticate your tools and track usage per organization.
 ### Setting the key
 
 ```bash
-export TAKUMO_API_KEY="tk_live_a1b2c3d4e5f6..."
+export TAKUMO_API_KEY="your-takumo-api-key"
 ```
 
 Or in your `.env` file:
 
 ```bash
-TAKUMO_API_KEY=tk_live_a1b2c3d4e5f6...
+TAKUMO_API_KEY=your-takumo-api-key
 ```
 
-API keys are 64-character hex strings with a prefix for identification:
+An API key is 64 hex characters. The **API Keys** page labels each key with a prefix made from its first eight characters:
 
 | Prefix | Environment |
 |--------|-------------|
-| `tk_live_` | Production |
-| `tk_test_` | Test / development |
+| `tk_` | Live |
+| `tk_test_` | Test |
+
+The prefix is a label, not part of the key. Send the key exactly as it was shown when you created it.
 
 ### Key scopes
 

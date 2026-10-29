@@ -8,6 +8,8 @@ icon: "terminal"
 
 Claude Code reads environment variables for its API connection. Set two variables and every request goes through Takumo.
 
+<Warning>Connecting AI tools through the Takumo gateway with an API key is not available yet, on `gateway.takumo.io` or on a self-hosted gateway. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) for early access.</Warning>
+
 ## Setup
 
 <Steps>
@@ -24,7 +26,7 @@ Claude Code reads environment variables for its API connection. Set two variable
 
     Claude Code sends `ANTHROPIC_AUTH_TOKEN` as `Authorization: Bearer`, which is the header the gateway checks. The gateway then calls Anthropic with Takumo's provider key, so you don't need an Anthropic key.
 
-    <Warning>Leave `ANTHROPIC_API_KEY` unset. Claude Code sends it as `x-api-key`. On its own, the gateway rejects it with `401`. Next to `ANTHROPIC_AUTH_TOKEN`, the gateway forwards it to Anthropic as the provider key, so a Takumo API key in `ANTHROPIC_API_KEY` leaves your network and reaches Anthropic, and Anthropic still rejects the request with `401`. If you set `ANTHROPIC_API_KEY` to your Takumo API key from an earlier version of this page, run `unset ANTHROPIC_API_KEY`, remove it from your shell profile, then create a new key on the **API Keys** page and delete the old one.</Warning>
+    <Warning>Set only `ANTHROPIC_AUTH_TOKEN`, and leave `ANTHROPIC_API_KEY` unset. Claude Code sends `ANTHROPIC_API_KEY` as `x-api-key`. On its own, the gateway rejects it with `401`. Next to `ANTHROPIC_AUTH_TOKEN`, the gateway forwards it to Anthropic as the provider key, so a Takumo API key in `ANTHROPIC_API_KEY` leaves your network and reaches Anthropic, and Anthropic still rejects the request with `401`. If you set `ANTHROPIC_API_KEY` to your Takumo API key from an earlier version of this page, run `unset ANTHROPIC_API_KEY`, remove it from your shell profile, then create a new key on the **API Keys** page and delete the old one.</Warning>
   </Step>
   <Step title="Run Claude Code">
     Use Claude Code like you normally would. Every request routes through the Takumo gateway automatically.
