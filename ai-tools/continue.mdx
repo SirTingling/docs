@@ -6,7 +6,7 @@ icon: "play"
 
 # Continue.dev
 
-Continue is open source and lets you configure custom provider endpoints. Point it at your Takumo gateway and every request to an Anthropic or OpenAI model is protected.
+Continue is open source and lets you configure custom provider endpoints. Point it at your Takumo gateway and every request to an Anthropic model is protected.
 
 <Warning>The OpenAI-compatible route (`/v1/chat/completions`) is temporarily unavailable. Don't configure OpenAI models in Continue to use the gateway yet. Anthropic models are not affected.</Warning>
 
@@ -48,22 +48,6 @@ Continue is open source and lets you configure custom provider endpoints. Point 
     ```
 
     Continue's Anthropic provider always sends `apiKey` as `x-api-key` and won't send a request without it, and the gateway doesn't accept a Takumo API key in `x-api-key`. So put your Anthropic API key in `apiKey` and your Takumo API key in the `Authorization` header under `requestOptions`. The gateway authenticates you with the Takumo API key and calls Anthropic with your Anthropic key.
-
-    For OpenAI models (temporarily unavailable, see the warning above):
-
-    ```json
-    {
-      "models": [
-        {
-          "title": "GPT-4o via Takumo",
-          "provider": "openai",
-          "model": "gpt-4o",
-          "apiBase": "https://gateway.takumo.io/v1",
-          "apiKey": "your-takumo-api-key"
-        }
-      ]
-    }
-    ```
 
     Self-hosted gateway users: replace the URL with your own.
 
@@ -149,12 +133,12 @@ This lets you pull both keys from environment variables instead of hardcoding th
 
   1. The gateway URL is correct and reachable: `curl https://gateway.takumo.io/health`
   2. Your Takumo API key is valid (check the dashboard), and it is in the `Authorization` header, not in `apiKey`
-  3. The `provider` field is `anthropic` or `openai`. The gateway does not serve other providers yet
+  3. The `provider` field is `anthropic`. The OpenAI-compatible route is temporarily unavailable, and the gateway does not serve other providers yet
   4. Restart VS Code after config changes
 </Accordion>
 
 <Accordion title="Autocomplete not going through Takumo">
-  Autocomplete uses a separate config key (`tabAutocompleteModel`), so `apiBase` in `models` doesn't apply to it. Takumo can only proxy it if it uses an Anthropic or OpenAI model, with `apiBase` set to the gateway in that block too.
+  Autocomplete uses a separate config key (`tabAutocompleteModel`), so `apiBase` in `models` doesn't apply to it. Takumo can only proxy it if it uses an Anthropic model, with `apiBase` set to the gateway in that block too.
 </Accordion>
 
 <Accordion title="Secrets not being detected">

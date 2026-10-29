@@ -17,11 +17,13 @@ Any AI tool that lets you set a custom API endpoint works with Takumo. The patte
     Look for a setting called "API base URL", "API endpoint", "Custom endpoint", or similar in your AI tool's configuration. Every tool that supports custom providers has one.
   </Step>
   <Step title="Change the URL">
-    Replace the provider's default URL with your Takumo gateway URL:
+    Replace the provider's default URL with your Takumo gateway URL. For Anthropic tools and SDKs, which add `/v1/messages` themselves, use the base URL without `/v1`:
 
     ```
-    https://gateway.takumo.io/v1
+    https://gateway.takumo.io
     ```
+
+    A tool that adds only `messages` takes `https://gateway.takumo.io/v1` instead. [Continue.dev](/ai-tools/continue) is one.
 
     Self-hosted: use your own gateway URL instead.
 
@@ -53,10 +55,6 @@ For CLI tools, the integration is usually two environment variables:
 # Anthropic-based tools (leave ANTHROPIC_API_KEY unset)
 export ANTHROPIC_BASE_URL="https://gateway.takumo.io"
 export ANTHROPIC_AUTH_TOKEN="your-takumo-api-key"
-
-# OpenAI-based tools (temporarily unavailable, see the warning above)
-export OPENAI_BASE_URL="https://gateway.takumo.io/v1"
-export OPENAI_API_KEY="your-takumo-api-key"
 ```
 
 Any tool that reads these standard environment variables will route through Takumo without any code changes.
