@@ -127,6 +127,7 @@ The GitHub App handles these webhook events:
 | `code_scanning_alert` | Create Issue |
 | `dependabot_alert` | Create Issue |
 | `branch_protection_rule` | Re-sync compliance data |
+| `issues` (closed, reopened) | Sync the linked Takumo issue status |
 | `workflow_run` (completed) | Update pipeline metrics |
 | `installation` / `installation_repositories` | Manage integration status |
 
@@ -136,12 +137,27 @@ The GitHub App handles these webhook events:
 
 | Permission | Access | Why |
 |-----------|--------|-----|
-| Contents | Read | Analyze code, read workflows |
-| Pull requests | Read + Write | Post comments |
-| Checks | Read + Write | Create check runs |
-| Issues | Read + Write | Auto-remediation PRs |
 | Metadata | Read | Repository info |
-| Security events | Read | Secret/code scanning alerts |
+| Contents | Read + Write | Analyze code; commit auto-remediation fixes |
+| Pull requests | Read + Write | Post PR comments; open auto-remediation PRs |
+| Checks | Read + Write | Create check runs |
+| Administration | Read | Read branch protection |
+| Members (organization) | Read | Confirm the person connecting GitHub is an owner of the organization |
+| Secret scanning alerts | Read | Ingest secret scanning alerts |
+| Code scanning alerts | Read | Ingest code scanning alerts |
+| Dependabot alerts | Read | Ingest Dependabot alerts |
+
+Optional, only for the features named:
+
+| Permission | Access | Needed for |
+|-----------|--------|-----|
+| Issues | Read + Write | Creating GitHub issues from findings ([GitHub Issues](/integrations/github-issues)) |
+| Actions | Read | Syncing workflow runs into the dashboard |
+| Workflows | Read + Write | Auto-remediation PRs that change files in `.github/workflows` |
+
+Subscribe to these events: **Pull request**, **Push**, **Repository**, **Branch protection rule**, **Secret scanning alert**, **Code scanning alert**, **Dependabot alert**.
+
+On a self-hosted dashboard you create this app yourself. See [Your GitHub App](/deployment/self-hosted-dashboard#your-github-app).
 
 ---
 
