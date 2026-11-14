@@ -6,7 +6,11 @@ icon: "file-check"
 
 # Policies
 
-Policies define what Takumo enforces. Which secrets to block, which patterns to flag, how to handle violations.
+Policies define how Takumo checks your pull requests: which findings fail a check, which only warn, and which are recorded.
+
+<Note>
+Policies apply to pull request checks on GitHub, GitLab and Bitbucket Server. The gateway, the editor extension and the CLI do not apply organization policies.
+</Note>
 
 ## What a policy contains
 
@@ -14,35 +18,37 @@ Every policy has three parts:
 
 | Part | What it controls |
 |------|-----------------|
-| **Rules** | The patterns and conditions that trigger the policy |
+| **Rules** | The conditions that trigger the policy |
 | **Enforcement mode** | What happens when a rule matches |
-| **Scope** | Where the policy applies |
+| **Scope** | Which repositories the policy covers |
 
 ## Enforcement modes
 
-Three modes. Pick the one that matches your risk tolerance.
+Four modes. Pick the one that matches your risk tolerance.
 
 ### Block
 
-Request is rejected. The secret is not sent to the AI. The user sees an error with the detection details.
-
-Use this for high-severity secrets in production: database credentials, cloud provider keys, private keys.
+The pull request check fails and Takumo posts a comment with the details. Use this for findings that must not merge.
 
 ### Warn
 
-Request goes through. The secret is tokenized as usual. But the detection is logged with a warning flag, and the user gets a notification.
+The check passes and Takumo posts a comment with the details. On GitHub the check reports as neutral.
 
-Use this for medium-severity patterns where you want visibility without blocking work.
+Use this for medium-severity findings where you want visibility without blocking work.
+
+### Notify
+
+The check passes and Takumo posts a comment with the details.
 
 ### Monitor
 
-Request goes through. Detection is logged silently. No notification, no warning. Just data.
+The check passes and Takumo posts a comment with the details.
 
-Use this when rolling out new patterns. Watch the detection rate before deciding whether to block or warn.
+Use this when rolling out a new policy. Watch what it matches before deciding whether to warn or block.
 
-## Built-in policies
+## Default detection patterns
 
-Takumo ships with default detection patterns that cover the most common secret types:
+Aegis Shield detects the most common secret types in outbound AI requests:
 
 - AWS access keys and secret keys
 - Database connection strings (PostgreSQL, MySQL, MongoDB, Redis)
@@ -52,34 +58,17 @@ Takumo ships with default detection patterns that cover the most common secret t
 - Private keys (RSA, EC, OpenSSH, PGP)
 - Generic patterns (`password`, `secret`, `api_key` in variable names)
 
-Built-in policies run in **Block** mode by default. You can change the enforcement mode but you cannot delete built-in policies.
+These are detected secrets, not a guarantee that every secret is found. Policies do not change what Aegis Shield detects.
 
 ## Custom policies
 
-Create your own rules in the dashboard under **Policies** in the sidebar.
+Create your own policies in the dashboard under **Policies** in the sidebar. The wizard offers policy templates and lets you set the rules, enforcement mode and scope.
 
-A custom policy rule looks like this:
-
-```json
-{
-  "name": "internal-service-token",
-  "pattern": "svc_[a-zA-Z0-9]{40}",
-  "category": "TOKEN",
-  "description": "Internal service-to-service authentication token",
-  "enforcement": "block"
-}
-```
-
-You can match on:
-
-- **Regex patterns**: match specific token formats
-- **Variable names**: flag values assigned to keys like `INTERNAL_SECRET`
-- **File paths**: only enforce in certain directories or file types
-- **Content context**: match patterns near specific keywords
+Policy rules currently match on file names and on changes to dependency manifests. They do not read file contents. A secret rule, for example, matches files such as `.env` or `.pem`, not the secrets inside other files. Only some rule criteria are evaluated today, and the policy templates for OWASP Top 10, SOC 2 Baseline and PCI DSS do not trigger yet. See [Security Policies](/dashboard/rules) for the criteria and their current behavior.
 
 ## Custom Sentinel rules
 
-In addition to policies (which govern Aegis Shield outbound tokenization), you can create **Sentinel rules** that scan inbound code for security issues.
+In addition to policies, you can create **Sentinel rules** that scan inbound code for security issues.
 
 Create them in the dashboard or directly from the extension:
 
@@ -120,19 +109,13 @@ Forced settings show a lock indicator in the extension's side panel. Members see
 
 ## Policy scope
 
-Apply policies at different levels:
+Apply a policy to a set of repositories:
 
 | Scope | What it covers |
 |-------|---------------|
-| **Organization** | Every team, every repo, every request |
-| **Team** | All repos and members within a team |
-| **Repository** | Only requests involving that repo |
-
-Narrower scopes override broader ones. A repo-level policy takes precedence over an org-level policy for the same pattern.
-
-<Note>
-Policies apply at the gateway level. When you update a policy, the coordinator pushes the change to all connected gateways within 500ms via config versioning. The daemon picks up policy changes on next sync.
-</Note>
+| **All repositories** | Every repository in the organization |
+| **Repositories** | The repositories you name |
+| **Tags** | Repositories that match the tags |
 
 ## Policy limits by plan
 
@@ -148,8 +131,8 @@ Policies apply at the gateway level. When you update a policy, the coordinator p
 A common pattern for introducing a new policy:
 
 1. Create the policy in **Monitor** mode
-2. Watch detections for a week. Check for false positives.
-3. Switch to **Warn** mode. Users see notifications but aren't blocked.
+2. Watch matches for a week. Check for false positives.
+3. Switch to **Warn** mode. Pull requests show a warning but are not blocked.
 4. After another week with no complaints, switch to **Block** mode.
 
 This takes about two weeks. You get data at every step. No surprises.

@@ -21,7 +21,7 @@ Runs as a Kubernetes deployment or standalone binary. Stateless by default: sess
 gRPC server that manages gateway instances. Four responsibilities:
 
 - **Audit shipping**: Collects audit events from gateways and writes them to the dashboard database in batches (configurable via `telemetryBatchSize`, default 500 events per batch).
-- **Policy sync**: Streams policy updates from the dashboard to gateways in real-time. When you change a policy in the dashboard, the coordinator pushes the update within `policyDebounceMs` (default 500ms).
+- **Policy sync**: Streams configuration updates from the dashboard to gateways in real-time. When you change a policy in the dashboard, the coordinator pushes the update within `policyDebounceMs` (default 500ms). Gateways do not apply organization policies, which apply to pull request checks.
 - **Health tracking**: Receives health reports from gateways. Marks a gateway as stale after `healthStaleSecs` (default 120 seconds) without a report.
 - **NATS publishing**: Publishes detection events to NATS JetStream for downstream processing by the Cloud Worker and Stream pipeline.
 
@@ -37,7 +37,7 @@ Standalone process running alongside the dashboard. Consumes NATS detection even
 
 ### Takumo Daemon (Rust)
 
-Local HTTP server that runs on developer machines. Bridge between the editor extension and Takumo's cloud services. Handles scanning, secret detection, AI transforms, Brain queries, auth, policy enforcement, and incident notifications. Communicates with the extension via HTTP + WebSocket.
+Local HTTP server that runs on developer machines. Bridge between the editor extension and Takumo's cloud services. Handles scanning, secret detection, AI transforms, Brain queries, auth, and incident notifications. Communicates with the extension via HTTP + WebSocket.
 
 ### Brain Intelligence (4 services)
 
