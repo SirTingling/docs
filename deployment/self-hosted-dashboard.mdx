@@ -328,6 +328,15 @@ helm upgrade cloud ./takumo-charts/cloud \
 
 Then connect GitHub from **Integrations** in your dashboard. An owner of the GitHub organization, or the owner of a personal account, installs the app and authorizes it when GitHub asks.
 
+If your app was already connected before you added the client secret, add it to the existing `cloud-github-app` Secret instead of recreating the Secret, then run the `helm upgrade` above:
+
+```bash
+printf 'GitHub App client secret: ' >&2; read -rs GH_APP_SECRET; echo >&2
+kubectl -n takumo patch secret cloud-github-app --type merge --patch-file /dev/stdin \
+  <<<"{\"data\":{\"github-app-client-secret\":\"$(printf '%s' "$GH_APP_SECRET" | base64)\"}}"
+unset GH_APP_SECRET
+```
+
 <Note>If connecting GitHub says **Connecting GitHub is not configured on this Takumo install**, the dashboard is missing the App or its client ID or client secret. The `config.invalid` log line names the setting. Existing connections keep working.</Note>
 
 ## License
@@ -401,6 +410,7 @@ kubectl logs -n takumo deploy/cloud --since=10m | grep -iE 'github|config.invali
 | GitHub shows a 404 instead of the install page | `app.githubAppSlug` matches the app's slug |
 | **this install is misconfigured** | The `config.invalid` line names the setting: the App ID, slug, private key or webhook secret |
 | **not configured on this Takumo install** | The `config.invalid` line names `GITHUB_APP_CLIENT_ID` or `GITHUB_APP_CLIENT_SECRET`: set `app.githubAppClientId` and the Secret's `github-app-client-secret` key |
+| GitHub says **This GitHub App must be configured with a callback URL** | The app's **Callback URL** is empty. On the app's **General** page, add `https://<your-dashboard-host>/api/integrations/github/authorize/callback` and click **Save changes** at the bottom of the page |
 | **Ask a GitHub organization owner to connect Takumo** | Only an owner of the GitHub organization can connect it. GitHub must have asked them to authorize the app: check that the app's callback URL is set |
 | **GitHub could not be connected right now** | The [rate limiting backend](#rate-limiting-backend) is reachable |
 | **belongs to a different GitHub App** | You installed another app. Install the one whose slug you configured |
