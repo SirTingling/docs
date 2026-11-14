@@ -250,7 +250,7 @@ kubectl create secret tls cloud-tls -n takumo --cert=./tls.crt --key=./tls.key
 
 The dashboard keeps rate limits and single use tokens through the Upstash REST API, not the Redis protocol. Use an [Upstash](https://upstash.com) database, or run an Upstash compatible REST proxy such as [serverless-redis-http](https://github.com/hiett/serverless-redis-http) in front of your own Redis. The dashboard's NetworkPolicy allows egress on port 443 and 5432 only, so serve the endpoint on 443.
 
-Without the endpoint the dashboard still starts and `/api/health/ready` still answers 200, but every rate limited route, such as device sign-in for the CLI, returns 500. If the endpoint is unreachable, each rate limited request waits about 5 seconds and is then allowed, and connecting GitHub fails with **GitHub could not be connected right now**.
+Without the endpoint the pods never become ready: `/api/health/ready` answers 503 and the dashboard's log names `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. If the endpoint is unreachable, each rate limited request waits about 5 seconds and is then allowed, and connecting GitHub fails with **GitHub could not be connected right now**.
 
 ### Email
 
