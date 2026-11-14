@@ -41,6 +41,17 @@ For organizations that need full control over where their data flows. Deploy the
 
     <Note>The blocks in this step that read input use `read -rs` and `<(...)`, which need bash or zsh. Run them in one of those shells, not `sh`.</Note>
 
+    <Tip>
+    A Secret stores every byte it is given, including a trailing newline. The blocks on this page write values with `printf '%s'`, which adds none. If you generate a random value yourself, strip the newline with `tr -d '\n'` and pipe the value straight into `kubectl`, so it never lands in a file or your shell history:
+
+    ```bash
+    openssl rand -hex 32 | tr -d '\n' \
+      | kubectl create secret generic <secret-name> -n takumo --from-file=<key>=/dev/stdin
+    ```
+
+    Writing the value to a file with `openssl rand -hex 32 > file` and then using `--from-file`, or piping `echo "$VALUE"`, keeps the newline, and a header or token built from that value is rejected.
+    </Tip>
+
     ```bash
     (
       printf 'Pooled database URL: ' >&2; read -rs DB_URL || exit 1; echo >&2
