@@ -6,17 +6,22 @@ icon: "house"
 
 The self-hosted dashboard is the Takumo web app (the `cloud` chart) running in your cluster on a hostname you own, with its own Postgres. Your users sign in there, and your GitHub App sends its webhooks there. Install it in the same namespace as the gateway and coordinator from [On-Premises](/deployment/onprem).
 
-<Warning>The dashboard chart and image are not yet published on `charts.takumo.io` and `cr.takumo.io`. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to get them. The steps below assume the chart is unpacked at `./takumo-charts/cloud` and the image is in a registry your cluster can pull from.</Warning>
+The dashboard image, `cr.takumo.io/takumo-cloud`, is private. Pulling it needs a [deploy token](/dashboard/deploy-tokens) from a Takumo workspace on the Pro or Enterprise plan that was created with the **On-Prem** deployment mode.
 
 ## Prerequisites
 
 | Requirement | Notes |
 |------------|-------|
+| A Takumo workspace on Pro or Enterprise | Created with the **On-Prem** deployment mode. Its deploy token pulls the dashboard image. See [The image pull is denied](#the-image-pull-is-denied) |
 | Kubernetes and Helm | The same cluster and Helm 3 as [On-Premises](/deployment/onprem) |
 | PostgreSQL | A database for the dashboard. The coordinator reads tables the dashboard creates, so point `coordinator-database` at this same database |
 | An Upstash compatible REST endpoint | Holds rate limits and single use tokens. See [Rate limiting backend](#rate-limiting-backend) |
-| A hostname and TLS certificate | For example `takumo.example.com`, served by an ingress controller |
-| An email provider (optional) | [Resend](https://resend.com). See [Email](#email) |
+| An email provider | [Resend](https://resend.com). The dashboard verifies each new account by email. See [Email](#email) |
+| A hostname | For example `takumo.example.com`, pointed at your ingress controller |
+| An ingress controller | The chart's Ingress uses class `nginx`. See [DNS and TLS](#dns-and-tls) |
+| cert-manager and a ClusterIssuer | Issues the TLS certificate. You can bring your own certificate instead. See [DNS and TLS](#dns-and-tls) |
+
+<Note>Support for a plain Redis endpoint, and for creating the first admin account without email, is planned. Until then, the REST endpoint and the email provider are both required.</Note>
 
 ### Outbound access
 
@@ -38,7 +43,7 @@ Your GitHub App's webhooks travel the other way: `github.com` must reach `https:
 
 ### Air-gapped installs
 
-With no route out, mirror every image into your own registry (see [Images](#images)) and use an [air-gapped license](#license). Users then sign in with email and password, and the dashboard verifies each address by email, so allow `api.resend.com` for [email](#email) or allow one sign-in provider. With neither, new accounts cannot be verified: contact Takumo support at [support@takumo.io](mailto:support@takumo.io) before you install.
+With no route out, mirror every image into your own registry (see [Images](#images)) and use an [air-gapped license](#license). The dashboard verifies each new account by email, so allow `api.resend.com` for [email](#email). If you cannot, contact Takumo support at [support@takumo.io](mailto:support@takumo.io) before you install.
 
 ## Images
 
@@ -77,6 +82,13 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     crane copy cr.takumo.io/mirror/redis:7-alpine <your-registry>/mirror/redis:7-alpine
     ```
 
+    The dashboard image has its own version, the chart's app version (`0.3.0` for chart `0.3.0`). Copy it the same way:
+
+    ```bash
+    digest=$(crane digest cr.takumo.io/takumo-cloud:0.3.0)
+    crane copy "cr.takumo.io/takumo-cloud@$digest" <your-registry>/takumo-cloud:0.3.0
+    ```
+
     Add `--insecure` to `crane copy` if your registry serves plain HTTP. Check that both platforms arrived:
 
     ```bash
@@ -85,7 +97,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
   </Step>
 
   <Step title="Point the charts at your registry">
-    Set `image.repository` and `image.tag` on each chart, for example `--set image.repository=<your-registry>/aegis-shield --set image.tag=<tag>`, and put your registry's credentials in `takumo-pull-secret`.
+    Set `image.repository` and `image.tag` on each chart, for example `--set image.repository=<your-registry>/aegis-shield --set image.tag=<tag>`, and put your registry's credentials in `takumo-pull-secret`. The dashboard chart uses `takumo-pull-secret` on its own only for images from `cr.takumo.io`, so for a mirrored dashboard image also set `--set imagePull.existingSecret=takumo-pull-secret`.
   </Step>
 </Steps>
 
@@ -96,6 +108,32 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
 <Note>The blocks on this page use `read -rs` and `<(...)`, which need bash or zsh.</Note>
 
 <Steps>
+  <Step title="Create the image pull Secret">
+    Skip this step if you created `takumo-pull-secret` in the `takumo` namespace for [On-Premises](/deployment/onprem). Otherwise, issue a deploy token in the Takumo dashboard (**Settings > Deploy Tokens**) of the Pro or Enterprise workspace. The username is your workspace ID, which that page shows, and the password is the token. Replace `<workspace-id>` below, paste the whole block, then paste the token when asked. The token is read without echo, so it stays out of shell history, the screen and process arguments:
+
+    ```bash
+    (
+      printf 'Paste the deploy token, then press Enter: ' >&2
+      read -rs TAKUMO_DEPLOY_TOKEN || exit 1
+      echo >&2
+      printf '{"auths":{"cr.takumo.io":{"username":"%s","password":"%s"}}}' "<workspace-id>" "$TAKUMO_DEPLOY_TOKEN" \
+        | kubectl create secret generic takumo-pull-secret -n takumo \
+            --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
+    )
+    ```
+
+    `helm install` stops with the commands to fix it if this Secret is missing from the namespace or has the wrong type.
+  </Step>
+
+  <Step title="Download the chart">
+    The on-prem values overlay, `values-onprem.yaml`, ships inside the chart. If you have not added the Helm repository yet, run `helm repo add takumo https://charts.takumo.io` first:
+
+    ```bash
+    helm repo update
+    helm pull takumo/cloud --version 0.3.0 --untar --untardir ./takumo-charts
+    ```
+  </Step>
+
   <Step title="Create the database Secret">
     Paste the pooled and direct connection strings when asked, in the form `postgres://USER:PASSWORD@HOST:5432/DATABASE` (use the same URL twice if you have no pooler). The direct URL runs the migrations:
 
@@ -141,28 +179,44 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     ```
   </Step>
 
+  <Step title="Create the email Secret">
+    Paste your Resend API key when asked:
+
+    ```bash
+    (
+      printf 'Paste your Resend API key, then press Enter: ' >&2
+      read -rs RESEND_API_KEY || exit 1
+      echo >&2
+      printf '%s' "$RESEND_API_KEY" \
+        | kubectl create secret generic cloud-email -n takumo --from-file=resend-api-key=/dev/stdin
+    )
+    ```
+  </Step>
+
   <Step title="Install the chart">
     ```bash
-    helm install cloud ./takumo-charts/cloud \
+    helm install cloud takumo/cloud \
       --namespace takumo \
+      --version 0.3.0 \
       --values ./takumo-charts/cloud/values-onprem.yaml \
-      --set image.repository=<your-registry>/takumo-cloud \
-      --set image.tag=<tag> \
-      --set secrets.imagePull.enabled=true \
-      --set secrets.imagePull.secretName=takumo-pull-secret \
       --set app.url=https://<your-dashboard-host> \
       --set app.authUrl=https://<your-dashboard-host> \
       --set app.trustedOrigins=https://<your-dashboard-host> \
       --set app.cookieDomain=.<your-domain> \
+      --set features.email=true \
+      --set secrets.email.enabled=true \
+      --set app.fromEmail='Takumo <takumo@<your-domain>>' \
       --set ingress.enabled=true \
       --set ingress.hostname=<your-dashboard-host> \
       --set ingress.tls.issuer=<your-cluster-issuer>
     ```
 
+    The chart pulls `cr.takumo.io/takumo-cloud:0.3.0` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
+
     `values-onprem.yaml` sets:
     - `app.installMode: onprem`, so every organization created on this dashboard is an on-prem organization
     - `worker.enabled: true`, the background worker that turns detected secrets and vulnerabilities into issues, syncs Bitbucket and resets annual credits. Without NATS it logs `running in HTTP push + cron only mode`, which is expected
-    - `networkPolicy.enabled: true`, `replicaCount: 2` and billing, email and OAuth off
+    - `networkPolicy.enabled: true`, `replicaCount: 2` and billing, email and OAuth off, so the email flags above turn email on
 
     Watch the pods start. The first start runs the database migrations:
 
@@ -194,26 +248,7 @@ If the endpoint is unreachable, each rate limited request waits about 5 seconds 
 
 ### Email
 
-The dashboard sends email through Resend. Without it, nothing is sent: sign-up says a verification link was sent, but an account created with email and password stays unverified and cannot sign in, and password reset emails never arrive. Configure email before the first user signs up, or have users sign in with [GitHub or Google](#sign-in-with-github-or-google).
-
-```bash
-(
-  printf 'Paste your Resend API key, then press Enter: ' >&2
-  read -rs RESEND_API_KEY || exit 1
-  echo >&2
-  printf '%s' "$RESEND_API_KEY" \
-    | kubectl create secret generic cloud-email -n takumo --from-file=resend-api-key=/dev/stdin
-)
-```
-
-```bash
-helm upgrade cloud ./takumo-charts/cloud \
-  --namespace takumo \
-  --reuse-values \
-  --set features.email=true \
-  --set secrets.email.enabled=true \
-  --set app.fromEmail='Takumo <takumo@<your-domain>>'
-```
+The dashboard sends email through Resend, set up in [Install the dashboard](#install-the-dashboard). Without it, nothing is sent: sign-up says a verification link was sent, but an account created with email and password stays unverified and cannot sign in, and password reset emails never arrive.
 
 Use a sender on a domain you have verified in Resend.
 
@@ -247,8 +282,9 @@ The Secret needs all four keys. Leave the pair for a provider you do not use emp
 ```
 
 ```bash
-helm upgrade cloud ./takumo-charts/cloud \
+helm upgrade cloud takumo/cloud \
   --namespace takumo \
+  --version 0.3.0 \
   --reuse-values \
   --set features.oauth=true \
   --set secrets.oauth.enabled=true
@@ -303,8 +339,9 @@ rm webhook-secret.txt
 Pass the App ID with `--set-string`, so Helm keeps it as a string:
 
 ```bash
-helm upgrade cloud ./takumo-charts/cloud \
+helm upgrade cloud takumo/cloud \
   --namespace takumo \
+  --version 0.3.0 \
   --reuse-values \
   --set features.githubApp=true \
   --set secrets.githubApp.enabled=true \
@@ -373,6 +410,18 @@ kubectl describe networkpolicy -n takumo <policy-name>
 ```
 
 The dashboard admits traffic from the `ingress-nginx` namespace, from pods labelled `app.kubernetes.io/part-of: takumo` and from its own cron jobs, and sends traffic out on 53, 443 and 5432 and to the coordinator, plus the license agent when `rtb.enabled` is on. The gateway's own limits are on [On-Premises](/deployment/onprem#network-requirements).
+
+### The image pull is denied
+
+If the dashboard pods stay in `ImagePullBackOff`, read the pull error:
+
+```bash
+kubectl describe pods -n takumo -l app.kubernetes.io/name=cloud | grep -iA3 'failed to pull'
+```
+
+An error that says `denied`, or `This workspace is not entitled to the self-hosted dashboard image`, means the deploy token in `takumo-pull-secret` works but its workspace cannot pull the dashboard image. The workspace must be on the Pro or Enterprise plan and must have been created with the **On-Prem** deployment mode. Some container runtimes show only `denied` without the message. Issue a token from a workspace that meets both conditions, delete the old Secret with `kubectl delete secret takumo-pull-secret -n takumo`, and create it again as in [Install the dashboard](#install-the-dashboard).
+
+An error that says `unauthorized` means the workspace ID or the token is wrong, or the token was revoked or has expired. See [Deploy Tokens](/dashboard/deploy-tokens).
 
 ### GitHub does not connect
 
