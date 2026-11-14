@@ -432,12 +432,14 @@ The dashboard admits traffic from the `ingress-nginx` namespace, from pods label
 If the dashboard pods stay in `ImagePullBackOff`, read the pull error:
 
 ```bash
-kubectl describe pods -n takumo -l app.kubernetes.io/name=cloud | grep -iA3 'failed to pull'
+kubectl describe pods -n takumo -l app.kubernetes.io/name=cloud --show-events=true | grep -iA3 'failed to pull'
 ```
 
 An error that says `denied`, or `This workspace is not entitled to the self-hosted dashboard image`, means the deploy token in `takumo-pull-secret` works but its workspace cannot pull the dashboard image. The workspace must be on the Pro or Enterprise plan and must have been created with the **On-Prem** deployment mode. Some container runtimes show only `denied` without the message. Issue a token from a workspace that meets both conditions, delete the old Secret with `kubectl delete secret takumo-pull-secret -n takumo`, and create it again as in [Install the dashboard](#install-the-dashboard).
 
 An error that says `unauthorized` means the workspace ID or the token is wrong, or the token was revoked or has expired. See [Deploy Tokens](/dashboard/deploy-tokens).
+
+An error that says `i/o timeout` means the node cannot reach `cr.takumo.io`. Each node's container runtime pulls the image, not the pod, so allow outbound 443 from every node (see [Outbound access](#outbound-access)), or mirror the image into your own registry (see [Images](#images)).
 
 ### GitHub does not connect
 
