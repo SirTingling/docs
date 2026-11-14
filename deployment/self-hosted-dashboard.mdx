@@ -252,6 +252,22 @@ The dashboard sends email through Resend, set up in [Install the dashboard](#ins
 
 Use a sender on a domain you have verified in Resend.
 
+### Monitoring
+
+The dashboard sends traces and metrics over OpenTelemetry (OTLP over HTTP). Point it at your collector with `otel.endpoint`. An https endpoint works anywhere; plain http works only for a service inside the cluster, such as `http://otel-collector.monitoring.svc.cluster.local:4318`. The dashboard's NetworkPolicy allows outbound traffic on ports 443 and 5432 only, so add a rule for the collector:
+
+```bash
+helm upgrade cloud takumo/cloud --version 0.3.0 --reuse-values \
+  --set otel.endpoint=http://otel-collector.monitoring.svc.cluster.local:4318 \
+  --set-json 'networkPolicy.extraEgress=[{"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}],"ports":[{"port":4318,"protocol":"TCP"}]}]'
+```
+
+`takumo_config_valid` is 1 when the dashboard's configuration passed its startup check and 0 when it did not; `takumo_config_problems` names each variable that failed. With the Prometheus Operator installed, `--set alerting.enabled=true` adds alert rules, including one that fires when the configuration is invalid.
+
+### Live notifications
+
+Notifications arrive in the dashboard within 30 seconds. To deliver them instantly, give the dashboard a Redis server for pub/sub with `--set features.redisPubSub=true --set features.redisPubSubUrl=redis://<redis-host>:6379`, and allow port 6379 to it with a `networkPolicy.extraEgress` rule like the one in [Monitoring](#monitoring).
+
 ## Sign in with GitHub or Google
 
 Sign-in uses an OAuth app per provider. Set the callback URL exactly:
