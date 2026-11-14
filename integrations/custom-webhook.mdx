@@ -70,7 +70,7 @@ Events are sent as JSON POST requests. Each payload includes:
 
 | Field | Description |
 |-------|-------------|
-| `event_type` | `secret_detection`, `policy_violation`, `sentinel_finding`, or `incident` |
+| `event_type` | `secret_detection`, `sentinel_finding`, or `incident`. `policy_violation` is reserved and not sent for pull request policy checks yet. |
 | `timestamp` | ISO 8601 timestamp |
 | `severity` | `critical`, `high`, `medium`, or `low` |
 | `repository` | Repository where the event was detected |

@@ -4,7 +4,7 @@ description: Violation alerts in Slack channels
 icon: "bell"
 ---
 
-Send security alerts to a Slack channel. Takumo posts messages when violations are detected: secrets exposed, policies triggered, or critical issues found.
+Send security alerts to a Slack channel. Takumo posts a message when a pull request check blocks or warns on a policy at or above your organization's minimum severity.
 
 ---
 
@@ -20,7 +20,7 @@ Send security alerts to a Slack channel. Takumo posts messages when violations a
   <Step title="Choose alert types">
     Select which events trigger Slack messages:
     - Security violations (secret exposure, vulnerabilities)
-    - Policy violations
+    - Policy violations (block or warn results at or above the minimum severity set for your organization)
     - Critical incidents
   </Step>
 </Steps>

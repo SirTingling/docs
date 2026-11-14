@@ -6,7 +6,7 @@ icon: "search"
 
 <Note>Requires an Custom plan.</Note>
 
-Send security metrics and events from Takumo to Datadog. Detections, policy violations, and incidents appear as Datadog events that you can alert on, graph, and correlate with your existing observability data.
+Send security metrics and events from Takumo to Datadog. Detections and incidents appear as Datadog events that you can alert on, graph, and correlate with your existing observability data.
 
 ---
 
@@ -54,7 +54,6 @@ If no site is provided, `datadoghq.com` is used.
 | Event type | Datadog type | Description |
 |-----------|-------------|-------------|
 | Secret detection | Event | A secret or credential found in code |
-| Policy violation | Event | A custom rule triggered on a commit or PR |
 | Sentinel finding | Event | AI review flagged a security issue |
 | Incident | Event | A critical issue was escalated |
 

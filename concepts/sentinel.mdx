@@ -50,7 +50,7 @@ After the AI responds, before the code reaches your editor:
 
 1. AI generates code
 2. The gateway intercepts the response
-3. Sentinel scans for vulnerabilities, license issues, and policy violations
+3. Sentinel scans for vulnerabilities and license issues
 4. Clean code passes through. Flagged code is annotated with the issue.
 
 ### In the extension
@@ -73,13 +73,13 @@ On pull requests via GitHub integration:
 
 ## Enforcement modes
 
-The enforcement mode depends on your policy configuration:
+On pull request checks, the enforcement mode comes from the matching policy rule:
 
 | Mode | Behavior |
 |------|----------|
-| **Block** | Flagged code is rejected. The request fails with detection details. |
-| **Warn** | Code passes through with warnings attached. Logged to audit trail. |
-| **Monitor** | Code passes through silently. Issue is logged. No notification. |
+| **Block** | The pull request check fails, with the details in the check and a PR comment. A violation is recorded. |
+| **Warn** | The check completes as neutral, with warnings in the PR comment. A violation is recorded. |
+| **Monitor** | The check is not affected. Matches are listed in the PR comment, and no violation is recorded. |
 
 ## Scan API
 

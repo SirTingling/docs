@@ -1,10 +1,10 @@
 ---
 title: Security Policies
-description: Define and enforce security, license, and operational risk policies
+description: Define the pull request checks for security, license, and operational risk
 icon: "shield"
 ---
 
-Policies are the core enforcement mechanism in Takumo. Each policy groups one or more rules under a single configuration, with scoping, enforcement mode, notifications, and version history. Policies are enforced across scans and generate violations when code does not comply.
+Policies are the core enforcement mechanism in Takumo. Each policy groups one or more rules under a single configuration, with scoping, enforcement mode, notifications, and version history. Policies apply to pull request checks and generate violations when a pull request does not comply.
 
 The policies page is at **Dashboard → Policies**.
 
@@ -16,7 +16,7 @@ Every policy has a type that determines what kind of rules it can contain:
 
 | Type | Description |
 |------|-------------|
-| **Security** | CVE thresholds, secret detection, malicious package flags, scan freshness requirements |
+| **Security** | Secret detection by file name, and a malicious package flag that matches any lock file change. CVE thresholds and scan freshness can be saved but are not evaluated yet |
 | **License** | Banned/allowed license lists, unknown license handling |
 | **Operational Risk** | Dependency health: inactivity, contributor count, download volume, version lag, deprecation |
 
@@ -44,8 +44,8 @@ Each policy has an enforcement mode that controls what happens when a rule match
 |------|----------|
 | **Block** | Blocks the PR merge or fails the check. |
 | **Warn** | Surfaces a warning but allows the merge. |
-| **Notify** | Sends a notification without affecting the PR. |
-| **Monitor** | Records the violation silently for analytics. |
+| **Notify** | Does not affect the PR. Takumo posts a comment on the PR. |
+| **Monitor** | Does not affect the PR. Takumo posts a comment on the PR. |
 
 The enforcement mode is derived from the first rule in the policy.
 
@@ -63,18 +63,18 @@ The enforcement mode is derived from the first rule in the policy.
   <Step title="Add rules">
     Add one or more rules to the policy. Each rule has a name, description, priority, criteria specific to the policy type, an enforcement action (block, warn, notify, monitor), and an enabled toggle.
 
-    Security rule criteria include CVSS thresholds, specific CVEs, secret types, finding age, fix availability, malicious package detection, and scan freshness. License criteria include banned/allowed license lists. Operational risk criteria include inactivity thresholds, contributor minimums, download requirements, and version lag limits.
+    The wizard offers criteria for CVSS thresholds, specific CVEs, secret types, finding age, fix availability, malicious package detection, scan freshness, license lists, inactivity, contributor minimums, downloads, and version lag. Policy checks currently evaluate only some of these, and they match on file names and dependency manifest changes, not file contents. CVSS, CVE, age, fix availability, scan freshness, inactivity (`maxInactivityMonths`), contributor and download criteria are saved but not evaluated yet. The malicious package, deprecated and version lag criteria match any lock file change and do not look up the package. License lists are not checked against real licenses: `bannedLicenses` and `unknownLicense` match any change that adds lines to a dependency manifest such as `package.json`, so a clean addition can be flagged and a license in a lock file is missed. A secret rule matches file names such as `.env` or `.pem`, so it flags detected file names, not every secret in your code.
   </Step>
   <Step title="Set the scope">
     Apply the policy to all repositories, specific repositories by name, or repositories matching tags.
 
-    Optionally configure path filters with include/exclude glob patterns.
+    Path filters are saved but not applied yet.
   </Step>
   <Step title="Configure notifications">
-    Add notification targets (Slack, email, webhook, Jira, PagerDuty) to be alerted when the policy triggers.
+    The wizard accepts notification targets (Slack, email, webhook, Jira, PagerDuty). Policy checks do not send alerts to these targets yet.
   </Step>
   <Step title="Choose activation">
-    Activate immediately, set a grace period (enforcement starts after N days), or save as draft.
+    Activate immediately or save as draft. A grace period can be set, but enforcement starts immediately today.
   </Step>
 </Steps>
 
@@ -156,8 +156,5 @@ Duplicating a policy also counts toward the limit.
 <CardGroup cols={2}>
   <Card title="Rules API" icon="code" href="/api/rules">
     Create and manage policies programmatically
-  </Card>
-  <Card title="Workbench" icon="flask-conical" href="/dashboard/workbench">
-    Test policy rules before deploying
   </Card>
 </CardGroup>

@@ -6,7 +6,7 @@ icon: "zap"
 
 <Note>Requires an Custom plan.</Note>
 
-Stream security events from Takumo to Splunk using the HTTP Event Collector (HEC). Every detection, policy violation, and incident is forwarded in real time.
+Stream security events from Takumo to Splunk using the HTTP Event Collector (HEC). Secret detections, Sentinel findings, and incidents are forwarded in real time.
 
 ---
 
@@ -66,7 +66,6 @@ Events are sent to HEC as JSON payloads. Each event includes:
 | Event type | When it fires |
 |-----------|--------------|
 | Secret detection | A secret or credential is found in code |
-| Policy violation | A custom rule is triggered |
 | Sentinel finding | AI review flags a security issue |
 | Incident | A critical issue is escalated |
 

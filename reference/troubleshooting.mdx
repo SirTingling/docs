@@ -76,7 +76,7 @@ Takumo detects specific patterns. If your secret doesn't match a known pattern, 
 **Check these:**
 - Review [Supported Patterns](/patterns/supported) for the full list.
 - Run a local scan to see what Takumo finds: `takumo-aegis scan ./your-file.ts`
-- If the secret uses a non-standard format, add a custom pattern in your [policy configuration](/concepts/policies) or create a [custom Sentinel rule](/dashboard/rules).
+- If the secret uses a non-standard format, create a [custom Sentinel rule](/dashboard/rules). Policies do not add detection patterns.
 - Generic detection catches values assigned to variables named `password`, `secret`, `api_key`, etc. If your variable name doesn't match, the value won't be flagged.
 </Accordion>
 
