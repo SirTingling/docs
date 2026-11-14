@@ -254,7 +254,7 @@ Use a sender on a domain you have verified in Resend.
 
 ### Monitoring
 
-The dashboard sends traces and metrics over OpenTelemetry (OTLP over HTTP). Point it at your collector with `otel.endpoint`. An https endpoint works anywhere; plain http works only for a service inside the cluster, such as `http://otel-collector.monitoring.svc.cluster.local:4318`. The dashboard's NetworkPolicy allows outbound traffic on ports 443 and 5432 only, so add a rule for the collector:
+The dashboard sends traces and metrics over OpenTelemetry (OTLP over HTTP). Point it at your collector with `otel.endpoint`. An https endpoint works anywhere; plain http works only for a service inside the cluster, such as `http://otel-collector.monitoring.svc.cluster.local:4318`. Over plain http the dashboard sends no credentials to the collector. The dashboard's NetworkPolicy allows outbound traffic on ports 443 and 5432 only, so add a rule for the collector:
 
 ```bash
 helm upgrade cloud takumo/cloud --version 0.3.0 --reuse-values \
