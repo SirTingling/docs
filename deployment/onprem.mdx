@@ -325,3 +325,68 @@ The coordinator needs:
 Both services create NetworkPolicy resources by default (`networkPolicy.enabled: true`).
 
 <Warning>The gateway's NetworkPolicy in chart 0.2.2 allows egress only on ports 53 and 443. If your CNI enforces NetworkPolicy, it blocks the gateway's connections to the coordinator on 9090 and to its Redis on 6379. Add a NetworkPolicy that allows that egress from the gateway pods, or install the gateway with `--set networkPolicy.enabled=false` and apply your own.</Warning>
+
+## Troubleshooting the self-hosted dashboard
+
+The dashboard checks its settings when each pod starts. It checks the format of each value and never logs the value itself, only the variable name and the problem.
+
+### The dashboard says the install is misconfigured
+
+If a page shows **This Takumo install is misconfigured. An administrator can see which setting in the server logs.**, a setting the request needed is missing or malformed. The page shows a request ID. Find the cause in the pod logs:
+
+```bash
+kubectl logs -n takumo deploy/cloud | grep -E 'config.invalid|<request-id>'
+```
+
+Each problem is one `config.invalid` line with the variable and the problem, for example `{"variable":"ENCRYPTION_KEY","problem":"not 64 hex characters","msg":"config.invalid"}`. A `config.whitespace_trimmed` warning names a variable whose value has a leading or trailing newline or space. Takumo trims those values, so the warning is safe to leave, but regenerate the value when you can.
+
+The same results are exported as metrics:
+
+| Metric | Meaning |
+|--------|---------|
+| `takumo_config_valid` | `1` when every check passes, `0` otherwise |
+| `takumo_config_problems{variable,problem}` | One series per problem |
+| `takumo_config_error_requests_total{route}` | Requests that failed because of a setting |
+
+With `alerting.enabled: true` in the cloud chart, the `TakumoConfigInvalid` alert fires when `takumo_config_valid` stays at `0` for 5 minutes.
+
+A problem with `ENCRYPTION_KEY`, `BETTER_AUTH_SECRET`, `DATABASE_URL`, `BETTER_AUTH_URL` or `NEXT_PUBLIC_APP_URL` also keeps the pod out of the Ready state, so `kubectl get pods -n takumo` shows it as `0/1`. Problems with optional integrations (Upstash, GitHub App, OAuth, SSO) leave the pod Ready and show only in the logs and metrics.
+
+To regenerate a 64 hex character key without a trailing newline, replace the key in the `cloud-auth` Secret and restart the dashboard:
+
+```bash
+kubectl create secret generic cloud-auth -n takumo \
+  --from-literal=better-auth-secret="$(kubectl get secret cloud-auth -n takumo -o jsonpath='{.data.better-auth-secret}' | base64 -d)" \
+  --from-literal=encryption-key="$(openssl rand -hex 32 | tr -d '\n')" \
+  --from-literal=hmac-key="$(kubectl get secret cloud-auth -n takumo -o jsonpath='{.data.hmac-key}' | base64 -d)" \
+  --from-literal=sso-encryption-key="$(kubectl get secret cloud-auth -n takumo -o jsonpath='{.data.sso-encryption-key}' | base64 -d)" \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl rollout restart deploy/cloud -n takumo
+```
+
+<Warning>A new `encryption-key` cannot decrypt credentials stored with the old one. Replace a malformed key before any integration is connected, or keep the old value and only remove its newline.</Warning>
+
+### The GitHub App private key
+
+The `github-app-private-key` key of the `cloud-github-app` Secret accepts the `.pem` file GitHub downloads as is, the base64 encoding of that file, or the PEM with literal `\n` escapes on one line. Create it straight from the downloaded file:
+
+```bash
+kubectl create secret generic cloud-github-app -n takumo \
+  --from-file=github-app-private-key=./your-app.private-key.pem \
+  --from-literal=github-webhook-secret='<webhook-secret>'
+```
+
+If the key does not parse, the logs show `config.invalid` with `"variable":"GITHUB_APP_PRIVATE_KEY"`, and connecting GitHub on the **Integrations** page shows that the install is misconfigured, with a **Try again** button and the request ID.
+
+Set the App ID as a string, for example `--set-string app.githubAppId=5754494`. Chart versions after TAK-164 also render a plain `--set` correctly. An App ID that is not all digits is logged as `config.invalid` with `"problem":"not a numeric GitHub App ID"`.
+
+### Cloud CronJobs fail
+
+The cloud chart runs CronJobs that call the dashboard with `CRON_SECRET`. With `alerting.enabled: true`, the `TakumoCloudCronJobFailing` alert fires when one of their Jobs has failed pods for 30 minutes. Read the failed Job's pod log:
+
+```bash
+kubectl get jobs -n takumo
+kubectl logs -n takumo job/<job-name>
+```
+
+A `401` or an invalid header error usually means the `cron-secret` value carries a trailing newline or differs from the one the dashboard reads. Recreate it with `openssl rand -hex 32 | tr -d '\n'` as shown above.
