@@ -29,7 +29,7 @@ What the install must reach depends on the features you turn on. Allow only thes
 
 | Destination | Needed for |
 |------------|------------|
-| Your registry, or `cr.takumo.io` with a [deploy token](/dashboard/deploy-tokens) | Pulling images |
+| Your registry, or `cr.takumo.io` with a [deploy token](/dashboard/deploy-tokens) | Pulling images. Each node's container runtime pulls, so allow this from every node, not only from pods |
 | Your PostgreSQL and your Upstash compatible endpoint | Always |
 | `github.com`, `api.github.com` | GitHub sign-in and your GitHub App |
 | `oauth2.googleapis.com`, `www.googleapis.com` | Google sign-in. Users' browsers also reach `accounts.google.com` |
@@ -109,7 +109,13 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
 
 <Steps>
   <Step title="Create the image pull Secret">
-    Skip this step if you created `takumo-pull-secret` in the `takumo` namespace for [On-Premises](/deployment/onprem). Otherwise, issue a deploy token in the Takumo dashboard (**Settings > Deploy Tokens**) of the Pro or Enterprise workspace. The username is your workspace ID, which that page shows, and the password is the token. Replace `<workspace-id>` below, paste the whole block, then paste the token when asked. The token is read without echo, so it stays out of shell history, the screen and process arguments:
+    Skip this step if you created `takumo-pull-secret` in the `takumo` namespace for [On-Premises](/deployment/onprem). Otherwise, create the namespace if it does not exist yet:
+
+    ```bash
+    kubectl create namespace takumo
+    ```
+
+    Then issue a deploy token in the Takumo dashboard (**Settings > Deploy Tokens**) of the Pro or Enterprise workspace. The username is your workspace ID, which that page shows, and the password is the token. Replace `<workspace-id>` below, paste the whole block, then paste the token when asked. The token is read without echo, so it stays out of shell history, the screen and process arguments:
 
     ```bash
     (
@@ -211,7 +217,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
       --set ingress.tls.issuer=<your-cluster-issuer>
     ```
 
-    The chart pulls `cr.takumo.io/takumo-cloud:0.3.0` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
+    The chart pulls `cr.takumo.io/takumo-cloud:0.3.0` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty, or while `app.fromEmail` is empty with `features.email=true`. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
 
     `values-onprem.yaml` sets:
     - `app.installMode: onprem`, so every organization created on this dashboard is an on-prem organization
@@ -244,7 +250,7 @@ kubectl create secret tls cloud-tls -n takumo --cert=./tls.crt --key=./tls.key
 
 The dashboard keeps rate limits and single use tokens through the Upstash REST API, not the Redis protocol. Use an [Upstash](https://upstash.com) database, or run an Upstash compatible REST proxy such as [serverless-redis-http](https://github.com/hiett/serverless-redis-http) in front of your own Redis. The dashboard's NetworkPolicy allows egress on port 443 and 5432 only, so serve the endpoint on 443.
 
-If the endpoint is unreachable, each rate limited request waits about 5 seconds and is then allowed, and connecting GitHub fails with **GitHub could not be connected right now**.
+Without the endpoint the dashboard still starts and `/api/health/ready` still answers 200, but every rate limited route, such as device sign-in for the CLI, returns 500. If the endpoint is unreachable, each rate limited request waits about 5 seconds and is then allowed, and connecting GitHub fails with **GitHub could not be connected right now**.
 
 ### Email
 
@@ -435,7 +441,7 @@ If the dashboard pods stay in `ImagePullBackOff`, read the pull error:
 kubectl describe pods -n takumo -l app.kubernetes.io/name=cloud --show-events=true | grep -iA3 'failed to pull'
 ```
 
-An error that says `denied`, or `This workspace is not entitled to the self-hosted dashboard image`, means the deploy token in `takumo-pull-secret` works but its workspace cannot pull the dashboard image. The workspace must be on the Pro or Enterprise plan and must have been created with the **On-Prem** deployment mode. Some container runtimes show only `denied` without the message. Issue a token from a workspace that meets both conditions, delete the old Secret with `kubectl delete secret takumo-pull-secret -n takumo`, and create it again as in [Install the dashboard](#install-the-dashboard).
+An error that says `denied`, `403 Forbidden`, or `This workspace is not entitled to the self-hosted dashboard image`, means the deploy token in `takumo-pull-secret` works but its workspace cannot pull the dashboard image. The workspace must be on the Pro or Enterprise plan and must have been created with the **On-Prem** deployment mode. Some container runtimes show only `denied`, or containerd only `403 Forbidden`, without the message. Issue a token from a workspace that meets both conditions, delete the old Secret with `kubectl delete secret takumo-pull-secret -n takumo`, and create it again as in [Install the dashboard](#install-the-dashboard).
 
 An error that says `unauthorized` means the workspace ID or the token is wrong, or the token was revoked or has expired. See [Deploy Tokens](/dashboard/deploy-tokens).
 
