@@ -137,17 +137,25 @@ The GitHub App handles these webhook events:
 
 | Permission | Access | Why |
 |-----------|--------|-----|
-| Actions | Read | Sync workflows and workflow runs |
-| Administration | Read | Read branch protection |
-| Checks | Read + Write | Create check runs |
-| Code scanning alerts | Read | Ingest code scanning alerts |
-| Contents | Read + Write | Analyze code, read workflows, commit auto-remediation fixes |
-| Dependabot alerts | Read | Ingest Dependabot alerts |
-| Issues | Read + Write | Post PR comments, track issue status |
 | Metadata | Read | Repository info |
-| Pull requests | Read + Write | Open auto-remediation PRs |
+| Contents | Read + Write | Analyze code; commit auto-remediation fixes |
+| Pull requests | Read + Write | Post PR comments; open auto-remediation PRs |
+| Checks | Read + Write | Create check runs |
+| Administration | Read | Read branch protection |
+| Members (organization) | Read | Confirm the person connecting GitHub is an owner of the organization |
 | Secret scanning alerts | Read | Ingest secret scanning alerts |
-| Workflows | Read + Write | Auto-remediation PRs that change `.github/workflows` |
+| Code scanning alerts | Read | Ingest code scanning alerts |
+| Dependabot alerts | Read | Ingest Dependabot alerts |
+
+Optional, only for the features named:
+
+| Permission | Access | Needed for |
+|-----------|--------|-----|
+| Issues | Read + Write | Creating GitHub issues from findings ([GitHub Issues](/integrations/github-issues)) |
+| Actions | Read | Syncing workflow runs into the dashboard |
+| Workflows | Read + Write | Auto-remediation PRs that change files in `.github/workflows` |
+
+Subscribe to these events: **Pull request**, **Push**, **Repository**, **Branch protection rule**, **Secret scanning alert**, **Code scanning alert**, **Dependabot alert**.
 
 On a self-hosted dashboard you create this app yourself. See [Your GitHub App](/deployment/self-hosted-dashboard#your-github-app).
 

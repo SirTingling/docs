@@ -30,7 +30,7 @@ What the install must reach depends on the features you turn on. Allow only thes
 | `oauth2.googleapis.com`, `www.googleapis.com` | Google sign-in. Users' browsers also reach `accounts.google.com` |
 | `api.resend.com` | Email |
 | `api.anthropic.com`, `api.openai.com` | The gateway, for the providers you configure |
-| `rtb.takumo.io` | The licence agent in a connected install only |
+| `rtb.takumo.io` | The license agent in a connected install only |
 
 The install sends nothing else to Takumo. It does not need `charts.takumo.io` at runtime: only the machine that runs `helm` reaches it. When the dashboard starts, its database migration step may look up `registry.npmjs.org`. It does not need the answer, so blocking that host is fine.
 
@@ -38,7 +38,7 @@ Your GitHub App's webhooks travel the other way: `github.com` must reach `https:
 
 ### Air-gapped installs
 
-With no route out, mirror every image into your own registry (see [Images](#images)) and use an [air-gapped licence](#licence). Users then sign in with email and password, and the dashboard verifies each address by email, so allow `api.resend.com` for [email](#email) or allow one sign-in provider. With neither, new accounts cannot be verified: contact Takumo support at [support@takumo.io](mailto:support@takumo.io) before you install.
+With no route out, mirror every image into your own registry (see [Images](#images)) and use an [air-gapped license](#license). Users then sign in with email and password, and the dashboard verifies each address by email, so allow `api.resend.com` for [email](#email) or allow one sign-in provider. With neither, new accounts cannot be verified: contact Takumo support at [support@takumo.io](mailto:support@takumo.io) before you install.
 
 ## Images
 
@@ -89,7 +89,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
   </Step>
 </Steps>
 
-`<your-registry>` may carry a port, such as `registry.example.com:5000`, for every chart except `takumo-rtb`, whose `image.repository` must be a hostname without a port. Every node must be able to pull from the registry, so configure each node's container runtime to trust its certificate, or to use plain HTTP, before you install.
+`<your-registry>` may carry a port, such as `registry.example.com:5000`, for every chart, including `takumo-rtb` from chart version 0.2.3. Every node must be able to pull from the registry, so configure each node's container runtime to trust its certificate, or to use plain HTTP, before you install.
 
 ## Install the dashboard
 
@@ -316,16 +316,16 @@ Then connect GitHub from **Integrations** in your dashboard.
 
 <Note>If connecting GitHub says **New GitHub connections are paused for a short upgrade**, new connections are temporarily unavailable. Existing connections keep working. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io).</Note>
 
-## Licence
+## License
 
-Each install runs the `takumo-rtb` licence agent. In an air-gapped install, the licence is a signed file you download from the Takumo dashboard and store in a Secret.
+Each install runs the `takumo-rtb` license agent. In an air-gapped install, the license is a signed file you download from the Takumo dashboard and store in a Secret.
 
 <Steps>
   <Step title="Install the agent">
     ```bash
     helm install takumo-rtb takumo/takumo-rtb \
       --namespace takumo \
-      --version 0.2.2 \
+      --version 0.2.3 \
       --set rtb.airGapped=true \
       --set image.repository=<your-registry>/takumo-rtb \
       --set image.tag=<tag> \
@@ -340,17 +340,17 @@ Each install runs the `takumo-rtb` licence agent. In an air-gapped install, the 
   </Step>
 
   <Step title="Add the install in the Takumo dashboard">
-    In your workspace on the Takumo dashboard, open **Installations**, choose **Add air-gapped install**, enter the fingerprint, and choose **Add and download license** to get the licence file, `license-<install-id>.json`.
+    In your workspace on the Takumo dashboard, open **Installations**, choose **Add air-gapped install**, enter the fingerprint, and choose **Add and download license** to get the license file, `license-<install-id>.json`.
   </Step>
 
-  <Step title="Store the licence">
+  <Step title="Store the license">
     ```bash
     kubectl -n takumo create secret generic takumo-license --from-file=license=./license-<install-id>.json
     ```
   </Step>
 </Steps>
 
-A licence is valid for 60 days. From day 46, use **Download refreshed license** on the same install's page and replace the Secret:
+A license is valid for 60 days. From day 46, use **Download refreshed license** on the same install's page and replace the Secret:
 
 ```bash
 kubectl -n takumo create secret generic takumo-license --from-file=license=./license-<install-id>.json \
@@ -372,7 +372,7 @@ kubectl get networkpolicy -n takumo
 kubectl describe networkpolicy -n takumo <policy-name>
 ```
 
-The dashboard admits traffic from the `ingress-nginx` namespace, from pods labelled `app.kubernetes.io/part-of: takumo` and from its own cron jobs, and sends traffic out on 53, 443 and 5432 and to the coordinator, plus the licence agent when `rtb.enabled` is on. The gateway's own limits are on [On-Premises](/deployment/onprem#network-requirements).
+The dashboard admits traffic from the `ingress-nginx` namespace, from pods labelled `app.kubernetes.io/part-of: takumo` and from its own cron jobs, and sends traffic out on 53, 443 and 5432 and to the coordinator, plus the license agent when `rtb.enabled` is on. The gateway's own limits are on [On-Premises](/deployment/onprem#network-requirements).
 
 ### GitHub does not connect
 
