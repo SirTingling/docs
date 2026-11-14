@@ -6,6 +6,8 @@ icon: "server"
 
 For organizations that need full control over where their data flows. Deploy the gateway and coordinator in your Kubernetes cluster.
 
+To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/deployment/self-hosted-dashboard).
+
 <Warning>Authenticating a self-hosted gateway with Takumo API keys or join keys is not yet available. The steps on this page deploy the coordinator and gateway, but developers can't send requests through the gateway with their Takumo API keys, and the gateway does not appear on the **Fleet** page. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
 
 ## Prerequisites
@@ -110,7 +112,9 @@ For organizations that need full control over where their data flows. Deploy the
     `sentinel-service`, `vault-service`) plus `mirror/redis` into your
     internal registry. Override `image.repository` in your values file, and
     `redis.image.repository` for the gateway's Redis, then put that
-    registry's pull credentials in this Secret instead.
+    registry's pull credentials in this Secret instead. To copy both
+    architectures by digest and pin tags, see
+    [Images](/deployment/self-hosted-dashboard#images).
   </Step>
 
   <Step title="Download the charts">

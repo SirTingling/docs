@@ -127,6 +127,7 @@ The GitHub App handles these webhook events:
 | `code_scanning_alert` | Create Issue |
 | `dependabot_alert` | Create Issue |
 | `branch_protection_rule` | Re-sync compliance data |
+| `issues` (closed, reopened) | Sync the linked Takumo issue status |
 | `workflow_run` (completed) | Update pipeline metrics |
 | `installation` / `installation_repositories` | Manage integration status |
 
@@ -136,12 +137,19 @@ The GitHub App handles these webhook events:
 
 | Permission | Access | Why |
 |-----------|--------|-----|
-| Contents | Read | Analyze code, read workflows |
-| Pull requests | Read + Write | Post comments |
+| Actions | Read | Sync workflows and workflow runs |
+| Administration | Read | Read branch protection |
 | Checks | Read + Write | Create check runs |
-| Issues | Read + Write | Auto-remediation PRs |
+| Code scanning alerts | Read | Ingest code scanning alerts |
+| Contents | Read + Write | Analyze code, read workflows, commit auto-remediation fixes |
+| Dependabot alerts | Read | Ingest Dependabot alerts |
+| Issues | Read + Write | Post PR comments, track issue status |
 | Metadata | Read | Repository info |
-| Security events | Read | Secret/code scanning alerts |
+| Pull requests | Read + Write | Open auto-remediation PRs |
+| Secret scanning alerts | Read | Ingest secret scanning alerts |
+| Workflows | Read + Write | Auto-remediation PRs that change `.github/workflows` |
+
+On a self-hosted dashboard you create this app yourself. See [Your GitHub App](/deployment/self-hosted-dashboard#your-github-app).
 
 ---
 
