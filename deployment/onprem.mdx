@@ -382,7 +382,7 @@ kubectl create secret generic cloud-github-app -n takumo \
 
 If the key does not parse, the logs show `config.invalid` with `"variable":"GITHUB_APP_PRIVATE_KEY"`, and connecting GitHub on the **Integrations** page shows that the install is misconfigured, with a **Try again** button and the request ID.
 
-Set the App ID as a string, for example `--set-string app.githubAppId=5754494`. Chart versions after TAK-164 also render a plain `--set` correctly. An App ID that is not all digits is logged as `config.invalid` with `"problem":"not a numeric GitHub App ID"`.
+Set the App ID as a string, for example `--set-string app.githubAppId=<your-app-id>`. Current chart versions also render a plain `--set` correctly. An App ID that is not all digits is logged as `config.invalid` with `"problem":"not a numeric GitHub App ID"`.
 
 ### Cloud CronJobs fail
 
