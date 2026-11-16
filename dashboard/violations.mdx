@@ -24,7 +24,7 @@ Each violation records the policy that fired, the enforcement mode, and the cont
 
 A pull request check records one open violation for each policy, rule, repository and pull request. Push again with the same problem and Takumo updates that violation with the new commit, adds a line to its timeline, and does not send a second alert. The alert goes out once, when the violation is created.
 
-When a later push fixes the problem and Takumo checks the whole pull request, the violation closes on its own as **Resolved** and the timeline says so. A check that could not finish never resolves anything, because it proves nothing about the files it did not read. A violation that was overridden is left as it is.
+When a later push fixes the problem and Takumo checks the whole pull request, the violation closes on its own as **Resolved** and the timeline says so. A check that could not finish never resolves anything, because it proves nothing about the files it did not read. The same holds when a secret rule could not scan a file, even if the rule only warns. A violation that was overridden is left as it is.
 
 Violations recorded before this behavior can show one row per push. They are not merged or closed automatically.
 

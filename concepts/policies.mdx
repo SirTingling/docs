@@ -66,7 +66,9 @@ These are detected secrets, not a guarantee that every secret is found. Policies
 
 Create your own policies in the dashboard under **Policies** in the sidebar. The wizard offers policy templates and lets you set the rules, enforcement mode and scope.
 
-Secret rules read the lines a pull request adds, in every changed file. A secret in `src/app.ts` fails the check, and a harmless file that only has a secret-sounding name, such as `.env.example` or `src/secretary.ts`, passes. Lines the pull request removes are not read, because removing a secret does not leak one. Findings name the detected category and the line, never the value.
+Secret rules read the lines a pull request adds, in every changed file. When GitHub does not send the change for a large file, Takumo reads the whole file at the pull request head instead. A secret in `src/app.ts` fails the check, and a harmless file that only has a secret-sounding name, such as `.env.example` or `src/secretary.ts`, passes. Lines the pull request removes are not read, because removing a secret does not leak one. Findings name the detected category and the line, never the value.
+
+Secret content checks need Takumo's content scanner, the Sentinel service. Where the scanner does not run, for example a self-hosted install that has not deployed `sentinel-service` or an environment where it is scaled to zero, a Block secret rule cannot finish and follows the **When a check can't finish** setting. A warn secret rule does not fail the check, and a run where it could not read a file does not resolve violations that earlier pushes recorded.
 
 These are detected secrets, not every secret. Takumo scans with the Sentinel secret rule, which is the Aegis Shield detector plus patterns for quoted assignments such as `password = "..."`. Some formats are not detected yet. An unquoted value in a `.env` file, such as `DB_PASSWORD=...` or an `OPENAI_API_KEY=sk-proj-...` line, is not flagged today, while a quoted assignment in code, such as `const password = "..."`, is.
 
