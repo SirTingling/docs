@@ -19,8 +19,8 @@ Connect Bitbucket to run Sentinel on pull requests and sync repository data. Tak
   <Step title="Select repositories">
     Takumo fetches repos from your workspace. Select which ones to track.
   </Step>
-  <Step title="Webhook registered">
-    Takumo registers a webhook on each selected repo for push and pull request events.
+  <Step title="Add the webhook">
+    Takumo does not register webhooks in Bitbucket. Add one yourself, as described in [Webhook setup](#webhook-setup).
   </Step>
 </Steps>
 
@@ -36,7 +36,36 @@ Connect Bitbucket to run Sentinel on pull requests and sync repository data. Tak
   <Step title="Select projects">
     Takumo fetches all projects from your instance. Select which ones to track.
   </Step>
+  <Step title="Add the webhook">
+    Takumo does not register webhooks in Bitbucket. Add one yourself, as described in [Webhook setup](#webhook-setup).
+  </Step>
 </Steps>
+
+---
+
+## Webhook setup
+
+Takumo checks a pull request only when Bitbucket signs the delivery with this integration's webhook secret. The secret decides which organization a delivery belongs to, so Takumo never guesses from the repository name.
+
+<Steps>
+  <Step title="Create a secret">
+    Go to **Dashboard > Integrations**, find Bitbucket and click **Configure**. Copy the **Webhook URL**, then click **Create secret** and copy the secret. Takumo shows it once and can't show it again. An integration that was connected before this existed has a secret that was never shown, so click **Create new secret** to replace it.
+  </Step>
+  <Step title="Add the webhook in Bitbucket">
+    In the repository, open **Repository settings**, then **Webhooks**, and add a webhook. Paste the URL and the secret. Choose the pull request created and updated events and repository push. On Server, choose opened, source branch updated and repository refs changed.
+  </Step>
+</Steps>
+
+Takumo refuses a delivery it can't verify with `401`:
+
+| Case | What Takumo does |
+|------|------------------|
+| The integration has no secret | Refuses every delivery. Create a secret first. |
+| The signature is missing or wrong | Refuses the delivery |
+| Two organizations connect the same repository name and the signature verifies for both | Refuses the delivery as ambiguous. Give each integration its own secret. |
+| No organization has the repository | Ignores the delivery and answers `200`, so Bitbucket does not retry it |
+
+Creating a new secret stops the current webhook until you update the secret in Bitbucket.
 
 ---
 
