@@ -27,7 +27,7 @@ const response = await fetch("https://cloud.takumo.io/api/v1/rules", {
 
 The gateway (`gateway.takumo.io/v1/messages` and `/v1/chat/completions`) takes the same `Authorization: Bearer` header. See [AI Tools](/ai-tools/overview).
 
-<Warning>Connecting AI tools through the Takumo gateway with an API key is not available yet, on `gateway.takumo.io` or on a self-hosted gateway. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) for early access.</Warning>
+<Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
 
 ## How keys are validated
 
@@ -39,16 +39,28 @@ The gateway (`gateway.takumo.io/v1/messages` and `/v1/chat/completions`) takes t
 
 The raw key is never stored. It exists only at creation time. After you close the creation dialog in the dashboard, the only copy is the one you saved.
 
-## Key prefixes
+## Key format
 
-An API key is 64 hex characters. The **API Keys** page labels each key with a prefix made from its first eight characters:
+A key is `tk_live_` or `tk_test_` followed by 43 letters, digits, hyphens and underscores. The prefix is the environment: `tk_live_` for Live and `tk_test_` for Test. It is part of the key, so send the whole key exactly as it was shown when you created it.
 
-| Prefix | Environment |
-|--------|-------------|
-| `tk_` | Live |
-| `tk_test_` | Test |
+The **API Keys** page labels each key with its first 12 characters, for example `tk_live_AbCd`, so you can tell your keys apart without showing the key.
 
-The prefix is a label, not part of the key. Send the key exactly as it was shown when you created it.
+<Note>An older key is 64 hex characters and the page labels it with `tk_` and eight characters. It keeps working on the Cloud API, but the gateway does not accept it. To use one at the gateway, rotate it on the **API Keys** page and use the new key.</Note>
+
+## Using a key at the gateway
+
+The gateway takes the same key as `Authorization: Bearer`. It exchanges the key for a short-lived token that carries your organization, your plan and the plan's limits, and applies them to every request:
+
+| Gateway requests a minute | Free | Pro | Enterprise | Custom |
+|---|---|---|---|---|
+| Per organization | 100 | 1,000 | 5,000 | 20,000 |
+| Per API key | 10 | 60 | 300 | 1,000 |
+
+Requests over either limit get `429 Too Many Requests` with a `Retry-After` header. See [Gateway limits by plan](/api/rate-limits#gateway-limits-by-plan).
+
+A key you revoke or disable stops working at the gateway within 5 minutes, because the gateway keeps the token it exchanged until the token expires. On the Cloud API the key is rejected at once.
+
+<Note>An organization with an IP allowlist cannot use API keys at the gateway yet. The gateway returns `401` for those keys. They keep working on the Cloud API, where the allowlist applies.</Note>
 
 ## Key scopes
 
@@ -95,7 +107,7 @@ For zero-downtime rotation:
 3. Verify requests succeed with the new key.
 4. Revoke the old key.
 
-Revocation takes effect within seconds. A revoked key returns `401 unauthorized` immediately. There is no undo.
+A revoked key returns `401 unauthorized` from the Cloud API at once and from the gateway within 5 minutes. You can enable a disabled key again from the **API Keys** page while your organization is under its key limit. A deleted key cannot be restored.
 
 ## Error responses
 
