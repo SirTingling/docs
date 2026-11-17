@@ -90,4 +90,4 @@ Pro and Enterprise plans charge **$0.02 per credit** over the included amount. A
 
 Custom plans include unlimited credits. No overage charges.
 
-Free plans are hard-capped. When you hit the limit, actions that Takumo runs for you are refused before they start, and the API returns `402` with `limit_exceeded:creditsPerPeriod`. Work that has already run in the Takumo daemon cannot be stopped: it is recorded as over the cap, shown on the Usage page as not charged, and the next call is refused. Free credits reset every month.
+Free plans are hard-capped. When you hit the limit, actions that Takumo runs for you are refused before they start, and the API returns `402` with `limit_exceeded:creditsPerPeriod`. Daemon transforms are refused at the credit cap too: the daemon checks your credits before it starts the work and shows the plan message. If Takumo Cloud cannot be reached, the transform runs and the charge is recorded afterwards. Usage that lands past the cap this way shows on the Usage page as over the cap, not charged. Free credits reset every month.
