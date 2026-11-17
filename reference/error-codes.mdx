@@ -31,7 +31,8 @@ The `type` field is a stable, machine-readable snake_case string. The `message` 
 | 401 | `unauthorized` | Invalid API key, missing credentials |
 | 401 | `token_expired` | API key or JWT has expired |
 | 401 | `token_revoked` | API key has been revoked |
-| 403 | `forbidden` | Insufficient scope, plan limit reached |
+| 402 | `limit_exceeded:<limit>` | A plan limit was reached, such as `limit_exceeded:creditsPerPeriod` or `limit_exceeded:apiKeys`. `spending_limit_reached` means your spending limit stopped the action |
+| 403 | `forbidden` | Insufficient scope, feature not available on your plan |
 | 404 | `not_found` | Resource doesn't exist |
 | 413 | `payload_too_large` | Request body exceeds maximum size |
 | 422 | `governance_violation` | Sentinel blocked the AI response (policy violation) |

@@ -101,8 +101,8 @@ Every operation consumes credits from your plan's included balance:
 
 ## Overage behavior
 
-- **Free plan**: Hard-capped. Overage is disabled. When you hit the monthly limit, requests are rejected until your credits reset. Free credits reset every month, 30 days after the organization was created or moved to Free.
-- **Pro and Enterprise plans**: Overage is enabled at $0.02 per credit. You are not cut off mid-request. Overage is billed at the end of the billing cycle.
+- **Free plan**: Hard-capped. Overage is disabled. When you hit the monthly limit, new actions are refused with `402` and `limit_exceeded:creditsPerPeriod` until your credits reset. Free credits reset every month, 30 days after the organization was created or moved to Free.
+- **Pro and Enterprise plans**: Overage is enabled at $0.02 per credit. A request that is already running is never cut off. If you set a spending limit, new actions are refused with `402` and `spending_limit_reached` once the overage would pass it. Overage is billed at the end of the billing cycle.
 - **Custom plans**: Unlimited included credits. Overage is enabled at $0.00 per credit (no charge).
 
 ### Included credits per plan

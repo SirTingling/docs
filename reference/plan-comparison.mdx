@@ -86,8 +86,8 @@ Every operation consumes credits from your included balance.
 
 ## Overage
 
-Pro and Enterprise plans charge **$0.02 per credit** over the included amount. You won't be cut off mid-request. Usage is billed at the end of the billing cycle.
+Pro and Enterprise plans charge **$0.02 per credit** over the included amount. A request that is already running is never cut off. If you set a spending limit on the Billing page, new actions in the dashboard are refused with `402` and `spending_limit_reached` once the overage would pass it. Usage is billed at the end of the billing cycle.
 
 Custom plans include unlimited credits. No overage charges.
 
-Free plans are hard-capped. When you hit the limit, requests return `403 forbidden` until your credits reset. Free credits reset every month.
+Free plans are hard-capped. When you hit the limit, actions that Takumo runs for you are refused before they start, and the API returns `402` with `limit_exceeded:creditsPerPeriod`. Work that has already run in the Takumo daemon cannot be stopped: it is recorded as over the cap, shown on the Usage page as not charged, and the next call is refused. Free credits reset every month.
