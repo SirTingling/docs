@@ -7,6 +7,17 @@ icon: "clock"
 # Changelog
 
 <AccordionGroup>
+  <Accordion title="v1.4.0: Policy checks fail closed">
+    A pull request check that Takumo could not finish is no longer reported as passed.
+
+    - A Block policy fails the check when Takumo errors, the provider returns only part of the pull request, or the pull request has more than 3,000 changed files. Choose **Let the pull request through** under **When a check can't finish** on the Policies page to keep the old neutral result. This applies to existing organizations
+    - Secret rules read the lines a pull request adds, so a secret in `src/app.ts` fails the check and a harmless file named `.env.example` passes
+    - Path filters on a policy now limit the files it reads, and Takumo rejects invalid patterns
+    - An approved override changes the next check within its scope and until it expires. You can't approve an override for your own pull request. On GitHub this applies when the approver's GitHub account is linked
+    - A pull request has one open violation per policy and rule. A fixing push resolves it
+    - Bitbucket and GitLab deliveries run only under the integration whose secret verifies them. Bitbucket shows its webhook URL and creates its secret in **Configure**
+  </Accordion>
+
   <Accordion title="v1.3.0: Documentation Overhaul">
     Complete rewrite of the documentation site. 113 pages across 8 tabs, all verified against source code.
 

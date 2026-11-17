@@ -20,6 +20,16 @@ Each violation records the policy that fired, the enforcement mode, and the cont
 
 ---
 
+## One violation per pull request
+
+A pull request check records one open violation for each policy, rule, repository and pull request. Push again with the same problem and Takumo updates that violation with the new commit, adds a line to its timeline, and does not send a second alert. The alert goes out once, when the violation is created.
+
+When a later push fixes the problem and Takumo checks the whole pull request, the violation closes on its own as **Resolved** and the timeline says so. A check that could not finish never resolves anything, because it proves nothing about the files it did not read. The same holds when a secret rule could not scan a file, even if the rule only warns. A violation that was overridden is left as it is.
+
+Violations recorded before this behavior can show one row per push. They are not merged or closed automatically.
+
+---
+
 ## Violation list
 
 | Column | Description |
@@ -57,6 +67,28 @@ Click a violation to see:
 - **Enforcement result**: What happened (code blocked, warning issued, or silently logged)
 - **Related detections**: If the violation was caused by a secret or vulnerability detection
 - **Actions taken**: Acknowledgements, remediation status
+
+---
+
+## Overriding a violation
+
+A block violation can be approved so the next check lets the pull request through. You need the `violations.manage` permission, which Owners, Admins and Security Leads have.
+
+In the dashboard, **Override** asks for a justification and approves that violation: the same policy, rule and repository, on that pull request, with no expiry. An override has one of three scopes:
+
+| Scope | What it covers |
+|-------|---------------|
+| **This violation** | The same policy, rule, repository and pull request |
+| **This rule in this repository** | The same policy and rule on any pull request in the repository |
+| **This rule in all repositories** | The same policy and rule on any pull request in your organization |
+
+The dashboard approves this violation only today. The other two scopes are not offered there yet.
+
+An approval does not re-run the check. Re-run it, or push a new commit, and Takumo reads the override. A covered match does not count toward the result and writes no new violation. The check summary lists it as **Overridden until** the expiry date, or **Overridden with no expiry**. If every match is overridden, the check passes with the title **Takumo: Passed with overrides**.
+
+An override with an expiry stops applying when it expires. The next check treats the match as new, and the violation returns to **Enforced** with an `override_expired` event. An override never applies across organizations.
+
+You can't approve an override for your own pull request. If the linked GitHub account of the approver is the author of the pull request, the override is refused and the refusal is recorded in the audit log. If the approver has no linked GitHub account, Takumo can't compare them, so the override is allowed and the timeline notes that the author identity is not linked. The author check covers GitHub pull requests.
 
 ---
 

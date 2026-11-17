@@ -30,6 +30,8 @@ Four modes. Pick the one that matches your risk tolerance.
 
 The pull request check fails and Takumo posts a comment with the details. Use this for findings that must not merge.
 
+A Block policy never passes a pull request that Takumo did not fully check. If Takumo hits an error or can't read the whole pull request, the check fails. See [When a check can't finish](#when-a-check-cant-finish).
+
 ### Warn
 
 The check passes and Takumo posts a comment with the details. On GitHub the check reports as neutral.
@@ -64,7 +66,34 @@ These are detected secrets, not a guarantee that every secret is found. Policies
 
 Create your own policies in the dashboard under **Policies** in the sidebar. The wizard offers policy templates and lets you set the rules, enforcement mode and scope.
 
-Policy rules currently match on file names and on changes to dependency manifests. They do not read file contents. A secret rule, for example, matches files such as `.env` or `.pem`, not the secrets inside other files. Only some rule criteria are evaluated today, and the policy templates for OWASP Top 10, SOC 2 Baseline and PCI DSS do not trigger yet. See [Security Policies](/dashboard/rules) for the criteria and their current behavior.
+Secret rules read the lines a pull request adds, in every changed file. When GitHub does not send the change for a large file, Takumo reads the whole file at the pull request head instead. A secret in `src/app.ts` fails the check, and a harmless file that only has a secret-sounding name, such as `.env.example` or `src/secretary.ts`, passes. Lines the pull request removes are not read, because removing a secret does not leak one. Findings name the detected category and the line, never the value.
+
+Secret content checks need Takumo's content scanner, the Sentinel service. Where the scanner does not run, for example a self-hosted install that has not deployed `sentinel-service` or an environment where it is scaled to zero, a Block secret rule cannot finish and follows the **When a check can't finish** setting. A warn secret rule does not fail the check, and a run where it could not read a file does not resolve violations that earlier pushes recorded.
+
+These are detected secrets, not every secret. Takumo scans with the Sentinel secret rule, which is the Aegis Shield detector plus patterns for quoted assignments such as `password = "..."`. Some formats are not detected yet. An unquoted value in a `.env` file, such as `DB_PASSWORD=...` or an `OPENAI_API_KEY=sk-proj-...` line, is not flagged today, while a quoted assignment in code, such as `const password = "..."`, is.
+
+License and dependency rules match on changes to dependency manifests and lock files. Only some rule criteria are evaluated today, and the policy templates for OWASP Top 10, SOC 2 Baseline and PCI DSS do not trigger yet. See [Security Policies](/dashboard/rules) for the criteria and their current behavior.
+
+## When a check can't finish
+
+Takumo can hit an error, or find a pull request it can't fully read. That happens when:
+
+- Takumo errors while it runs the check
+- the provider returns an error or only part of the pull request
+- the pull request has more than 3,000 changed files, the most Takumo reads on any provider
+- a changed file is too large for the provider to return its changes, Takumo can't read it from the pull request head, and a secret rule applies to it
+- the content scanner is unavailable
+
+A check that did not finish is never reported as passed. You choose what it does:
+
+| Setting | Result |
+|---------|--------|
+| **Fail the check** (default) | When a Block policy applies to the pull request, the check fails (`failure` on GitHub, `failed` on GitLab, `FAILED` on Bitbucket). The summary says what could not be read and what to do. Re-run the check once the problem is fixed. |
+| **Let the pull request through** | The check is neutral and says it could not finish. A required check still passes. GitLab and Bitbucket show it as passed, with the same message. |
+
+If no Block policy applies to the pull request, the check is neutral in both settings. If Takumo can see a violation in the files it did read, the check fails in both settings.
+
+An org admin sets this on the **Policies** page, under **When a check can't finish**. It applies to every policy in the organization and to existing organizations too.
 
 ## Custom Sentinel rules
 
@@ -116,6 +145,8 @@ Apply a policy to a set of repositories:
 | **All repositories** | Every repository in the organization |
 | **Repositories** | The repositories you name |
 | **Tags** | Repositories that match the tags |
+
+A policy can also limit the files it reads with path filters. See [Security Policies](/dashboard/rules).
 
 ## Policy limits by plan
 
