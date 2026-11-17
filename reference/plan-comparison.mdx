@@ -20,14 +20,18 @@ Takumo has four plans. Here's what each one includes.
 |-------|------|-----------|-----|------------|
 | Team members | 5 | 5 | 25 | Unlimited |
 | API keys | 3 | 10 | 20 | Unlimited |
+| Deploy tokens | 1 | 5 | 25 | Unlimited |
 | Repositories | 3 | 10 | Unlimited | Unlimited |
 | Pipelines | 5 | 25 | 100 | Unlimited |
 | Integrations | 3 | 10 | 25 | Unlimited |
-| Included credits | 1,000 | 5,000 | 5,000/seat | Unlimited |
-| Concurrent scans | 2 | 3 | 5 | 50 |
-| Daily AI reviews | 10 | 50 | 200 | Unlimited |
-| Data export | 1 GB/day | 5 GB/day | 10 GB/day | Unlimited |
 | Policies | 5 | 15 | 25 | Unlimited |
+| Included credits | 1,000 | 5,000 | 5,000 per seat | Unlimited |
+| Concurrent AI reviews | 2 | 3 | 5 | 50 |
+| Daily AI reviews | 10 | 50 | 200 | Unlimited |
+| Saved reports | None | 10 | 50 | Unlimited |
+| Audit history | 7 days | 30 days | 90 days | 365 days |
+
+Unlimited means no limit and no progress bar. Audit history is a view window: older entries are never deleted and return if you upgrade.
 
 ## Features
 
@@ -44,7 +48,7 @@ Takumo has four plans. Here's what each one includes.
 | Weekly digest | - | Yes | Yes | Yes |
 | Report export | - | CSV | CSV, JSON, XLSX | CSV, PDF, JSON, XLSX |
 | Report scheduling | - | - | Yes | Yes |
-| Audit log | - | Yes (30d) | Yes (90d) | Yes (365d) |
+| Audit log | Yes (7d) | Yes (30d) | Yes (90d) | Yes (365d) |
 | MFA enforcement | - | - | Yes | Yes |
 | Domain verification | - | - | Yes | Yes |
 | Fleet management | - | - | Yes | Yes |
@@ -58,27 +62,14 @@ Takumo has four plans. Here's what each one includes.
 | Audit webhooks | - | - | - | Yes |
 | Support | Community | Email | Priority | Dedicated |
 
-## Rate limits
+## Gateway rate limits
 
-| Operation | Free | Pro | Enterprise | Custom |
-|-----------|------|-----------|-----|------------|
-| Secret scans/mo | 1,000 | 5,000 | 10,000 | Unlimited |
-| Vulnerability scans/mo | 500 | 2,500 | 5,000 | Unlimited |
-| Policy evaluations/mo | 5,000 | 20,000 | Unlimited | Unlimited |
-| Auto-fix/mo | 500 | 2,500 | 5,000 | Unlimited |
-| API requests/mo | 10,000 | 50,000 | 100,000 | Unlimited |
-| Webhook deliveries/mo | 5,000 | 25,000 | 50,000 | Unlimited |
+| Gateway requests a minute | Free | Pro | Enterprise | Custom |
+|---------------------------|------|-----------|-----|------------|
+| Per organization | 100 | 1,000 | 5,000 | 20,000 |
+| Per API key | 10 | 60 | 300 | 1,000 |
 
-## Per-minute rate limits
-
-| Operation | Free | Pro | Enterprise | Custom |
-|-----------|------|-----------|-----|------------|
-| Secret scans | 10/min | 20/min | 30/min | 100/min |
-| Vulnerability scans | 5/min | 5/min | 10/min | 50/min |
-| Policy evaluations | 20/min | 40/min | 60/min | 200/min |
-| Auto-fix | 5/min | 10/min | 20/min | 50/min |
-| API requests | 30/min | 60/min | 120/min | 500/min |
-| Webhook deliveries | 10/min | 20/min | 30/min | 100/min |
+Takumo does not enforce per minute or per month limits by operation. Credits are the one metered cap. See [Rate Limits](/api/rate-limits) for how the gateway applies these numbers.
 
 ## Credit costs
 
@@ -95,8 +86,8 @@ Every operation consumes credits from your included balance.
 
 ## Overage
 
-Pro and Enterprise plans charge **$0.02 per credit** over the included amount. You won't be cut off mid-request. Usage is billed at the end of the billing cycle.
+Pro and Enterprise plans charge **$0.02 per credit** over the included amount. A request that is already running is never cut off. If you set a spending limit on the Billing page, new actions in the dashboard are refused with `402` and `spending_limit_reached` once the overage would pass it. Usage is billed at the end of the billing cycle.
 
 Custom plans include unlimited credits. No overage charges.
 
-Free plans are hard-capped. When you hit the limit, requests return `403 forbidden` until the next billing cycle.
+Free plans are hard-capped. When you hit the limit, actions that Takumo runs for you are refused before they start, and the API returns `402` with `limit_exceeded:creditsPerPeriod`. Daemon transforms are refused at the credit cap too: the daemon checks your credits before it starts the work and shows the plan message. If Takumo Cloud cannot be reached, the transform runs and the charge is recorded afterwards. Usage that lands past the cap this way shows on the Usage page as over the cap, not charged. Free credits reset every month.

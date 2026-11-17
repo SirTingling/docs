@@ -4,40 +4,83 @@ description: Plan limits and current consumption
 icon: "clock"
 ---
 
-The Limits page shows your organization's current consumption against plan quotas: how many scans, credits, API keys, members, and repos you've used.
+The Limits page shows what your plan includes and how much of it you use. It has three tabs: **Rate Limits**, **Platform Quotas** and **Team Budgets**.
 
 ---
 
-## Current usage vs limits
+## Rate Limits
 
-| Resource | What it tracks |
+This tab lists only limits that Takumo enforces. Each row shows what you have used against what your plan allows.
+
+| Row | What it tracks |
+|-----|---------------|
+| **Gateway requests a minute, organization** | Requests the gateway accepts for your whole organization each minute |
+| **Gateway requests a minute, per key** | Requests the gateway accepts for one API key each minute |
+| **AI reviews a day** | Pull request reviews in the last 24 hours. A refunded review is not counted |
+| **Concurrent AI reviews** | Reviews that can run at the same moment. The rest are skipped |
+| **Credits this period** | Credits used in the current period. The one metered cap |
+
+The gateway rows show the ceiling, with no usage bar. Requests over it get `429 Too Many Requests` and a `Retry-After` header. See [Rate Limits](/api/rate-limits).
+
+---
+
+## Platform Quotas
+
+This tab counts what exists in your organization against what your plan includes, for example "2 of 5 members used".
+
+| Resource | What it counts |
 |----------|---------------|
-| **Scans** | Scans processed this billing cycle vs. plan maximum |
-| **Credits** | Credits consumed vs. plan allocation |
-| **API keys** | Active keys vs. plan maximum |
-| **Members** | Team members vs. plan maximum |
-| **Repositories** | Connected repos vs. plan maximum |
+| **Members** | Active members plus pending invitations |
+| **API keys** | Keys that are not revoked or deleted |
+| **Deploy tokens** | Tokens that are not revoked or expired |
+| **Integrations** | Connected integrations |
+| **Policies** | Policies that are not deleted |
+| **Repositories** | Connected repositories |
+| **Pipelines** | Pipelines Takumo has synced |
+| **Streaming keys** | Streaming keys. Hidden when streaming is not set up for your deployment |
 
-Each resource shows a progress bar with current usage, the limit, and percentage consumed.
+RTB installs and PR scans a month are listed as **Reported, not enforced**. Takumo shows them and does not refuse anything when you pass them.
+
+A plan with no limit shows **Unlimited** and no progress bar.
+
+---
+
+## Team Budgets
+
+Team budgets are coming soon. The tab shows no numbers today.
 
 ---
 
 ## Plan limits by tier
 
 | Resource | Free | Pro | Enterprise | Custom |
-|----------|------|-----------|-----|------------|
-| Credits/month | 1,000 | 5,000 | 5,000/seat | Unlimited |
-| Secret scans/month | 1,000 | 5,000 | 10,000 | Unlimited |
-| Vulnerability scans/month | 500 | 2,500 | 5,000 | Unlimited |
-| Auto-fix/month | 500 | 2,500 | 5,000 | Unlimited |
-| API requests/month | 10,000 | 50,000 | 100,000 | Unlimited |
-| API keys | 3 | 10 | 20 | Unlimited |
+|---|---|---|---|---|
 | Members | 5 | 5 | 25 | Unlimited |
+| API keys | 3 | 10 | 20 | Unlimited |
+| Deploy tokens | 1 | 5 | 25 | Unlimited |
+| Integrations | 3 | 10 | 25 | Unlimited |
+| Policies | 5 | 15 | 25 | Unlimited |
 | Repositories | 3 | 10 | Unlimited | Unlimited |
 | Pipelines | 5 | 25 | 100 | Unlimited |
-| Integrations | 3 | 10 | 25 | Unlimited |
-| Concurrent scans | 2 | 3 | 5 | 50 |
-| Policies | 5 | 15 | 25 | Unlimited |
+| Streaming keys | 25 | 25 | 25 | 25 |
+
+| Limit | Free | Pro | Enterprise | Custom |
+|---|---|---|---|---|
+| Credits per month | 1,000 | 5,000 | 5,000 per seat | Unlimited |
+| AI reviews a day | 10 | 50 | 200 | Unlimited |
+| Concurrent AI reviews | 2 | 3 | 5 | 50 |
+
+| Limit | Free | Pro | Enterprise | Custom |
+|---|---|---|---|---|
+| Audit history | 7 days | 30 days | 90 days | 365 days |
+| Saved reports | None | 10 | 50 | Unlimited |
+
+| Gateway requests a minute | Free | Pro | Enterprise | Custom |
+|---|---|---|---|---|
+| Per organization | 100 | 1,000 | 5,000 | 20,000 |
+| Per API key | 10 | 60 | 300 | 1,000 |
+
+Audit history and saved reports are explained below. [Plan Comparison](/reference/plan-comparison) lists every feature next to these numbers.
 
 ---
 
@@ -45,19 +88,50 @@ Each resource shows a progress bar with current usage, the limit, and percentage
 
 | Resource | Behavior |
 |----------|----------|
-| **Scans** | New scans are rejected with `429 Rate Limited`. Existing data remains accessible. |
-| **Credits** | Credit-consuming operations (scans, reviews, fix suggestions) are rejected. Existing data remains accessible. |
-| **API keys** | Cannot create new keys. Existing keys continue to work. |
-| **Members** | Cannot invite new members. Existing members retain access. |
-| **Repositories** | Cannot connect new repos. Existing repos continue to be monitored. |
+| **Members** | New invitations are refused. Existing members keep access. |
+| **API keys, deploy tokens, integrations, policies** | Creating a new one is refused. What you have keeps working. |
+| **Repositories and pipelines** | A sync stops at the limit and shows a warning. Items past it are not synced. |
+| **Credits** | Free stops at the cap. Paid plans follow the spending cap you set under [Billing](/dashboard/billing). Existing data stays available. |
+| **AI reviews a day** | Reviews over the daily cap are skipped. |
+| **Gateway requests** | Requests over the per minute ceiling get `429`. |
 
-A warning banner appears when you reach 80% of any limit. At 100%, the affected feature stops and a notification is sent to the Owner and Billing Admin.
+A refusal says what your plan includes, how many are in use and how to raise the limit: upgrade to the next plan, or contact sales for Custom.
 
 ---
 
+## After a downgrade
+
+When a plan drops, Takumo deletes nothing and turns nothing off. What you already have keeps working, and new items are refused until you are back under the limit.
+
+If you use more than the new plan includes, each affected page shows an **Over your plan limit** banner naming the limit, how many are in use and how many are included. The email about the plan change lists the same counts. Remove what you no longer need, or view the plans from the banner.
+
+---
+
+## Credits and the Free plan
+
+Free credits reset every month, 30 days after your organization was created or after it moved to Free. Unused credits do not carry over. When a paid plan ends, the organization starts a new Free period with a fresh balance.
+
+---
+
+## Audit history
+
+Audit history is a view window. The audit log page, its filters, its CSV export and the audit log API show entries from the last 7, 30, 90 or 365 days, depending on your plan. Older entries are not deleted, so they appear again if you upgrade. A date range that starts before the window is cut to the window.
+
+---
+
+## Saved reports
+
+The Reports history lists your most recent saved reports, up to the number your plan includes. Free keeps none.
+
+---
+
+## Need more
+
+**Request Increase** (top right) and **Contact Sales** (under Rate Limits) open the same form. Tell Takumo what you are hitting and the team replies by email. If the message cannot be sent, the form says so and gives sales@takumo.io instead of showing a false success.
+
 ## Upgrading
 
-Click **Upgrade Plan** on the limits page to increase quotas. Changes take effect immediately, with no waiting for the next billing cycle.
+Click **Change Plan** on the [Billing](/dashboard/billing) page to raise your limits. Changes take effect immediately.
 
 See [Plan Comparison](/reference/plan-comparison) for a full feature comparison.
 

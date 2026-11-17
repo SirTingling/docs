@@ -95,13 +95,13 @@ Set `cr.takumo.io` registry credentials as build secrets in your CI provider (Gi
 ## Plan Limits
 
 | Plan | Max Deploy Tokens |
-|------|------------------|
+|------|-------------------|
 | Free | 1 |
-| Developer | 5 |
-| Pro | 25 |
-| Enterprise | Unlimited |
+| Pro | 5 |
+| Enterprise | 25 |
+| Custom | Unlimited |
 
-When you hit the limit, revoke an unused token or upgrade your plan.
+Revoked and expired tokens do not count. When you hit the limit, creating a token is refused until you revoke an unused token or upgrade your plan. Tokens you already have keep working after a downgrade.
 
 ## Revoking a Token
 

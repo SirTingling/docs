@@ -23,6 +23,8 @@ The top of the page shows:
 
 ## Usage breakdown
 
+The cost forecast shows **Not enough data yet** until credits have been used in the current period, because there is nothing to project from.
+
 A chart shows daily usage over the selected period (7, 30, or 90 days). You can view by:
 
 - **Scan type**: Shield scans, Sentinel reviews, code reviews
@@ -34,20 +36,9 @@ A chart shows daily usage over the selected period (7, 30, or 90 days). You can 
 
 ## Plan limits
 
-Your current plan defines hard limits:
+The Usage page shows credits and activity. Every plan limit, with your usage against it, is on the [Limits](/dashboard/limits) page. Takumo does not enforce limits by operation, so the per action counts here have no ceiling of their own. Credits are the one metered cap.
 
-| Limit | Free | Pro | Enterprise | Custom |
-|-------|------|-----------|-----|------------|
-| Credits/month | 1,000 | 5,000 | 5,000/seat | Unlimited |
-| Secret scans/month | 1,000 | 5,000 | 10,000 | Unlimited |
-| Vulnerability scans/month | 500 | 2,500 | 5,000 | Unlimited |
-| Auto-fix/month | 500 | 2,500 | 5,000 | Unlimited |
-| API requests/month | 10,000 | 50,000 | 100,000 | Unlimited |
-| API keys | 3 | 10 | 20 | Unlimited |
-| Members | 5 | 5 | 25 | Unlimited |
-| Repos | 3 | 10 | Unlimited | Unlimited |
-
-When you approach a limit, a warning banner appears. When you hit it, the relevant feature stops working until the next billing cycle or an upgrade.
+When you reach 80% of your included credits, a warning banner appears. Free stops at the cap. Paid plans follow the spending cap you set under [Billing](/dashboard/billing).
 
 ---
 
@@ -64,16 +55,17 @@ Credits are consumed by operations:
 | Fix suggestion | 3 credits |
 | Code review | 5 credits |
 
-Credits reset at the start of each billing cycle. Unused credits don't roll over. Pro and Enterprise plans support overage at $0.02 per credit. Free plans are hard-capped.
+Credits reset at the start of each billing cycle. Free credits reset every month, 30 days after the organization was created or moved to Free. Unused credits don't roll over. Pro and Enterprise plans support overage at $0.02 per credit. Free plans are hard-capped.
 
 ---
 
 ## Rate limits
 
-API rate limits are separate from credit limits:
+Gateway rate limits are separate from credit limits and follow your plan. See [Gateway limits by plan](/api/rate-limits#gateway-limits-by-plan).
 
-| Plan | API requests/min | API requests/hr |
-|------|-----------------|----------------|
+Rate limit headers (`X-RateLimit-Remaining`, `X-RateLimit-Reset`, `Retry-After`) are included in every API response. See [Error Codes](/reference/error-codes) for details.
+
+------|-----------------|----------------|
 | Free | 30 | 500 |
 | Pro | 60 | 2,500 |
 | Enterprise | 120 | 5,000 |

@@ -36,7 +36,7 @@ What happens when you exceed your monthly credit allowance depends on your plan:
 
 | Plan | Overage Behavior |
 |------|-----------------|
-| Free | Hard limit. Operations are blocked until the next billing cycle. |
+| Free | Hard limit. Operations are blocked until your credits reset. Free credits reset every month. |
 | Pro | $0.02 per credit over allowance |
 | Enterprise | $0.02 per credit over allowance |
 | Custom | Included. No overage charges. |
@@ -61,9 +61,13 @@ What happens when you exceed your monthly credit allowance depends on your plan:
 
 ### Downgrading
 
-Downgrades take effect at the end of the current billing period. You keep access to your current plan's features until then.
+When you cancel, the plan changes at the end of the current billing period and you keep your current plan's features until then. A switch to a lower paid plan takes effect when the billing provider confirms it, and the Billing page always shows the plan you are on.
 
 If you're downgrading from a plan that includes features you're actively using (e.g., fleet management on Enterprise, SSO on Custom), those features will become unavailable when the downgrade takes effect.
+
+Takumo deletes nothing when a plan drops. If you use more than the new plan includes, such as more API keys or members, what you have keeps working and new ones are refused until you are under the limit. Each affected page shows an **Over your plan limit** banner, and the email about the plan change lists each limit you are over. Audit history becomes a shorter view window, and older entries return if you upgrade. See [Limits](/dashboard/limits#after-a-downgrade).
+
+When a paid plan ends, the organization starts a new Free period with a fresh credit balance.
 
 ## Monitoring Usage
 
@@ -73,20 +77,23 @@ The Billing page shows:
 - **Credits used** this billing period vs. your allowance
 - **Credit burn rate**: how quickly you're consuming credits based on recent usage
 - **Overage charges**: any charges beyond your included allowance
+- **Invoices**: your orders with date, amount and status, and a download for each invoice. The billing portal link stays next to them
+
+A Custom plan without a subscription shows **Billed by agreement**. Your account team sends your invoices, so there is no payment method to add.
 
 ## Plan Comparison at a Glance
 
 <CardGroup cols={2}>
   <Card title="Free" icon="zap">
-    1,000 credits/mo. 3 API keys. 5 members. No audit log. Good for trying Takumo on a personal project.
+    1,000 credits/mo. 3 API keys. 5 members. 7-day audit history. Good for trying Takumo on a personal project.
   </Card>
   <Card title="Pro" icon="code">
-    5,000 credits/mo. 10 API keys. 5 members. 30-day audit log. Built for individual developers and small teams.
+    5,000 credits/mo. 10 API keys. 5 members. 30-day audit history. Built for individual developers and small teams.
   </Card>
   <Card title="Enterprise" icon="rocket">
-    5,000 credits/seat/mo. 20 API keys. 25 members. 90-day audit log. Fleet management. MFA enforcement. The plan for engineering teams.
+    5,000 credits/seat/mo. 20 API keys. 25 members. 90-day audit history. Fleet management. MFA enforcement. The plan for engineering teams.
   </Card>
   <Card title="Custom" icon="server">
-    Unlimited credits. Unlimited API keys. Unlimited members. 365-day audit log. SSO, SCIM, IP allowlist. For organizations with compliance requirements.
+    Unlimited credits. Unlimited API keys. Unlimited members. 365-day audit history. SSO, SCIM, IP allowlist. For organizations with compliance requirements.
   </Card>
 </CardGroup>

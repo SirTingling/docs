@@ -84,10 +84,14 @@ The API Keys page shows summary stats at the top:
 ## Plan Limits
 
 | Plan | Max API Keys |
-|------|-------------|
+|------|--------------|
 | Free | 3 |
 | Pro | 10 |
 | Enterprise | 20 |
 | Custom | Unlimited |
+
+Revoked and deleted keys do not count. When you hit the limit, creating a key is refused until you revoke one or upgrade. Keys you already have keep working, including after a downgrade, where an **Over your plan limit** banner names the overage.
+
+Each key is also limited to a number of gateway requests a minute by your plan. See [Gateway limits by plan](/api/rate-limits#gateway-limits-by-plan).
 
 <Warning>Deleting a key is permanent. Any tool using that key will immediately lose access. Disable it first if you're unsure.</Warning>

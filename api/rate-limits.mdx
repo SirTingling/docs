@@ -27,71 +27,32 @@ The Cloud API defines separate limiters for different endpoint categories. Each 
 
 In addition to the sliding-window rate limiter, Sentinel AI reviews have Redis-backed concurrency and deduplication controls:
 
-- **Concurrency slots**: Per-org limit on simultaneous AI reviews. Configurable per plan via `maxDailyAIReviews`. Slot TTL is 10 minutes as a safety fallback.
+- **Concurrency slots**: Per-org limit on simultaneous AI reviews, set by your plan (see [Gateway limits by plan](#gateway-limits-by-plan)). Slot TTL is 10 minutes as a safety fallback.
 - **PR dedup**: 5-minute cooldown per PR per org. Prevents redundant reviews when multiple pushes happen in quick succession.
 
 Both controls fail open on Redis errors: a review will proceed rather than block.
 
-## Per-plan operation limits
+## Gateway limits by plan
 
-Each plan defines per-minute, per-hour, and per-month limits for specific operation categories. These are enforced at the application layer on top of the Redis rate limiters above.
+The gateway enforces a requests per minute limit for your organization and for each API key. Both follow your plan.
 
-### Secret scans
+| Gateway requests a minute | Free | Pro | Enterprise | Custom |
+|---|---|---|---|---|
+| Per organization | 100 | 1,000 | 5,000 | 20,000 |
+| Per API key | 10 | 60 | 300 | 1,000 |
 
-| | Free | Pro | Enterprise | Custom |
-|--|------|-----------|-----|------------|
-| Per minute | 10 | 20 | 30 | 100 |
-| Per hour | 100 | 300 | 500 | 2,000 |
-| Per month | 1,000 | 5,000 | 10,000 | Unlimited |
+Requests over either limit get `429 Too Many Requests` with a `Retry-After` header. An organization limit counts every key in the organization, so many keys cannot add up to more than the organization limit.
 
-### Vulnerability scans
-
-| | Free | Pro | Enterprise | Custom |
-|--|------|-----------|-----|------------|
-| Per minute | 5 | 5 | 10 | 50 |
-| Per hour | 50 | 100 | 200 | 1,000 |
-| Per month | 500 | 2,500 | 5,000 | Unlimited |
-
-### Policy evaluations
+### Other plan limits
 
 | | Free | Pro | Enterprise | Custom |
-|--|------|-----------|-----|------------|
-| Per minute | 20 | 40 | 60 | 200 |
-| Per hour | 200 | 500 | 1,000 | 5,000 |
-| Per month | 5,000 | 20,000 | Unlimited | Unlimited |
-
-### Auto-fix generation
-
-| | Free | Pro | Enterprise | Custom |
-|--|------|-----------|-----|------------|
-| Per minute | 5 | 10 | 20 | 50 |
-| Per hour | 50 | 150 | 300 | 1,000 |
-| Per month | 500 | 2,500 | 5,000 | Unlimited |
-
-### API requests
-
-| | Free | Pro | Enterprise | Custom |
-|--|------|-----------|-----|------------|
-| Per minute | 30 | 60 | 120 | 500 |
-| Per hour | 500 | 2,500 | 5,000 | 20,000 |
-| Per month | 10,000 | 50,000 | 100,000 | Unlimited |
-
-### Webhook deliveries
-
-| | Free | Pro | Enterprise | Custom |
-|--|------|-----------|-----|------------|
-| Per minute | 10 | 20 | 30 | 100 |
-| Per hour | 200 | 500 | 1,000 | 5,000 |
-| Per month | 5,000 | 25,000 | 50,000 | Unlimited |
-
-### Additional plan limits
-
-| Limit | Free | Pro | Enterprise | Custom |
-|-------|------|-----------|-----|------------|
-| Concurrent scans | 2 | 3 | 5 | 50 |
-| Max policies | 5 | 15 | 25 | Unlimited |
-| Data export (GB/day) | 1 | 5 | 10 | Unlimited |
+|---|---|---|---|---|
 | Daily AI reviews | 10 | 50 | 200 | Unlimited |
+| Concurrent AI reviews | 2 | 3 | 5 | 50 |
+
+Reviews over the daily or concurrent limit are skipped. The [Limits](/dashboard/limits) page lists every plan limit and shows your usage against each one.
+
+<Note>Takumo does not enforce per minute or per hour limits by operation, such as scans, auto-fix or webhook deliveries. Credits are the one metered cap.</Note>
 
 ## Handling rate limits
 
@@ -140,8 +101,8 @@ Every operation consumes credits from your plan's included balance:
 
 ## Overage behavior
 
-- **Free plan**: Hard-capped. Overage is disabled. When you hit the monthly limit, requests are rejected until the next billing cycle.
-- **Pro and Enterprise plans**: Overage is enabled at $0.02 per credit. You are not cut off mid-request. Overage is billed at the end of the billing cycle.
+- **Free plan**: Hard-capped. Overage is disabled. When you hit the monthly limit, new actions are refused with `402` and `limit_exceeded:creditsPerPeriod` until your credits reset. Free credits reset every month, 30 days after the organization was created or moved to Free.
+- **Pro and Enterprise plans**: Overage is enabled at $0.02 per credit. A request that is already running is never cut off. If you set a spending limit, new actions are refused with `402` and `spending_limit_reached` once the overage would pass it. Overage is billed at the end of the billing cycle.
 - **Custom plans**: Unlimited included credits. Overage is enabled at $0.00 per credit (no charge).
 
 ### Included credits per plan

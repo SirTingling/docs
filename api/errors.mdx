@@ -32,6 +32,7 @@ The request ID is returned in the `x-aegis-request-id` response header, not in t
 | `401` | `unauthorized` | Missing API key, invalid key |
 | `401` | `token_expired` | API key or JWT has expired |
 | `401` | `token_revoked` | API key has been revoked |
+| `402` | `limit_exceeded:<limit>` | A plan limit was reached, for example `limit_exceeded:creditsPerPeriod`; `spending_limit_reached` when your spending limit stopped the action |
 | `403` | `forbidden` | Key lacks required scope, feature not available on your plan |
 | `404` | `not_found` | Endpoint doesn't exist, resource not found |
 | `413` | `payload_too_large` | Request body exceeds maximum size |

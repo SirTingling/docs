@@ -7,6 +7,17 @@ icon: "clock"
 # Changelog
 
 <AccordionGroup>
+  <Accordion title="v1.5.0: Plan limits match what Takumo enforces">
+    The Limits, Billing, Usage and Reports pages and these docs now show the same numbers, taken from one table.
+
+    - Limits lists only what Takumo enforces: gateway requests a minute, AI reviews a day, concurrent AI reviews and credits. Per minute and per month limits by operation are removed. Credits are the one metered cap
+    - The gateway applies your plan's requests a minute limit for the organization and for each API key. Unlimited shows as **Unlimited** with no bar
+    - A downgrade deletes nothing. What you have keeps working, new items are refused until you are under the limit, and pages show an **Over your plan limit** banner. The plan change email lists each limit you are over
+    - Free credits reset every month. Audit history is a view window by plan, and older entries return if you upgrade
+    - **Request Increase** and **Contact Sales** reach the sales team, and say so when a message cannot be sent
+    - Reports and Usage show **Not enough data yet** instead of a made up figure. Billing lists invoices, and a Custom plan without a subscription shows **Billed by agreement**
+  </Accordion>
+
   <Accordion title="v1.4.0: Policy checks fail closed">
     A pull request check that Takumo could not finish is no longer reported as passed.
 

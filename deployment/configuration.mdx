@@ -43,7 +43,8 @@ Complete reference for configuring all Takumo services. All values are set via H
 | `TAKUMO_RATE_LIMIT_ENABLED` | `rateLimit.enabled` | `true` | Enable rate limiting |
 | `TAKUMO_RATE_LIMIT_ORG_RPM` | `rateLimit.orgRpm` | `1000` | Organization-level requests per minute |
 | `TAKUMO_RATE_LIMIT_USER_RPM` | `rateLimit.userRpm` | `60` | User-level requests per minute |
-| `TAKUMO_RATE_LIMIT_POD_ESTIMATE` | `rateLimit.fallbackPodEstimate` | `5` | Assumed pod count when no shared state is available |
+| `TAKUMO_RATE_LIMIT_POD_ESTIMATE` | `rateLimit.fallbackPodEstimate` | `5` | Assumed pod count when no shared state is available. Set it to your replica count |
+| `TAKUMO_RATE_LIMIT_PER_PLAN` | `rateLimit.perPlan` | `false` | Apply the plan's organization and per key limits instead of the flat values above. Needs a coordinator that signs the plan's organization limit |
 
 <Note>The `rateLimit.rateLimitSalt` value (env var `TAKUMO_RATE_LIMIT_SALT`) is required in production for per-tier rate limit bucketing. Set it via a sealed secret, not in plain values.</Note>
 
