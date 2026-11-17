@@ -59,7 +59,7 @@ The Billing page, Settings > Billing and the Usage page show where your overage 
 
 Things to know:
 
-- **Spending limit.** The limit you set on the Billing page applies to the overage you have already accrued plus the action that would add to it. An action that would take your overage past the limit is refused, so detected overage never passes the limit within a period.
+- **Spending limit.** The limit you set on the Billing page applies to the overage you have already accrued plus the action that would add to it. An action that would take your overage past the limit is refused, so detected overage never passes the limit within a period. The limit is checked again when overage is reported, against the billing period the report falls in. Overage held back for a missing meter, or left over from the end of a period, is reported only as far as that period's limit leaves room. What does not fit waits for the next period and is never dropped.
 - **Cancelling.** If you cancel, overage keeps being reported until your paid period ends and goes on your final invoice. Overage recorded after the subscription has ended is not billed.
 - **Annual plans.** Annual subscriptions are invoiced for overage at renewal, not monthly. The Billing page says so.
 - **Timing at the period boundary.** Overage from the last few minutes before your billing period is cut can appear on the next invoice, so one invoice can run a few cents past your spending limit.
