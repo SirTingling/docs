@@ -39,9 +39,31 @@ What happens when you exceed your monthly credit allowance depends on your plan:
 | Free | Hard limit. Operations are blocked until your credits reset. Free credits reset every month. |
 | Pro | $0.02 per credit over allowance |
 | Enterprise | $0.02 per credit over allowance |
-| Custom | Included. No overage charges. |
+| Custom | Included. No overage charges. The Custom plan is the only one with no per credit overage price. |
 
 <Note>Enterprise plan credits scale with your team. 5 seats = 25,000 credits/month.</Note>
+
+### How overage is billed
+
+Takumo records the overage it detects as you use credits, and reports it to your billing account in small amounts during the billing period, about every five minutes. It is not saved up for the end of the period, because the invoice for a period is cut before a report made after it would count. Each report is sent once: a retry never charges you twice. Reported overage appears as a usage line on your next invoice.
+
+The Billing page, Settings > Billing and the Usage page show where your overage stands for the current period:
+
+| Line | Meaning |
+|------|---------|
+| **Reported to billing** | Overage already sent to your billing account. |
+| **Waiting to be reported** | Overage Takumo has recorded and will send on its next run. |
+| **Not billable yet** | Overage recorded while your subscription did not yet include overage billing. It is billed once the subscription does, within that period's spending limit. |
+| **Could not be reported** | Overage Polar refused. Contact support. |
+| **Carried to the next billing period** | Overage over this period's spending limit. It is reported in the next period, within that period's limit. |
+
+Things to know:
+
+- **Spending limit.** The limit you set on the Billing page applies to the overage you have already accrued plus the action that would add to it. An action that would take your overage past the limit is refused, so detected overage never passes the limit within a period.
+- **Cancelling.** If you cancel, overage keeps being reported until your paid period ends and goes on your final invoice. Overage recorded after the subscription has ended is not billed.
+- **Annual plans.** Annual subscriptions are invoiced for overage at renewal, not monthly. The Billing page says so.
+- **Timing at the period boundary.** Overage from the last few minutes before your billing period is cut can appear on the next invoice, so one invoice can run a few cents past your spending limit.
+- **Refunds.** If credits are refunded after the overage was reported, Takumo reports a matching reduction, and the next invoice nets it.
 
 ## Managing Your Subscription
 
