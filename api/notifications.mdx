@@ -251,7 +251,7 @@ Other possible errors:
 |--------|-------|---------|
 | `401` | `Unauthorized: Missing or malformed Authorization header` | No API key provided |
 | `401` | `Unauthorized: API key has been revoked` | Key was revoked |
-| `401` | `Unauthorized: API key lacks required scope` | Key missing `notifications:write` scope |
+| `403` | `Forbidden: API key lacks required scope: notifications:write` | Key missing `notifications:write` scope |
 | `403` | `Weekly digest requires a Pro plan or higher` | Plan does not include weekly digest |
 | `422` | _(varies)_ | Digest generation failed (e.g. no email recipients configured) |
 | `429` | `Rate limit exceeded` | API key rate limit hit |

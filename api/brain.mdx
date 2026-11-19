@@ -14,7 +14,7 @@ Retrieve contextual code intelligence from Brain: patterns, function signatures,
 
 Fetch developer context for a specific file in a repository. Used by extensions and AI tools to enrich prompts with codebase knowledge. Proxies to the Brain Query service internally.
 
-**Scope:** No specific scope required (any valid API key).
+**Scope:** `scan:read`
 
 <CodeGroup>
 ```bash curl
@@ -124,7 +124,7 @@ Fetch context tuned for Sentinel analysis and Phase 4 transform prompts. Wire-co
 
 Used internally by Sentinel when reviewing pull requests.
 
-**Scope:** No specific scope required (any valid API key).
+**Scope:** `scan:read`
 
 ```bash
 curl -X POST "https://cloud.takumo.io/api/v1/brain/sentinel-context" \
@@ -151,7 +151,7 @@ Same shape as [`POST /brain/context`](#post-braincontext): a `DeveloperContextRe
 
 Fetch active policies for AI analysis. Returns all enabled, non-deleted policies for your organization with their enforcement rules.
 
-**Scope:** No specific scope required (any valid API key).
+**Scope:** `policies:read`
 
 ```bash
 curl "https://cloud.takumo.io/api/v1/brain/policies" \

@@ -22,6 +22,15 @@ Every error response follows the same format. Parse it once, handle it everywher
 
 The request ID is returned in the `x-aegis-request-id` response header, not in the JSON body. Include it when contacting support.
 
+The Cloud API (`cloud.takumo.io/api/v1`) returns a shorter format, `{ "error": "<message>" }`. A scope refusal also lists the missing scopes:
+
+```json
+{
+  "error": "Forbidden: API key lacks required scope: reports:read",
+  "required_scopes": ["reports:read"]
+}
+```
+
 ## Status codes
 
 | Status | Type | When |
