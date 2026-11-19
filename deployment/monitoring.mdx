@@ -75,6 +75,7 @@ The Grafana sidecar automatically picks up the ConfigMap. No manual import neede
 | Metric | Type | Description |
 |--------|------|-------------|
 | `aegis_requests_total` | Counter | Total requests processed, labeled by `status` (HTTP code) and `provider` |
+| `aegis_requests_forwarded_total` | Counter | Requests sent on to the AI provider, labeled by `tenant_id`. On-prem usage reporting counts this one; requests the gateway refuses before forwarding are not counted |
 | `aegis_request_duration_seconds` | Histogram | Request latency from gateway receipt to response delivery |
 | `aegis_upstream_errors_total` | Counter | Errors from upstream AI providers, labeled by `provider` |
 
@@ -83,6 +84,7 @@ The Grafana sidecar automatically picks up the ConfigMap. No manual import neede
 | Metric | Type | Description |
 |--------|------|-------------|
 | `aegis_secrets_detected_total` | Counter | Secrets found and tokenized |
+| `aegis_secrets_blocked_total` | Counter | Detected secrets kept from the AI provider: each distinct secret tokenized out of a request, a request refused because a detected secret could not be tokenized, or a response stopped because it carried a secret. On-prem usage reporting counts this one |
 | `aegis_security_violations_total` | Counter | Policy violations detected |
 | `aegis_auth_failures_blocked_total` | Counter | Authentication failures blocked |
 
