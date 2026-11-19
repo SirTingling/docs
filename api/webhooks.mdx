@@ -121,6 +121,8 @@ The `data` field varies by event type.
 
 ## Verifying signatures
 
+<Note>This section covers product webhooks. Streaming destinations sign differently, with `X-Takumo-Signature-256`. See [Verifying streaming webhooks](/concepts/streaming#verifying-streaming-webhooks).</Note>
+
 Every webhook includes a signature in the `X-Takumo-Signature` header. Verify it to confirm the payload came from Takumo and was not tampered with.
 
 The signature is an HMAC-SHA256 of the raw request body, using your webhook secret as the key.

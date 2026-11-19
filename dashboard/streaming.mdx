@@ -20,26 +20,33 @@ Pipeline health at a glance:
 
 ### Destinations
 
-Where events are delivered. Create and manage:
+Where events are delivered. Five types are available:
 
-| Type | Configuration |
-|------|--------------|
-| **Webhook** | URL, headers, authentication |
-| **Slack** | Workspace, channel |
-| **Email** | Recipients, template |
-| **Custom** | Any HTTP endpoint with custom headers |
+| Type | What you configure | How Takumo sends |
+|------|--------------------|------------------|
+| **Splunk HEC** | HEC base URL and token | `POST /services/collector/event` with `Authorization: Splunk <token>` |
+| **Datadog Logs** | Site and API key | `POST https://http-intake.logs.<site>/api/v2/logs` with `DD-API-KEY` |
+| **New Relic Logs** | Region (US or EU) and license key | `POST https://log-api.newrelic.com/log/v1` (EU: `log-api.eu.newrelic.com`) with `Api-Key` |
+| **Elasticsearch** | Cluster URL, index, and an API key or user name and password | `POST /_bulk` with one NDJSON line pair per event |
+| **Webhook** | HTTPS URL, signing secret, optional token | `POST <url>`, signed with `X-Takumo-Signature-256`. See [Verifying streaming webhooks](/concepts/streaming#verifying-streaming-webhooks) |
 
-Credentials are AES-256-GCM encrypted at rest. Click **Test** to send a sample event.
+Events are sent as JSON. See [Event format](/concepts/streaming#event-format) for the fields and how each destination type wraps them.
+
+Credentials are encrypted at rest with AES-256-GCM, bound to the organization and destination, and never shown again after saving.
+
+Destination URLs must be public HTTPS addresses. Private, loopback, link-local and other reserved addresses are refused, including when a hostname resolves to one.
+
+An optional rate limit caps events per second for one destination. Leave it blank for no limit.
 
 ### Subscriptions
 
-Filters that route events to destinations. Each subscription:
-- Targets one destination
-- Filters by event type (`secret.detected`, `policy.violated`, `scan.complete`)
-- Filters by severity
-- Filters by repository (all or specific)
+A subscription decides which events one destination receives. A destination with no enabled subscription receives nothing. Each subscription can filter by:
 
-One destination can have multiple subscriptions. Enable/disable without deleting.
+- minimum severity: `INFO`, `LOW`, `MEDIUM`, `HIGH` or `CRITICAL`
+- categories to include or exclude: `SECRET_LEAK`, `VULNERABILITY`, `CODE_QUALITY`, `ARCH_DRIFT`, `POLICY_VIOLATION`, `PATTERN_DEVIATION`, `LICENSE_RISK`
+- rule ids to include or exclude
+
+An event goes to a destination when any of that destination's enabled subscriptions matches it. Enable or disable a subscription without deleting it.
 
 ### Dead Letter Queue
 
@@ -50,6 +57,10 @@ Failed deliveries land here. For each failed event:
 - **Retry** button for individual events
 - **Bulk retry** for clearing the queue
 
+A delivery goes to the DLQ after its retries run out, or straight away when the destination answers with an error that won't change on retry, such as a bad token (`401` or `403`) or a rejected payload (`400`). Rate limits (`429`) and timeouts (`408`) are retried, and Takumo waits for the destination's `Retry-After` when it sends one.
+
+**Retry** sends the original event to that destination again, once, and the entry leaves the queue. If the stored event is no longer available, the entry stays in the queue so nothing is marked done that wasn't sent.
+
 ### Receipts
 
 Every delivery attempt is tracked:
@@ -58,6 +69,12 @@ Every delivery attempt is tracked:
 - Timestamp
 - Duration
 - Retry count
+
+Download receipts as CSV from the **Receipts** tab.
+
+### Failure notifications
+
+When a destination keeps failing, Takumo stops sending to it for a minute and emails the organization's alert recipients. If the destination has a notification webhook, Takumo posts the same notice there. Takumo tries up to 3 times, waiting 1s then 2s, before dropping a notification.
 
 ---
 

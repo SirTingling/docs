@@ -15,9 +15,8 @@ graph LR
     A[Gateway / Cloud] -->|publish| B[Stream Ingest]
     B -->|JetStream| C[NATS]
     C -->|consume| D[Stream Router]
-    D -->|deliver| E[Webhooks]
-    D -->|deliver| F[Slack]
-    D -->|deliver| G[Email]
+    D -->|deliver| E[Splunk, Datadog, New Relic, Elasticsearch]
+    D -->|deliver| F[Webhooks]
     D -->|dead letter| H[DLQ]
 ```
 
@@ -69,11 +68,13 @@ Consumes events from NATS and delivers to configured destinations. Runs 7 admin 
 | `ROUTER_ADMIN_GRPC_ADDR` | Admin gRPC bind address | `0.0.0.0:9091` |
 | `DATABASE_URL` | Stream database (Postgres) | Required |
 | `ROUTER_KMS_KEY_B64` | AES-256-GCM key (base64) for credential encryption | Required |
-| `RETRY_MAX_ATTEMPTS` | Delivery retry count | `5` |
+| `RETRY_MAX_ATTEMPTS` | Delivery attempts before the DLQ | `5` |
 | `RETRY_BASE_DELAY_MS` | Base backoff between retries | `1000` |
 | `RETRY_MAX_DELAY_MS` | Maximum backoff between retries | `60000` |
 | `NATS_ACK_WAIT_SECS` | NATS ack wait before redelivery | `30` |
 | `MAX_INFLIGHT` | Maximum in-flight deliveries | `256` |
+| `ROUTER_RETRY_STREAM_MAX_BYTES` | Storage for pending retries in JetStream. Halved once at startup if the server has less | `268435456` (256 MiB) |
+| `ROUTER_RETRY_STREAM_MAX_MESSAGES` | Maximum pending retries | `500000` |
 
 Helm values (`takumo-stream-router`):
 
