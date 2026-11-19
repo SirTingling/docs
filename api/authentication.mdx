@@ -34,8 +34,12 @@ The gateway (`gateway.takumo.io/v1/messages` and `/v1/chat/completions`) takes t
 1. Takumo receives your key from the `Authorization` header.
 2. It computes a SHA-256 hash of the raw key.
 3. The hash is looked up in the database.
-4. If found and not revoked, the request proceeds.
-5. Constant-time comparison prevents timing attacks.
+4. A deleted, disabled or expired key is refused with `401`. A key stops working at the moment it expires.
+5. A key without the scope the route needs is refused with `403`, and the response names the scope.
+6. If your organization has an IP allowlist, a request from outside it is refused with `403`.
+7. Otherwise the request proceeds.
+
+Every request is checked against the database, so disabling, deleting or expiring a key takes effect on the next request to the Cloud API.
 
 The raw key is never stored. It exists only at creation time. After you close the creation dialog in the dashboard, the only copy is the one you saved.
 
@@ -68,14 +72,33 @@ Each key has a set of scopes. A request to a route that needs a scope the key do
 
 | Scope | Routes that check it |
 |-------|----------------------|
-| `scan:read` | `GET /issues`, `/violations`, `/repositories`, `/compliance` |
-| `audit:read` | `GET /audit-log` |
+| `scan:read` | `GET /violations`, `/repositories`, `/repositories/:repoName`, `/compliance`, `/issues`; `POST /brain/context`, `/brain/sentinel-context` |
+| `scan:write` | `POST /scan-results/ingest`, `/audit/credits` |
+| `issues:read` | `GET /issues` (either `issues:read` or `scan:read` is enough) |
+| `issues:write` | `POST /incidents/:violationId/acknowledge`, `/incidents/:violationId/actions` |
+| `policies:read` | `GET /rules`, `/rules/:ruleId`, `/brain/policies`, `/org/extension-policy` |
 | `policies:write` | `POST /rules`, `PATCH` and `DELETE /rules/:ruleId`, `POST /rules/:ruleId/publish` |
+| `audit:read` | `GET /audit-log` |
 | `reports:read` | `GET /reports`, `/reports/:id`, `/reports/schedules` |
 | `reports:write` | `POST /reports/generate`, schedule create, update and delete |
 | `notifications:write` | `POST /notifications/digest` |
 
-Routes not listed need a valid key but no scope. Assign the minimum scopes needed. See [API Keys](/dashboard/api-keys) for how to set them.
+`GET /credits/check` is the only route that takes any valid key with no scope, because it returns your own organization's credit balance. Every other route checks a scope.
+
+A refused request returns `403` and names the missing scope:
+
+```json
+{
+  "error": "Forbidden: API key lacks required scope: policies:write",
+  "required_scopes": ["policies:write"]
+}
+```
+
+A key with an empty scope list passes every scope check. Keys made by the device flow before 19 November 2026 and service account keys have an empty list. Keys made on the **API Keys** page always have at least one scope.
+
+The gateway does not check these scopes yet. Any valid key can send AI traffic through the gateway, whatever its scopes.
+
+Assign the minimum scopes needed. See [API Keys](/dashboard/api-keys) for how to set them.
 
 ## Rate limit headers
 
@@ -114,7 +137,7 @@ A revoked key returns `401 unauthorized` from the Cloud API at once and from the
 | Status | Code | When |
 |--------|------|------|
 | `401` | `unauthorized` | Missing key, invalid key, expired key, revoked key |
-| `403` | `forbidden` | Key lacks required scope, feature not available on your plan |
+| `403` | `forbidden` | Key lacks required scope, feature not available on your plan, request from outside the IP allowlist |
 | `429` | `rate_limited` | Too many requests in the current window |
 
 See [Errors](/api/errors) for the full error response format.

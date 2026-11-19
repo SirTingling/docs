@@ -21,6 +21,9 @@ API keys authenticate your AI tools with Takumo. Each key has scopes that contro
   <Step title="Select scopes">
     Choose a preset, **Full Access**, **Scans Only** or **Read Only**, or pick **Custom** and select permissions one by one. See [Permission Scopes](#permission-scopes) for what each one unlocks.
   </Step>
+  <Step title="Choose when it expires">
+    Pick **30 days**, **90 days**, **1 year** or **Never**. A key stops working at the moment it expires.
+  </Step>
   <Step title="Copy the key">
     Copy the key immediately. It is shown exactly once. If you lose it, you'll need to create a new one.
   </Step>
@@ -34,41 +37,58 @@ Every API key has the following properties:
 |----------|-------------|
 | **Name** | Human-readable label you assigned at creation |
 | **Prefix** | Visible identifier (e.g., `tk_live_a1b2...`) used for recognition without exposing the full key |
-| **Status** | `active`, `disabled`, or `revoked` |
-| **Scopes** | Granular permissions attached to this key |
+| **Status** | **Active**, **Disabled** or **Expired** |
+| **Scopes** | Granular permissions attached to this key. A key with no scopes shows **Full Access (all scopes)** |
+| **Expires** | When the key stops working, or never |
 | **Created by** | Which team member created the key |
 | **Last used** | Timestamp of the most recent API call made with this key |
 
 ## Permission Scopes
 
-The Cloud API checks six scopes. Each one unlocks the routes listed in [Key scopes](/api/authentication#key-scopes):
+The Cloud API checks ten scopes. Each one unlocks the routes listed in [Key scopes](/api/authentication#key-scopes):
 
 | Scope | What it unlocks |
 |-------|-----------------|
-| `scan:read` | Read issues, violations, repositories and compliance |
+| `scan:read` | Read scan results, violations, repositories and compliance data |
+| `scan:write` | Send scan results and spend scan credits |
+| `issues:read` | Read issues |
+| `issues:write` | Acknowledge incidents and act on them |
+| `policies:read` | Read policies, rules and the extension policy |
+| `policies:write` | Create, change, publish and delete rules |
 | `audit:read` | Read the audit log |
-| `policies:write` | Create, update, delete and publish rules |
-| `reports:read` | Read reports and report schedules |
+| `reports:read` | List and download reports and read report schedules |
 | `reports:write` | Generate reports and manage report schedules |
-| `notifications:write` | Send the notification digest |
+| `notifications:write` | Send the weekly digest notification |
 
-A key with no scopes passes every scope check, so it has the same API access as a key with all six. Give each key only the scopes its tool needs.
+The presets map to these scopes:
 
-The **Custom** picker lists nine permissions. Two of them, `scan:read` and `policies:write`, are scopes the API checks today. The others (`scan:write`, `issues:read`, `issues:write`, `events:read`, `policies:read`, `team:read`, `webhooks:manage`) are stored on the key but no API route checks them yet. The presets map to these permissions:
-
-| Preset | Permissions |
-|--------|-------------|
-| **Full Access** | All nine |
+| Preset | Scopes |
+|--------|--------|
+| **Full Access** | All ten. **Select all** in **Custom** picks the same set |
 | **Scans Only** | `scan:read`, `scan:write` |
-| **Read Only** | `scan:read`, `issues:read`, `events:read` |
+| **Read Only** | Every `:read` scope: `scan:read`, `issues:read`, `policies:read`, `audit:read`, `reports:read` |
 
-<Warning>No preset and no **Custom** permission grants `audit:read`, `reports:read`, `reports:write` or `notifications:write`. A key created on this page with any permission selected gets `403` from the audit log, reports and notification digest routes.</Warning>
+### What your role can grant
+
+A key can't do more than the person who creates it. The dialog only offers the scopes your role allows, and Takumo refuses a request for any other scope:
+
+| Role | Scopes it can put on a key |
+|------|----------------------------|
+| Owner, Admin | All ten |
+| Security Lead | All except `notifications:write` |
+| Member | `scan:read`, `scan:write`, `issues:read`, `issues:write`, `policies:read`, `audit:read`, `reports:read` |
+| Viewer | `scan:read`, `issues:read`, `policies:read`, `audit:read`, `reports:read` |
+| Billing Admin | `audit:read` |
+
+Older keys can hold `events:read`, `team:read` or `webhooks:manage`. No route uses them yet, so the dialog no longer offers them.
+
+<Note>Metrics keys on the **Streaming** page are a different kind of key. They start with `tksk_` and only read stream metrics from the router. Use API keys, which start with `tk_live_` or `tk_test_`, for the REST API.</Note>
 
 ## Managing Keys
 
 You can perform the following actions on existing keys:
 
-- **Disable Key** or **Enable Key**: switch between `active` and `disabled`. A disabled key rejects all requests and can be enabled again later.
+- **Disable Key** or **Enable Key**: switch between **Active** and **Disabled**. A disabled key rejects all requests from the next request on, and can be enabled again later.
 - **Delete Key**: remove the key entirely. This cannot be undone.
 - **View Permissions**: inspect the full scope set attached to a key.
 

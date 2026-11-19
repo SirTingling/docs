@@ -189,7 +189,7 @@ Approve a pending device authorization request. Creates an API key for the speci
 
 ### Side effects
 
-- Creates an API key named `Device Flow — <user_code>` with no scope restrictions.
+- Creates an API key named `Device Flow <user_code>` with every scope your role can grant. See [What your role can grant](/dashboard/api-keys#what-your-role-can-grant).
 - Sends a `team` notification to the organization: "&lt;user name&gt; connected Takumo Studio".
 - Logs an audit event: `device_flow.authorized`.
 
