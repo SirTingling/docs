@@ -72,7 +72,7 @@ Secret content checks need Takumo's content scanner, the Sentinel service. Where
 
 These are detected secrets, not every secret. Takumo scans with the Sentinel secret rule, which is the Aegis Shield detector plus patterns for quoted assignments such as `password = "..."`. Some formats are not detected yet. An unquoted value in a `.env` file, such as `DB_PASSWORD=...` or an `OPENAI_API_KEY=sk-proj-...` line, is not flagged today, while a quoted assignment in code, such as `const password = "..."`, is.
 
-License and dependency rules match on changes to dependency manifests and lock files. Only some rule criteria are evaluated today, and the policy templates for OWASP Top 10, SOC 2 Baseline and PCI DSS do not trigger yet. See [Security Policies](/dashboard/rules) for the criteria and their current behavior.
+Dependency rules match on lock file changes only. License rules never match, because license lists are not checked against real licenses yet. The OWASP Top 10, SOC 2 Baseline, PCI DSS, License Compliance and Supply Chain Health templates are not available yet, because CVE, license and package health checks do not run. See [Security Policies](/dashboard/rules) for the criteria and their current behavior.
 
 ## When a check can't finish
 

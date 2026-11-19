@@ -4,7 +4,7 @@ description: Define the pull request checks for security, license, and operation
 icon: "shield"
 ---
 
-Policies are the core enforcement mechanism in Takumo. Each policy groups one or more rules under a single configuration, with scoping, enforcement mode, notifications, and version history. Policies apply to pull request checks and generate violations when a pull request does not comply.
+Policies are the core enforcement mechanism in Takumo. Each policy groups one or more rules under a single configuration, with scoping, enforcement mode and version history. Policies apply to pull request checks and generate violations when a pull request does not comply.
 
 The policies page is at **Dashboard → Policies**.
 
@@ -16,9 +16,9 @@ Every policy has a type that determines what kind of rules it can contain:
 
 | Type | Description |
 |------|-------------|
-| **Security** | Secret detection on the lines a pull request adds, and a malicious package flag that matches any lock file change. CVE thresholds and scan freshness can be saved but are not evaluated yet |
-| **License** | Banned/allowed license lists, unknown license handling |
-| **Operational Risk** | Dependency health: inactivity, contributor count, download volume, version lag, deprecation |
+| **Security** | Detected secrets on the lines a pull request adds, and a lock file change flag. CVE thresholds, fix availability and scan freshness are not checked yet, and the wizard marks them **Not checked yet** |
+| **License** | Not available yet. License lists are not checked against real licenses, so license rules never match. Existing license policies show **Not checked yet** |
+| **Operational Risk** | Dependency health criteria (inactivity, contributor count, download volume, version lag, deprecation). These are not checked yet: the deprecated and version lag criteria match any lock file change, and the rest are saved only |
 
 ---
 
@@ -63,10 +63,10 @@ The enforcement mode is derived from the first rule in the policy.
   <Step title="Add rules">
     Add one or more rules to the policy. Each rule has a name, description, priority, criteria specific to the policy type, an enforcement action (block, warn, notify, monitor), and an enabled toggle.
 
-    The wizard offers criteria for CVSS thresholds, specific CVEs, secret types, finding age, fix availability, malicious package detection, scan freshness, license lists, inactivity, contributor minimums, downloads, and version lag. Policy checks currently evaluate only some of these. Secret rules read the lines a pull request adds. Other rules match on dependency manifest and lock file changes. CVSS, CVE, age, fix availability, scan freshness, inactivity (`maxInactivityMonths`), contributor and download criteria are saved but not evaluated yet. The malicious package, deprecated and version lag criteria match any lock file change and do not look up the package. License lists are not checked against real licenses: `bannedLicenses` and `unknownLicense` match any change that adds lines to a dependency manifest such as `package.json`, so a clean addition can be flagged and a license in a lock file is missed. A secret rule flags detected secrets on added lines, not every secret in your code: some formats are not detected yet, such as unquoted values in a `.env` file. A file with a secret-sounding name but no secret in its changes passes.
+    The wizard offers criteria for CVSS thresholds, specific CVEs, secret types, finding age, fix availability, malicious package detection, scan freshness, license lists, inactivity, contributor minimums, downloads, and version lag. Policy checks currently evaluate only some of these. Secret rules read the lines a pull request adds. Other rules match on dependency manifest and lock file changes. CVSS, CVE, age, fix availability, scan freshness, inactivity (`maxInactivityMonths`), contributor and download criteria are saved but not evaluated yet. The malicious package, deprecated and version lag criteria match any lock file change and do not look up the package. License lists are not checked against real licenses, so license rules never match. The wizard marks every criterion it does not check as **Not checked yet**. A secret rule flags detected secrets on added lines, not every secret in your code: some formats are not detected yet, such as unquoted values in a `.env` file. A file with a secret-sounding name but no secret in its changes passes.
   </Step>
   <Step title="Set the scope">
-    Apply the policy to all repositories, specific repositories by name, or repositories matching tags.
+    Apply the policy to all repositories, specific repositories by name, or repositories matching tags. Repository names match whatever their case, and the wizard suggests your connected repositories.
 
     Path filters limit the files the policy reads. Enter patterns relative to the repository root, separated by commas or new lines:
 
@@ -78,9 +78,6 @@ The enforcement mode is derived from the first rule in the policy.
     Patterns use `*` for one path segment, `**` for any depth, `?`, `[abc]` and `{a,b}`. A trailing slash means the whole directory. Dotfiles match. For example, `src/**` includes everything under `src`, and `**/*.example` excludes every `.example` file.
 
     Takumo rejects a pattern that is empty, longer than 256 characters, starts with `/` or `!`, contains `..`, a backslash or a control character, has unbalanced `[ ] { } ( )`, or is not a valid glob. You can have up to 50 patterns per field. The wizard shows the problem under the field and blocks **Continue** until it is fixed, and Takumo checks the same rules when it saves. A policy whose filters match no file in a pull request still counts as evaluated.
-  </Step>
-  <Step title="Configure notifications">
-    The wizard accepts notification targets (Slack, email, webhook, Jira, PagerDuty). Policy checks do not send alerts to these targets yet.
   </Step>
   <Step title="Choose activation">
     Activate immediately or save as draft. A grace period can be set, but enforcement starts immediately today.
@@ -167,3 +164,16 @@ Duplicating a policy also counts toward the limit.
     Create and manage policies programmatically
   </Card>
 </CardGroup>
+
+---
+
+## Alerts
+
+A policy has no alert targets of its own. Violations alert the email addresses and Slack webhook in your organization's notification settings, and open tickets in connected trackers. Policies created before this change keep the targets they saved, but Takumo does not send to them.
+
+## Sentinel AI review on policy checks
+
+When Sentinel's AI review is on for your organization and it reports at least one failure finding, the check fails with **Takumo: Sentinel found N issues**, even when every policy passes. Suggestions alone never fail the check. A policy failure always comes first in the title.
+
+A new review is skipped for a push within five minutes of the last review on the same pull request, and when the review rate limit, the daily cap or your credits run out. A skipped review does not fail the check, so treat the AI review as advice rather than a merge gate.
+
