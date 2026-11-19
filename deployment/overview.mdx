@@ -21,7 +21,7 @@ Runs as a Kubernetes deployment or standalone binary. Stateless by default: sess
 gRPC server that manages gateway instances. Four responsibilities:
 
 - **Audit shipping**: Collects audit events from gateways and writes them to the dashboard database in batches (configurable via `telemetryBatchSize`, default 500 events per batch).
-- **Policy sync**: Streams configuration updates from the dashboard to gateways in real-time. When you change a policy in the dashboard, the coordinator pushes the update within `policyDebounceMs` (default 500ms). Gateways do not apply organization policies, which apply to pull request checks.
+- **Config sync**: Sends each gateway the organization's configuration version when it connects and when the version changes, debounced by `policyDebounceMs` (default 500ms). Gateways do not receive or apply organization policies, which apply to pull request checks.
 - **Health tracking**: Receives health reports from gateways. Marks a gateway as stale after `healthStaleSecs` (default 120 seconds) without a report.
 - **NATS publishing**: Publishes detection events to NATS JetStream for downstream processing by the Cloud Worker and Stream pipeline.
 

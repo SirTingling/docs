@@ -99,7 +99,7 @@ Which one to use:
 
 | Environment Variable | Helm Value | Default | Description |
 |---------------------|-----------|---------|-------------|
-| `TAKUMO_POLICY_DEBOUNCE_MS` | `coordinator.policyDebouncMs` | `500` | Debounce time in ms before pushing policy updates to gateways |
+| `TAKUMO_POLICY_DEBOUNCE_MS` | `coordinator.policyDebouncMs` | `500` | Debounce time in ms before sending a configuration version change to gateways |
 | `TAKUMO_HEALTH_STALE_SECS` | `coordinator.healthStaleSecs` | `120` | Seconds before a gateway is marked stale |
 | `TAKUMO_TELEMETRY_BATCH_SIZE` | `coordinator.telemetryBatchSize` | `500` | Audit events per database write batch |
 | `TAKUMO_TELEMETRY_FLUSH_INTERVAL_MS` | `coordinator.telemetryFlushIntervalMs` | `5000` | Maximum time between telemetry flushes in ms |

@@ -80,7 +80,7 @@ Revoking a join key disconnects all gateway instances that authenticated with it
 
 Under **Settings > Gateway**, you can configure:
 
-- **Configuration version**: An incrementing counter. Bumping this number marks instances that have not yet synced the new version. Gateways do not apply organization policies, which apply to pull request checks.
+- **Configuration version**: An incrementing counter that gateways receive when they connect and when it changes. Gateways do not apply organization policies, which apply to pull request checks.
 - **Fleet overview totals**: Summary of total, connected, stale, and disconnected instances.
 
 <Warning>Join keys are shown once at creation. Store them securely. You'll need them in your gateway's deployment configuration.</Warning>
