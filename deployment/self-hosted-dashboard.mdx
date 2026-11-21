@@ -246,7 +246,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     - `worker.enabled: true`, the background worker that turns detected secrets and vulnerabilities into issues, syncs Bitbucket and resets annual credits. Without NATS it logs `running in HTTP push + cron only mode`, which is expected
     - `networkPolicy.enabled: true`, `replicaCount: 2` and billing, email and OAuth off, so the email flags above turn email on
     - `features.contentScan: true`, which lets the dashboard reach `sentinel-service` on port 50051 for the pull request check's file scan
-    - `networkPolicyCheck.enabled: true`, which adds the two pods that `helm test` runs in the next step
+    - `networkPolicyCheck.enabled: true`, which adds the two pods that `helm test` runs in the next step, and the ServiceAccount, Role and RoleBinding the second pod uses (they are ordinary resources, so every install and upgrade renders them; the Role can only get one named pod and its log)
 
     Watch the pods start. The first start runs the database migrations:
 
@@ -266,7 +266,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
 
     | The verdict says | What it means | What to do |
     |------------------|---------------|------------|
-    | `enforced` | Only the dashboard and the gateway can reach `sentinel-service` | Nothing |
+    | `enforced` | A pod without the dashboard label could not reach `sentinel-service` on port 50051, and the dashboard pod could. The check does not test any other pod, including the gateway | Nothing |
     | `WARNING: sentinel-service is reachable from any pod` | This cluster's network plugin does not enforce NetworkPolicy, or the `sentinel-service` policy is off. Any pod can call the scanner | See [Network policy](#network-policy) |
     | `inconclusive` | The check could not tell, for example because `sentinel-service` was still starting or the dashboard could not reach it | Check that `sentinel-service` is running, then run the command again |
 
