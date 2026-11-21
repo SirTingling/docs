@@ -42,14 +42,14 @@ Turn it on for releases you have already installed:
 ```bash
 helm upgrade aegis-shield takumo/aegis-shield \
   --namespace takumo \
-  --reuse-values \
+  --reset-then-reuse-values \
   --set serviceMonitor.enabled=true
 ```
 
 ```bash
 helm upgrade gateway-coordinator takumo/gateway-coordinator \
   --namespace takumo \
-  --reuse-values \
+  --reset-then-reuse-values \
   --set serviceMonitor.enabled=true
 ```
 
@@ -62,7 +62,7 @@ The gateway chart includes pre-built Grafana dashboards as ConfigMaps labelled `
 ```bash
 helm upgrade aegis-shield takumo/aegis-shield \
   --namespace takumo \
-  --reuse-values \
+  --reset-then-reuse-values \
   --set grafana.dashboards.enabled=true
 ```
 
@@ -126,7 +126,7 @@ The gateway chart includes a full set of PrometheusRule alert definitions. Enabl
 ```bash
 helm upgrade aegis-shield takumo/aegis-shield \
   --namespace takumo \
-  --reuse-values \
+  --reset-then-reuse-values \
   --set alerting.enabled=true
 ```
 
