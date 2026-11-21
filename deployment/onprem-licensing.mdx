@@ -189,10 +189,10 @@ Upgrade `takumo-rtb` to 0.3.0 or later, then the component charts. Use `--reset-
 ```bash
 helm repo update
 helm upgrade takumo-rtb takumo/takumo-rtb --namespace takumo --version 0.3.0 --reset-then-reuse-values
-helm upgrade gateway-coordinator takumo/gateway-coordinator --namespace takumo --version <version> --reset-then-reuse-values
+helm upgrade gateway-coordinator takumo/gateway-coordinator --namespace takumo --version 0.1.6 --reset-then-reuse-values
 ```
 
-Repeat the second command for each component chart, using the chart version released with this takumo-rtb version.
+Repeat the second command for each component chart. The first versions that carry the license check are aegis-shield 0.3.2, gateway-coordinator 0.1.6, vault-service 0.1.5 and sentinel-service 0.1.5; use those or later.
 
 Before every install and upgrade, each component chart runs a check Job as a Helm pre-install and pre-upgrade hook. The Job runs the chart's own image with the check command and exits without serving. If you upgrade a component before `takumo-rtb`, the check finds no license bundle:
 
@@ -267,7 +267,7 @@ When the cluster serves the Prometheus Operator API, the `takumo-rtb` chart rend
 | `TakumoLicenseRefusing` (critical) | `takumo_rtb_guard_refused_total` increased in the last 5 minutes. A guard is refusing work for a license reason. | Run `takumo-rtb check`, read what was refused with `kubectl -n <namespace> logs <pod> \| grep rtb.guard.refused`, and fix what the check names. Refusals stop at the next refresh once the stage allows the work. In this release nothing refuses, so this alert stays quiet. |
 | `TakumoLicenseStageNotActive` (warning) | A guard has not been ACTIVE for 30 minutes. | Run `takumo-rtb check` and follow the fix it prints. A connected install renews the license with your Takumo admin or lets `takumo-rtb` reach Takumo to refresh it. An air-gapped install downloads a new license file and applies it as the `takumo-license` Secret. A revoked license, or an install that moved to Takumo Cloud, contacts Takumo. An unreadable guard names the RBAC or egress to restore. The alert clears at the next refresh with no restart. |
 
-The guard also exports `takumo_rtb_guard_stage`, `takumo_rtb_guard_days_to_next`, `takumo_rtb_guard_refresh_total`, `takumo_rtb_guard_refused_total` and `takumo_rtb_guard_would_refuse_total` on each service's `/metrics`. In this release `takumo_rtb_guard_would_refuse_total` counts what a later release would refuse. Pod logs carry `rtb.guard.started`, `rtb.guard.warning`, `rtb.guard.stage_changed`, `rtb.guard.unreadable` and `rtb.guard.refused`.
+The guard also exports `takumo_rtb_guard_stage`, `takumo_rtb_guard_days_to_next`, `takumo_rtb_guard_refresh_total`, `takumo_rtb_guard_refused_total` and `takumo_rtb_guard_would_refuse_total` on each service's `/metrics`. In this release `takumo_rtb_guard_would_refuse_total` counts what a later release would refuse. Pod logs carry `rtb.guard.started`, `rtb.guard.warning`, `rtb.guard.stage_changed`, `rtb.guard.unreadable` and `rtb.guard.would_refuse`. In this release a guard writes `rtb.guard.would_refuse` for work a later release would refuse; `rtb.guard.refused` appears only once enforcement is on. To see what would be refused, run `kubectl -n <namespace> logs <pod> | grep rtb.guard.would_refuse`.
 
 ## Recovery
 
