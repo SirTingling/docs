@@ -90,7 +90,13 @@ Each message names what stops, why and what to do. Every message that limits or 
 | Another cluster | `Takumo is paused on this install because its license was issued for another cluster. Ask your Takumo admin to register this cluster, or see docs.takumo.io/deployment/onprem-licensing. To see why, run takumo-rtb check -n takumo.` |
 | Cannot read the cluster | `Takumo cannot check its license on this install because this service may not read the kube-system namespace. Restore the RoleBinding the chart installs, or see docs.takumo.io/deployment/onprem-licensing. To see why, run takumo-rtb check -n takumo.` |
 
-In this release the Cloud banners and the License page use audit wording for a licensed install past ACTIVE, which ends "Nothing is limited in this release.", and the no-license wording under [Stages](#no-valid-license-for-this-cluster) for an unlicensed one. Pod logs carry the message text for the stage, which describes what an enforcing release limits. No request is refused.
+In this release a licensed install past ACTIVE sees audit wording in pod logs, Cloud banners and the License page. For an expired connected license it reads:
+
+```text
+This install's Takumo license expired or takumo-rtb stopped checking in. Nothing is limited in this release. A later release will limit Takumo until it is fixed. Ask your Takumo admin to renew it on the License page, or see docs.takumo.io/deployment/onprem-licensing.
+```
+
+An air-gapped install is told to download a new license file and apply it as the `takumo-license` Secret instead, a revoked license says "its Takumo license was revoked" and asks you to contact Takumo, and an unlicensed install sees the no-license wording under [Stages](#no-valid-license-for-this-cluster). No request is refused.
 
 Once enforcement is on, a refused request returns HTTP 403 with a JSON body. `/v1/messages` uses the Anthropic error shape:
 

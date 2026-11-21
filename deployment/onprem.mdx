@@ -108,8 +108,8 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
     ```
 
     **Air-gapped:** if your cluster has no egress to `cr.takumo.io`, mirror
-    the four service images (`aegis-shield`, `gateway-coordinator`,
-    `sentinel-service`, `vault-service`) plus `mirror/redis` into your
+    the five service images (`aegis-shield`, `gateway-coordinator`,
+    `sentinel-service`, `vault-service`, `takumo-rtb`) plus `mirror/redis` into your
     internal registry. Override `image.repository` in your values file, and
     `redis.image.repository` for the gateway's Redis, then put that
     registry's pull credentials in this Secret instead. To copy both
@@ -130,6 +130,29 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
     so use the files from `./takumo-charts`. To find newer chart versions,
     run `helm search repo takumo --versions` and use the same version in
     every command on this page.
+  </Step>
+
+  <Step title="Install the license agent">
+    Every Takumo service checks its license itself, so install `takumo-rtb` and add your license before the coordinator and the gateway. In a connected install, issue a bootstrap token under **Installations** in Takumo Cloud, save it to a file, and create the Secret from the file so the token stays out of your shell history:
+
+    ```bash
+    kubectl -n takumo create secret generic takumo-rtb-bootstrap --from-file=token=./bootstrap-token.txt
+    ```
+
+    ```bash
+    helm install takumo-rtb takumo/takumo-rtb \
+      --namespace takumo \
+      --version 0.3.0 \
+      --set 'imagePullSecrets[0].name=takumo-pull-secret'
+    ```
+
+    Check that the agent holds a license:
+
+    ```bash
+    kubectl -n takumo exec deploy/takumo-rtb -- takumo-rtb check -n takumo
+    ```
+
+    For an air-gapped install, follow [License](/deployment/self-hosted-dashboard#license) instead. This release only audits, so nothing is refused yet. For the stages, the upgrade order and recovery, see [On-Prem Licensing](/deployment/onprem-licensing).
   </Step>
 
   <Step title="Deploy the coordinator">

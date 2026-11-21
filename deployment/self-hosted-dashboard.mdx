@@ -407,7 +407,7 @@ Each install runs the `takumo-rtb` license agent. In an air-gapped install, the 
     ```bash
     helm install takumo-rtb takumo/takumo-rtb \
       --namespace takumo \
-      --version 0.2.3 \
+      --version 0.3.0 \
       --set rtb.airGapped=true \
       --set image.repository=<your-registry>/takumo-rtb \
       --set image.tag=<tag> \
@@ -440,6 +440,8 @@ kubectl -n takumo create secret generic takumo-license --from-file=license=./lic
 ```
 
 The agent's logs show its status: `kubectl -n takumo logs deploy/takumo-rtb`.
+
+To see the stage every service reports, run `kubectl -n takumo exec deploy/takumo-rtb -- takumo-rtb check -n takumo`. For the stages and recovery steps, see [On-Prem Licensing](/deployment/onprem-licensing).
 
 ## Troubleshooting
 
