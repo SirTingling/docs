@@ -1,0 +1,334 @@
+---
+title: On-Prem Licensing
+description: How an on-prem install checks its license, what changes at each stage, and how to recover
+icon: "key"
+---
+
+Every Takumo service in an on-prem install checks its signed license itself. The `takumo-rtb` license agent keeps the license in a ConfigMap, the license bundle, and each service reads that bundle and works out its own stage. Nothing on the request path calls the agent, and no environment variable, chart value or install mode switches the check off.
+
+<Note>**This release only audits.** Each service works out its stage, shows the banners and messages on this page, and counts and logs what it would refuse. It refuses nothing. A later release will start enforcing the stages below. Until then the sections that describe a refusal tell you what that later release will do.</Note>
+
+## Stages
+
+A service is in one of six stages. Stages move forward on fixed dates that are signed into your license, so a licensed install always has at least 14 days between the first stage that changes anything (DEGRADED) and LOCKED.
+
+| Stage | When it starts | What changes once enforcement is on |
+|-------|----------------|--------------------------------------|
+| ACTIVE | The license is valid for this cluster. A connected install has checked in within the last 48 hours. | Nothing. |
+| WARNING | 14 days before the license expires (connected) or 30 days before (air-gapped). | Nothing is limited. The dashboard shows an amber banner with the days left to owners and admins. |
+| GRACE | The license expires or is revoked, or a connected install has not checked in for more than 48 hours. Lasts 14 days. | Nothing is limited. The dashboard shows an amber banner. |
+| DEGRADED | GRACE ends. Lasts 14 days. | Admin changes and new AI reviews pause. See [What each service does](#what-each-service-does). |
+| LOCKED | DEGRADED ends. Lasts until the license is fixed. | Takumo is paused. Only sign in, the License page and the safety actions work. |
+| UNVERIFIED | A service cannot read the Kubernetes API, its own RBAC or the license bundle. | See [When a service cannot read its license](#when-a-service-cannot-read-its-license). |
+
+In this release no stage limits anything. Each service works out the same stage and shows the audit wording under [The messages you see](#the-messages-you-see).
+
+A connected license lasts 30 days and the agent renews it when fewer than 15 days remain, so a connected install in WARNING means renewal is failing. An air-gapped license lasts 60 days and you replace it yourself (see [License](/deployment/self-hosted-dashboard#license)).
+
+For a license that expires on 2027-01-10 the dates are:
+
+| Stage | Connected | Air-gapped |
+|-------|-----------|------------|
+| WARNING | 2026-12-27 | 2026-12-11 |
+| GRACE | 2027-01-10 | 2027-01-10 |
+| DEGRADED | 2027-01-24 | 2027-01-24 |
+| LOCKED | 2027-02-07 | 2027-02-07 |
+
+When a connected install stops checking in, the dates count from its last successful check-in instead: GRACE begins once more than 48 hours have passed, GRACE ends 14 days after the check-in, and LOCKED comes 28 days after it. A revoked license counts from the revocation.
+
+### No valid license for this cluster
+
+A cluster with no license, an edited license, or a license issued for another cluster follows the cluster's own dates. From the later of the day the cluster was created and the day enforcement starts, it has 14 days of GRACE, 14 days of DEGRADED, then LOCKED. Restarting, deleting objects or upgrading does not reset these dates.
+
+This release works out the same stages for an unlicensed install but shows no countdown. Its banners and messages say:
+
+```text
+This install has no Takumo license. A future release will require one. See docs.takumo.io/deployment/onprem-licensing.
+```
+
+### When a service cannot read its license
+
+A service reads two things from the Kubernetes API with its own ServiceAccount: the `kube-system` namespace (your cluster's identity) and the license bundle. If a read fails:
+
+- A running pod keeps the stage it last read, moved on by the clock, for up to 72 hours. It shows at least WARNING, with the reason and the fix.
+- After 72 hours the pod is UNVERIFIED. A read failure alone never reaches LOCKED.
+- A pod that starts with a failing read stays not Ready for up to 600 seconds once enforcement is on, so a rollout stalls and the old pods keep serving. After that it becomes Ready in UNVERIFIED so the message reaches users. In this release it is Ready at once.
+- A service leaves UNVERIFIED within about a minute of its first successful read. It needs no restart.
+
+In UNVERIFIED, dashboard reads and sign-in, Sentinel scanning, vault reads and event ingest keep working. The rest follows the UNVERIFIED column below.
+
+## What each service does
+
+This section describes what each service does once enforcement is on. In this release no service refuses anything. GRACE and everything before it change nothing. From DEGRADED, a service refuses the new work its column lists and finishes the work already in flight. Health and metrics endpoints never fail for a license reason.
+
+| Service | DEGRADED | UNVERIFIED | LOCKED |
+|---------|----------|------------|--------|
+| `cloud` (web) | New AI reviews are not started. Admin changes are refused: settings, policies, member invites and role changes, API key creation, integration setup, rules, accepting an invite and creating an organization. Reads, sign-in and the License page work. | Same as DEGRADED. | Every page except sign in, the License page and the safety pages redirects to `/license`. Calls to the API return 403. |
+| `cloud-worker` | No change. | No change. | Bitbucket sync, stream outbox drain, credit resets and the overage report pause. The detection bridge keeps running, so no detection is dropped or held. |
+| `gateway-coordinator` | No new config broadcast (the update is held and applied on recovery), no initial config, no Brain AI review, and token exchange is refused for new sessions. | Same as DEGRADED. | Also refuses new connector streams. |
+| `aegis-gateway` | No change. | `/v1/messages`, `/v1/chat/completions`, `/v1/usage/spend` and `/v1/auth/exchange` answer 403. | Same as UNVERIFIED. |
+| `sentinel-service` | No change. | No change. | New scan requests are refused. Sentinel is the last service to stop. |
+| `vault-service` | Writes are refused and reads are served. | Same as DEGRADED. | Same as DEGRADED. |
+| `brain-embedding`, `brain-indexer`, `brain-pattern`, `brain-query` | No change. | New work is refused. The indexer and embedding workers stop claiming jobs and the pattern job is skipped. | Same as UNVERIFIED. |
+| `takumo-stream-ingest` | No change. | No change. | New events are refused with 403. |
+| `takumo-stream-router` | No change. | No change. | Stops pulling and refuses replays. Messages wait in `TAKUMO_STREAM`, which keeps them for 7 days. |
+| `takumo-rtb` | Never refuses. | Never refuses. | Never refuses. |
+
+These actions are never refused at any stage: removing a member, revoking an API key or deploy token, signing out a session, SCIM deprovisioning, disconnecting an integration, and key revocations at the coordinator. Customer deletions in the Brain services keep running. At LOCKED, the dashboard still serves sign in, the License page, device sign-in for the CLI and extension, and the safety pages (members, API keys, deploy tokens, integrations, account, settings, Move to Takumo Cloud and streaming keys).
+
+<Warning>Once enforcement is on, DEGRADED's "no new sessions" cannot be enforced against someone who administers the cluster. The 14 day DEGRADED window bounds that. At LOCKED the gateway refuses its four routes whatever the auth setup.</Warning>
+
+## The messages you see
+
+Each message names what stops or fails, why and what to do.
+
+### Messages once enforcement is on
+
+These are the messages a later release shows when it refuses work. Every one except WARNING ends with the command that shows the reason, `takumo-rtb check -n <namespace>`, with your own namespace filled in. They use the connected wording. An air-gapped install is told to download a new license file and apply it as the `takumo-license` Secret instead.
+
+This release shows the WARNING and Cannot read the cluster messages as written, because neither claims a limit. It shows the other rows only as the audit wording below, because it refuses nothing.
+
+| Where | Message |
+|-------|---------|
+| WARNING | `This install's Takumo license expires soon and has not renewed. Check that takumo-rtb can reach rtb.takumo.io, or see docs.takumo.io/deployment/onprem-licensing.` |
+| DEGRADED | `On this install, admin changes and new AI reviews are paused because its license expired or takumo-rtb stopped checking in. If the license is not fixed, Takumo stops serving its pages and APIs on Dec 4, 2026. Ask your Takumo admin to renew the license on the License page, or see docs.takumo.io/deployment/onprem-licensing. To see why, run takumo-rtb check -n takumo.` |
+| LOCKED | `Takumo is paused on this install because its license expired or takumo-rtb stopped checking in. Ask your Takumo admin to renew the license on the License page, or see docs.takumo.io/deployment/onprem-licensing. To see why, run takumo-rtb check -n takumo.` |
+| No license | `Takumo is paused on this install because it has no valid Takumo license. Install takumo-rtb with your license, or see docs.takumo.io/deployment/onprem-licensing. To see why, run takumo-rtb check -n takumo.` |
+| No bundle | `Takumo is paused on this install because it has no valid Takumo license. To fix it, upgrade takumo-rtb first (0.3.0 or later), or install it with your license, or see docs.takumo.io/deployment/onprem-licensing. To see why, run takumo-rtb check -n takumo.` |
+| Another cluster | `Takumo is paused on this install because its license was issued for another cluster. Ask your Takumo admin to register this cluster, or see docs.takumo.io/deployment/onprem-licensing. To see why, run takumo-rtb check -n takumo.` |
+| Cannot read the cluster | `Takumo cannot check its license on this install because this service may not read the kube-system namespace. Restore the RoleBinding the chart installs, or see docs.takumo.io/deployment/onprem-licensing. To see why, run takumo-rtb check -n takumo.` |
+
+### Messages in this release
+
+In this release an install shows audit wording in pod logs, dashboard banners and the License page, and nothing is refused. A licensed install past ACTIVE sees the license state and the fix, and is told that nothing is limited. For an expired connected license it reads:
+
+```text
+This install's Takumo license expired or takumo-rtb stopped checking in. Nothing is limited in this release. A later release will limit Takumo until it is fixed. Ask your Takumo admin to renew it on the License page, or see docs.takumo.io/deployment/onprem-licensing. To see why, run takumo-rtb check -n takumo.
+```
+
+The other cases follow the same pattern:
+
+- An air-gapped install reads "This install's Takumo license expired." and is told to download a new license file and apply it as the `takumo-license` Secret.
+- A revoked license reads "This install's Takumo license was revoked." and asks you to contact Takumo.
+- An install that moved to Takumo Cloud reads "This install moved to Takumo Cloud." and asks you to use Takumo Cloud or contact Takumo.
+- An unlicensed install sees the no-license wording under [Stages](#no-valid-license-for-this-cluster).
+
+The first three also say that nothing is limited in this release, and all three end with the `takumo-rtb check` command.
+
+Once enforcement is on, a refused request returns HTTP 403 with a JSON body. `/v1/messages` uses the Anthropic error shape:
+
+```json
+{
+  "type": "error",
+  "error": {
+    "type": "takumo_license",
+    "code": "locked_no_bundle",
+    "message": "Takumo is paused on this install because it has no valid Takumo license. To fix it, upgrade takumo-rtb first (0.3.0 or later), or install it with your license, or see docs.takumo.io/deployment/onprem-licensing. To see why, run takumo-rtb check -n takumo.",
+    "docs": "https://docs.takumo.io/deployment/onprem-licensing"
+  }
+}
+```
+
+The OpenAI-shaped and Takumo routes return the same object without the outer `"type": "error"`. The `code` is the stage and the reason in lowercase, joined with an underscore, and is just the stage when the stage is the reason, as in `degraded`. gRPC services answer `FAILED_PRECONDITION` with the same message.
+
+Three refusals look different once enforcement is on:
+
+- The vault HTTP scan returns 409, not 403, with its own body: `{"success": false, "error": "Vault writes are refused on this install; reads still work. ..."}`.
+- A dashboard API call from a caller that is not signed in, and has no valid API key or deploy token, returns `{"error": {"type": "takumo_license", "code": "license_required", ...}}` and a short "ask your admin" notice. A signed-in session or a valid API key sees the stage and the reason.
+- A refusal that comes before authentication shows the stage and the reason as fixed text. It never includes a license ID, organization or cluster identity.
+
+## Check your install
+
+`takumo-rtb check` runs the same reads a service makes and prints the result. It changes nothing and binds no port. Run it in the namespace that holds the agent:
+
+```bash
+kubectl -n takumo exec deploy/takumo-rtb -- takumo-rtb check -n takumo
+```
+
+```text
+namespace: takumo
+stage: ACTIVE
+reason: ok
+read: readable
+enforcement: audit (capped; claim: enforce)
+next change: 2027-01-10T00:30:52Z (in 30 days)
+fingerprint: 0123456789ab
+exit: 0
+```
+
+| Line | Meaning |
+|------|---------|
+| `stage` and `reason` | The stage this install is in and why. |
+| `read` | `readable`, or the reason the check could not read: `fingerprint_unreadable`, `bundle_unreadable` or `api_unreachable`. It retries for up to 60 seconds first. |
+| `enforcement` | `audit` in this release. `capped; claim: enforce` means your license asks for enforcement, which a later release will honor. |
+| `next change` | When the stage changes next, and the days left. For ACTIVE this is the license expiry. |
+| `fingerprint` | The first 12 hex characters of this cluster's fingerprint. |
+| `warning` | What to do, when something needs doing. |
+| `exit` | `0` when ACTIVE, `1` for any other stage, `2` for a usage error. |
+
+`takumo-rtb check --as-guard --component <name>` runs the check as one component's pods run it, with the code the pre-upgrade check uses. It takes no `-n`, and exits 0 or 3 instead.
+
+## Install and upgrade order
+
+### New installs: license first
+
+Install `takumo-rtb` and add your license before you install the components. In a connected install, issue a bootstrap token under **Installations** in Takumo Cloud, save it to a file, and create the Secret from the file so the token stays out of your shell history:
+
+```bash
+kubectl -n takumo create secret generic takumo-rtb-bootstrap --from-file=token=./bootstrap-token.txt
+```
+
+In an air-gapped install, follow [License](/deployment/self-hosted-dashboard#license) to read the fingerprint and store the license file.
+
+Once enforcement is on, an unlicensed cluster has 28 days from the later of its creation and the day enforcement starts. After that the pre-upgrade check refuses to install any component. With `takumo-rtb` installed but no license, it prints `this cluster has no Takumo license: install takumo-rtb with your license first`. With no `takumo-rtb` at all, it prints `this cluster has no Takumo license bundle: upgrade takumo-rtb first (0.3.0 or later), or install it with your license`. A cluster that is older than that and has no license when you install a component hits this at once, so license first. In this release the check prints the same line as a warning and exits 0.
+
+### Upgrades: takumo-rtb first
+
+Upgrade `takumo-rtb` to 0.3.0 or later, then the component charts. Use `--reset-then-reuse-values` and not `--reuse-values`: it takes the new chart's default `image.tag` and keeps the values you set yourself. `--reuse-values` would carry over the old chart's pinned tag, and an image that old cannot run the check.
+
+```bash
+helm repo update
+helm upgrade takumo-rtb takumo/takumo-rtb --namespace takumo --version 0.3.0 --reset-then-reuse-values
+helm upgrade gateway-coordinator takumo/gateway-coordinator --namespace takumo --version 0.1.6 --reset-then-reuse-values
+```
+
+Repeat the second command for each component chart. The first versions that carry the license check are aegis-shield 0.3.2, gateway-coordinator 0.1.6, vault-service 0.1.5 and sentinel-service 0.1.5; use those or later.
+
+Before every install and upgrade, each component chart runs a check Job as a Helm pre-install and pre-upgrade hook. The Job runs the chart's own image with the check command and exits without serving. If you upgrade a component before `takumo-rtb`, the check finds no license bundle:
+
+- **In this release** the Job prints a warning and exits 0, so the upgrade goes ahead:
+
+  ```text
+  warning: this cluster has no Takumo license bundle: upgrade takumo-rtb first (0.3.0 or later), or install it with your license
+  r3: an enforcing release would refuse this upgrade (exit 3)
+  ```
+
+- **Once enforcement is on** the same check exits 3 for an install that is past its dates, the upgrade stops with `upgrade takumo-rtb first`, and the old pods keep serving.
+
+Read what the Job printed. The Job is named `<release>-rtb-check`, for example `gateway-coordinator-rtb-check`. The dashboard has `cloud-rtb-check-web` and `cloud-rtb-check-worker`:
+
+```bash
+kubectl -n takumo logs job/gateway-coordinator-rtb-check
+```
+
+A licensed install in LOCKED can still install upgrades, because the check exits 0 for a licensed install whose reads work. Security patches reach a licensed install in any license state, as long as its license reads work. The check exits 3 only when enforcement is on and either the reads fail or no license verifies for this cluster and the no-license dates have run out.
+
+### Run the chart's own image tag or later
+
+A component chart must run the image tag it ships with, or a later tag. An older image cannot run the check, so do not pin `image.tag` below your chart's default. A hook that ends in `DeadlineExceeded` means the chart is newer than its image: the Rust components fail after 150 seconds and the dashboard's Jobs fail at once with `Cannot find module`. The upgrade stops and the old pods keep serving. Use a guarded image tag, or install the chart version that matches your image.
+
+The check Job needs no values of its own. Leave `rtb.guard.enabled` at its default of `true` in every component chart. Setting it to `false` removes the guard's token and RBAC but not the guard, so the service cannot read its license and reports UNVERIFIED. That setting is not supported.
+
+## RBAC and egress
+
+Each component chart renders what its guard needs. You do not create any of it by hand.
+
+| Object | Where | Grants |
+|--------|-------|--------|
+| ClusterRole and ClusterRoleBinding `<release>-<namespace>-rtb-guard` | Cluster | `get` on the `kube-system` namespace only. |
+| Role and RoleBinding `<release>-rtb-guard-bundle` | The release namespace | `get` and `watch` on the ConfigMap `takumo-rtb-bundle` only. |
+| Projected token volume | Each guarded pod | The ServiceAccount token, the cluster CA and the namespace, mounted at the standard path. `automountServiceAccountToken` stays `false`. |
+| NetworkPolicy `takumo-rtb-guard-api` | The `takumo-rtb` namespace and every namespace in `bundleReaders` | Egress for pods labeled `takumo.io/rtb-guard: "true"` to DNS (port 53) and to the Kubernetes API on TCP 443 and on `rtb.kubeApi.port`, which defaults to 6443. |
+
+The check Job has its own ServiceAccount `<release>-rtb-check` with matching `get` rules. The Job's ServiceAccount, ClusterRole, ClusterRoleBinding, Role and RoleBinding are deleted when the hook succeeds, and stay after a failed hook so you can read why. The Job stays after the hook, and after `helm uninstall`, until its namespace is deleted. Delete it by name if you want it gone:
+
+```bash
+kubectl -n takumo delete job <release>-rtb-check --ignore-not-found
+```
+
+The dashboard has two Jobs, `cloud-rtb-check-web` and `cloud-rtb-check-worker`.
+
+The agent's own Role lets it create ConfigMaps and Secrets in its namespace, `get` and `update` the `takumo-rtb-bundle` ConfigMap, `get` the Secrets `takumo-rtb-state`, `takumo-license` and `takumo-rtb-bootstrap`, `update` the Secret `takumo-rtb-state`, `get` Pods, and `list` EndpointSlices.
+
+### Narrow the API egress
+
+With nothing set, `takumo-rtb-guard-api` allows TCP 443 and `rtb.kubeApi.port` to any address. That is new egress for `sentinel-service` and the Brain services, which had none on 443. To limit it to the API server, find its address and set `rtb.guardEgress.cidr` on the `takumo-rtb` chart:
+
+```bash
+kubectl get endpointslices -n default -l kubernetes.io/service-name=kubernetes
+```
+
+```bash
+helm upgrade takumo-rtb takumo/takumo-rtb --namespace takumo --version 0.3.0 --reset-then-reuse-values \
+  --set rtb.guardEgress.cidr=10.0.0.10/32
+```
+
+On EKS, GKE and AKS the API endpoint listens on 443. Elsewhere it is usually 6443, so set `rtb.kubeApi.port` to match if yours differs. A wrong value here can cut a running pod's API egress. A running pod holds its last stage for 72 hours when that happens, and the `TakumoLicenseStageNotActive` alert fires.
+
+<Warning>The guard policy selects every pod that carries the `takumo.io/rtb-guard` label for egress. On a CNI that enforces egress policies, a component whose own chart sets `networkPolicy.enabled: false` can then reach only DNS and the API once `takumo-rtb` is installed. Keep each component chart's NetworkPolicy on. Flannel does not enforce NetworkPolicy, so this shows only on an enforcing CNI such as Calico, Cilium or kindnet.</Warning>
+
+## Alerts
+
+When the cluster serves the Prometheus Operator API, the `takumo-rtb` chart renders a PrometheusRule named `takumo-rtb-guard` with three alerts. Each alert's `runbook_url` points at this page. See [Monitoring](/deployment/monitoring) to deploy Prometheus. Set `monitoring.guardRules.namespace` if your Prometheus loads rules from another namespace than `takumo-rtb`'s.
+
+| Alert | Fires when | What to do |
+|-------|------------|------------|
+| `TakumoLicenseGuardUnreadable` (critical) | A guard has had no readable refresh for 5 minutes. | Find the reason in the pod log: `kubectl -n <namespace> logs <pod> \| grep rtb.guard.unreadable`. For `fingerprint_unreadable` or `bundle_unreadable`, restore the RBAC in [RBAC and egress](#rbac-and-egress) by upgrading the component chart and the `takumo-rtb` chart. For `api_unreachable`, check the `takumo-rtb-guard-api` NetworkPolicy exists and allows the API endpoint. Then run `takumo-rtb check`. |
+| `TakumoLicenseRefusing` (critical) | `takumo_rtb_guard_refused_total` increased in the last 5 minutes. A guard is refusing work for a license reason. | Run `takumo-rtb check`, read what was refused with `kubectl -n <namespace> logs <pod> \| grep rtb.guard.refused`, and fix what the check names. Refusals stop at the next refresh once the stage allows the work. In this release nothing refuses, so this alert stays quiet. |
+| `TakumoLicenseStageNotActive` (warning) | A guard has not been ACTIVE for 30 minutes. | Run `takumo-rtb check` and follow the fix it prints. A connected install renews the license with your Takumo admin or lets `takumo-rtb` reach Takumo to refresh it. An air-gapped install downloads a new license file and applies it as the `takumo-license` Secret. A revoked license, or an install that moved to Takumo Cloud, contacts Takumo. An unreadable guard names the RBAC or egress to restore. The alert clears at the next refresh with no restart. |
+
+The guard also exports `takumo_rtb_guard_stage`, `takumo_rtb_guard_days_to_next`, `takumo_rtb_guard_refresh_total`, `takumo_rtb_guard_refused_total` and `takumo_rtb_guard_would_refuse_total` on each service's `/metrics`. In this release `takumo_rtb_guard_would_refuse_total` counts what a later release would refuse. Pod logs carry `rtb.guard.started`, `rtb.guard.warning`, `rtb.guard.stage_changed`, `rtb.guard.unreadable` and `rtb.guard.would_refuse`. In this release a guard writes `rtb.guard.would_refuse` for work a later release would refuse; `rtb.guard.refused` appears only once enforcement is on. To see what would be refused, run `kubectl -n <namespace> logs <pod> | grep rtb.guard.would_refuse`.
+
+## Recovery
+
+After each fix, a service returns to ACTIVE in up to about a minute and needs no restart. Confirm with `takumo-rtb check -n takumo`.
+
+### The agent was deleted or scaled down
+
+The services keep reading the last license bundle, so nothing stops at once. A connected install enters GRACE after 48 hours without a check-in and reaches LOCKED 28 days after the last check-in. An air-gapped install keeps running until its license expires, then follows the dates in [Stages](#stages).
+
+If the release is still installed, upgrade it. Helm creates the Deployment again:
+
+```bash
+helm upgrade takumo-rtb takumo/takumo-rtb --namespace takumo --version 0.3.0 --reset-then-reuse-values
+```
+
+If you ran `helm uninstall`, install it again with the values you used the first time, as in [License](/deployment/self-hosted-dashboard#license).
+
+The agent keeps its state in the Secret `takumo-rtb-state`, which the chart does not own and `helm uninstall` leaves behind. It reads the state, checks in and renews the license. If the state Secret was deleted as well, the agent restores its install ID, acknowledgements and high-water mark from the license bundle and logs `rtb.agent.state.restored`.
+
+### The bundle was deleted
+
+If the agent is running, it writes the ConfigMap `takumo-rtb-bundle` again within 10 minutes. Until then each service treats the install as having no license and follows the no-license dates. To restore it at once, restart the agent:
+
+```bash
+kubectl -n takumo rollout restart deploy/takumo-rtb
+```
+
+If the agent and the bundle are both gone, and the state Secret is gone too, nothing holds the license. Register the install again as you did the first time (a new bootstrap token for a connected install, a license file for an air-gapped one). If Takumo Cloud will not register it, contact [support@takumo.io](mailto:support@takumo.io).
+
+### The cluster was rebuilt
+
+A rebuilt cluster has a new identity, so its old license is for another cluster. The services report `its license was issued for another cluster` and follow the no-license dates from the new cluster's creation, so you have 28 days from creation.
+
+Install `takumo-rtb` on the new cluster first and register it. For a connected install, issue a new bootstrap token under **Installations** and create the `takumo-rtb-bootstrap` Secret. For an air-gapped install, read the new fingerprint, add the install in Takumo Cloud and store the new license file:
+
+```bash
+kubectl -n takumo exec deploy/takumo-rtb -- takumo-rtb fingerprint
+```
+
+Restoring the old cluster's state Secret or bundle onto the new cluster does not help. Each is bound to the old cluster's identity.
+
+### An air-gapped license expired
+
+An expired air-gapped license starts GRACE at expiry and reaches LOCKED 28 days later. In Takumo Cloud, open the install under **Installations** and choose **Download refreshed license**. Replace the Secret, then restart the agent so it reads the new file:
+
+```bash
+kubectl -n takumo create secret generic takumo-license --from-file=license=./license-<install-id>.json \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n takumo rollout restart deploy/takumo-rtb
+```
+
+Download the next license before this one expires. Warnings begin 30 days before expiry.
+
+## What the check does not stop
+
+The license check trusts the Kubernetes API of the cluster it runs on, and it is built to make a lapse visible and to stop honest drift, not to defeat someone who controls your control plane. These limits are accepted:
+
+- Someone who controls the Kubernetes control plane controls what the check reads. The check does not defend against that.
+- A cluster rebuilt from scratch is a new cluster with its own 28 day window. Licensing the rebuilt cluster is the supported route.
+- Someone who controls a Takumo process on your cluster can change what that process decides. The check does not defend against that either.
+- When a service cannot read the Kubernetes API, it follows the UNVERIFIED rules above. A license copied from another cluster does not change that.
+- Restoring an older snapshot of the agent's state and bundle brings back the older license until its own expiry. After any restore of `takumo-rtb`, run `takumo-rtb check` and let the agent check in. It fetches the current license.
+- Releases before this one do not check their license. They also get no later patches, fixes or features.
+- Once enforcement is on, DEGRADED's "no new sessions" cannot be enforced against someone who administers the cluster. See the warning under [What each service does](#what-each-service-does).

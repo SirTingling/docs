@@ -243,6 +243,7 @@
               "deployment/overview",
               "deployment/saas",
               "deployment/onprem",
+              "deployment/onprem-licensing",
               "deployment/self-hosted-dashboard",
               "deployment/configuration",
               "deployment/streaming",
