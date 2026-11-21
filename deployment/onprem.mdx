@@ -146,17 +146,25 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
       --set 'imagePullSecrets[0].name=takumo-pull-secret'
     ```
 
-    Check that the agent holds a license:
+    Wait for the agent to roll out:
+
+    ```bash
+    kubectl -n takumo rollout status deploy/takumo-rtb
+    ```
+
+    Then check that the agent holds a license:
 
     ```bash
     kubectl -n takumo exec deploy/takumo-rtb -- takumo-rtb check -n takumo
     ```
 
+    The first check can show no license until the agent finishes registering. Run it again after a short wait.
+
     For an air-gapped install, follow [License](/deployment/self-hosted-dashboard#license) instead. This release only audits, so nothing is refused yet. For the stages, the upgrade order and recovery, see [On-Prem Licensing](/deployment/onprem-licensing).
   </Step>
 
   <Step title="Deploy the coordinator">
-    The coordinator uses the `manual` secrets provider for on-prem, meaning it expects you to create Kubernetes secrets yourself (done in the previous step).
+    The coordinator uses the `manual` secrets provider for on-prem, meaning it expects you to create Kubernetes secrets yourself (done in the Create namespace and secrets step).
 
     Deploy initially with the join key disabled (you'll create it in a later step):
 
