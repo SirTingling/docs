@@ -211,7 +211,7 @@ Read what the Job printed. The Job is named `<release>-rtb-check`, for example `
 kubectl -n takumo logs job/gateway-coordinator-rtb-check
 ```
 
-A licensed install in LOCKED can still install upgrades, because the check exits 0 for a licensed install whose reads work. Security patches reach a licensed install in any license state. The check exits 3 only when enforcement is on and either the reads fail or no license verifies for this cluster and the no-license dates have run out.
+A licensed install in LOCKED can still install upgrades, because the check exits 0 for a licensed install whose reads work. Security patches reach a licensed install in any license state, as long as its license reads work. The check exits 3 only when enforcement is on and either the reads fail or no license verifies for this cluster and the no-license dates have run out.
 
 ### Run the chart's own image tag or later
 
