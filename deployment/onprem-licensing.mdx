@@ -211,7 +211,7 @@ Read what the Job printed. The Job is named `<release>-rtb-check`, for example `
 kubectl -n takumo logs job/gateway-coordinator-rtb-check
 ```
 
-A licensed install in LOCKED can still install upgrades, because the check exits 0 for a licensed install whose reads work. Security patches go in whatever the license state. The check exits 3 only when enforcement is on and either the reads fail or no license verifies for this cluster and the no-license dates have run out.
+A licensed install in LOCKED can still install upgrades, because the check exits 0 for a licensed install whose reads work. Security patches reach a licensed install in any license state. The check exits 3 only when enforcement is on and either the reads fail or no license verifies for this cluster and the no-license dates have run out.
 
 ### Run the chart's own image tag or later
 
@@ -330,5 +330,5 @@ The license check trusts the Kubernetes API of the cluster it runs on, and it is
 - Someone who controls a Takumo process on your cluster can change what that process decides. The check does not defend against that either.
 - When a service cannot read the Kubernetes API, it follows the UNVERIFIED rules above. A license copied from another cluster does not change that.
 - Restoring an older snapshot of the agent's state and bundle brings back the older license until its own expiry. After any restore of `takumo-rtb`, run `takumo-rtb check` and let the agent check in. It fetches the current license.
-- Releases before this one do not check their license. They also get no later patches, fixes or features, and Takumo deploy tokens limit what you can pull later.
+- Releases before this one do not check their license. They also get no later patches, fixes or features.
 - Once enforcement is on, DEGRADED's "no new sessions" cannot be enforced against someone who administers the cluster. See the warning under [What each service does](#what-each-service-does).
