@@ -82,11 +82,11 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     crane copy cr.takumo.io/mirror/redis:7-alpine <your-registry>/mirror/redis:7-alpine
     ```
 
-    The dashboard image has its own version, the chart's app version (`0.3.0` for chart `0.3.1`). Copy it the same way:
+    The dashboard image has its own version, the chart's app version (`0.3.3` for chart `0.3.2`). Copy it the same way:
 
     ```bash
-    digest=$(crane digest cr.takumo.io/takumo-cloud:0.3.0)
-    crane copy "cr.takumo.io/takumo-cloud@$digest" <your-registry>/takumo-cloud:0.3.0
+    digest=$(crane digest cr.takumo.io/takumo-cloud:0.3.3)
+    crane copy "cr.takumo.io/takumo-cloud@$digest" <your-registry>/takumo-cloud:0.3.3
     ```
 
     Add `--insecure` to `crane copy` if your registry serves plain HTTP. Check that both platforms arrived:
@@ -136,7 +136,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
 
     ```bash
     helm repo update
-    helm pull takumo/cloud --version 0.3.1 --untar --untardir ./takumo-charts
+    helm pull takumo/cloud --version 0.3.2 --untar --untardir ./takumo-charts
     ```
   </Step>
 
@@ -225,7 +225,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     ```bash
     helm install cloud takumo/cloud \
       --namespace takumo \
-      --version 0.3.1 \
+      --version 0.3.2 \
       --values ./takumo-charts/cloud/values-onprem.yaml \
       --set app.url=https://<your-dashboard-host> \
       --set app.authUrl=https://<your-dashboard-host> \
@@ -239,7 +239,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
       --set ingress.tls.issuer=<your-cluster-issuer>
     ```
 
-    The chart pulls `cr.takumo.io/takumo-cloud:0.3.0` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty, or while `app.fromEmail` is empty with `features.email=true`. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
+    The chart pulls `cr.takumo.io/takumo-cloud:0.3.3` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty, or while `app.fromEmail` is empty with `features.email=true`. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
 
     `values-onprem.yaml` sets:
     - `app.installMode: onprem`, so every organization created on this dashboard is an on-prem organization
@@ -305,7 +305,7 @@ Use a sender on a domain you have verified in Resend.
 The dashboard sends traces and metrics over OpenTelemetry (OTLP over HTTP). Point it at your collector with `otel.endpoint`. An https endpoint works anywhere; plain http works only for a service inside the cluster, such as `http://otel-collector.monitoring.svc.cluster.local:4318`. Over plain http the dashboard sends no credentials to the collector. The dashboard's NetworkPolicy allows outbound traffic on ports 443 and 5432 only (and on port 50051 to `sentinel-service` when `features.contentScan` is on), so add a rule for the collector:
 
 ```bash
-helm upgrade cloud takumo/cloud --version 0.3.1 --reset-then-reuse-values \
+helm upgrade cloud takumo/cloud --version 0.3.2 --reset-then-reuse-values \
   --set otel.endpoint=http://otel-collector.monitoring.svc.cluster.local:4318 \
   --set-json 'networkPolicy.extraEgress=[{"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}],"ports":[{"port":4318,"protocol":"TCP"}]}]'
 ```
@@ -318,12 +318,12 @@ Notifications arrive in the dashboard within 30 seconds. To deliver them instant
 
 ### Upgrading from 0.3.0
 
-Upgrade every Cloud release with `--reset-then-reuse-values`, not `--reuse-values`: `--reuse-values` keeps the old release's values and drops settings the new chart adds. Chart 0.3.1 adds `features.contentScan` and `networkPolicyCheck.enabled`, so set both on the first upgrade, after you install `sentinel-service` as in [Install the dashboard](#install-the-dashboard):
+Upgrade every Cloud release with `--reset-then-reuse-values`, not `--reuse-values`: `--reuse-values` keeps the old release's values and drops settings the new chart adds. Chart 0.3.1 added `features.contentScan` and `networkPolicyCheck.enabled`, so set both on the first upgrade, after you install `sentinel-service` as in [Install the dashboard](#install-the-dashboard):
 
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace takumo \
-  --version 0.3.1 \
+  --version 0.3.2 \
   --reset-then-reuse-values \
   --set features.contentScan=true \
   --set networkPolicyCheck.enabled=true
@@ -363,7 +363,7 @@ The Secret needs all four keys. Leave the pair for a provider you do not use emp
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace takumo \
-  --version 0.3.1 \
+  --version 0.3.2 \
   --reset-then-reuse-values \
   --set features.oauth=true \
   --set secrets.oauth.enabled=true
@@ -433,7 +433,7 @@ Pass the App ID with `--set-string`, so Helm keeps it as a string. The client ID
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace takumo \
-  --version 0.3.1 \
+  --version 0.3.2 \
   --reset-then-reuse-values \
   --set features.githubApp=true \
   --set secrets.githubApp.enabled=true \
