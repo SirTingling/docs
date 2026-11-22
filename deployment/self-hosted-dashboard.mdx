@@ -82,11 +82,11 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     crane copy cr.takumo.io/mirror/redis:7-alpine <your-registry>/mirror/redis:7-alpine
     ```
 
-    The dashboard image has its own version, the chart's app version (`0.3.1` for chart `0.3.2`). Copy it the same way:
+    The dashboard image has its own version, the chart's app version (`0.3.3` for chart `0.3.2`). Copy it the same way:
 
     ```bash
-    digest=$(crane digest cr.takumo.io/takumo-cloud:0.3.1)
-    crane copy "cr.takumo.io/takumo-cloud@$digest" <your-registry>/takumo-cloud:0.3.1
+    digest=$(crane digest cr.takumo.io/takumo-cloud:0.3.3)
+    crane copy "cr.takumo.io/takumo-cloud@$digest" <your-registry>/takumo-cloud:0.3.3
     ```
 
     Add `--insecure` to `crane copy` if your registry serves plain HTTP. Check that both platforms arrived:
@@ -239,7 +239,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
       --set ingress.tls.issuer=<your-cluster-issuer>
     ```
 
-    The chart pulls `cr.takumo.io/takumo-cloud:0.3.1` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty, or while `app.fromEmail` is empty with `features.email=true`. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
+    The chart pulls `cr.takumo.io/takumo-cloud:0.3.3` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty, or while `app.fromEmail` is empty with `features.email=true`. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
 
     `values-onprem.yaml` sets:
     - `app.installMode: onprem`, so every organization created on this dashboard is an on-prem organization
