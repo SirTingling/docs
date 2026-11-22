@@ -13,7 +13,7 @@ The dashboard image, `cr.takumo.io/takumo-cloud`, is private. Pulling it needs a
 | Requirement | Notes |
 |------------|-------|
 | A Takumo workspace on Pro or Enterprise | Created with the **On-Prem** deployment mode. Its deploy token pulls the dashboard image. See [The image pull is denied](#the-image-pull-is-denied) |
-| Kubernetes and Helm | The same cluster and Helm 3 as [On-Premises](/deployment/onprem) |
+| Kubernetes and Helm | The same cluster as [On-Premises](/deployment/onprem), with Helm 3.14 or later, or Helm 4. The upgrade commands on this page use `--reset-then-reuse-values`, which older Helm 3 releases do not have |
 | PostgreSQL | A database for the dashboard. The coordinator reads tables the dashboard creates, so point `coordinator-database` at this same database |
 | An Upstash compatible REST endpoint | Holds rate limits and single use tokens. See [Rate limiting backend](#rate-limiting-backend) |
 | An email provider | [Resend](https://resend.com). The dashboard verifies each new account by email. See [Email](#email) |
@@ -82,7 +82,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     crane copy cr.takumo.io/mirror/redis:7-alpine <your-registry>/mirror/redis:7-alpine
     ```
 
-    The dashboard image has its own version, the chart's app version (`0.3.0` for chart `0.3.0`). Copy it the same way:
+    The dashboard image has its own version, the chart's app version (`0.3.0` for chart `0.3.1`). Copy it the same way:
 
     ```bash
     digest=$(crane digest cr.takumo.io/takumo-cloud:0.3.0)
@@ -136,7 +136,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
 
     ```bash
     helm repo update
-    helm pull takumo/cloud --version 0.3.0 --untar --untardir ./takumo-charts
+    helm pull takumo/cloud --version 0.3.1 --untar --untardir ./takumo-charts
     ```
   </Step>
 
@@ -199,11 +199,33 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     ```
   </Step>
 
+  <Step title="Install the content scanner">
+    The dashboard's pull request check scans the files in a pull request for detected secrets through `sentinel-service`, so install it before the dashboard:
+
+    ```bash
+    helm pull takumo/sentinel-service --version 0.1.6 --untar --untardir ./takumo-charts
+    helm install sentinel-service takumo/sentinel-service \
+      --namespace takumo \
+      --version 0.1.6 \
+      --values ./takumo-charts/sentinel-service/values-onprem.yaml \
+      --set secrets.imagePull.enabled=true \
+      --set secrets.imagePull.secretName=takumo-pull-secret
+    ```
+
+    If you mirrored the image, add `--set image.repository=<your-registry>/sentinel-service --set image.tag=<tag>`. `values-onprem.yaml` admits the dashboard's pods on port 50051, and the dashboard chart sends its scan traffic there (`features.contentScan`). Wait for the pod before you continue:
+
+    ```bash
+    kubectl rollout status deploy/sentinel-service -n takumo
+    ```
+
+    Without it the dashboard still runs, but a pull request check cannot scan file contents. The check then says so in plain words and follows the organization's fail open or fail closed setting.
+  </Step>
+
   <Step title="Install the chart">
     ```bash
     helm install cloud takumo/cloud \
       --namespace takumo \
-      --version 0.3.0 \
+      --version 0.3.1 \
       --values ./takumo-charts/cloud/values-onprem.yaml \
       --set app.url=https://<your-dashboard-host> \
       --set app.authUrl=https://<your-dashboard-host> \
@@ -223,12 +245,32 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     - `app.installMode: onprem`, so every organization created on this dashboard is an on-prem organization
     - `worker.enabled: true`, the background worker that turns detected secrets and vulnerabilities into issues, syncs Bitbucket and resets annual credits. Without NATS it logs `running in HTTP push + cron only mode`, which is expected
     - `networkPolicy.enabled: true`, `replicaCount: 2` and billing, email and OAuth off, so the email flags above turn email on
+    - `features.contentScan: true`, which lets the dashboard reach `sentinel-service` on port 50051 for the pull request check's file scan
+    - `networkPolicyCheck.enabled: true`, which adds the two pods that `helm test` runs in the next step, and the ServiceAccount, Role and RoleBinding the second pod uses (they are ordinary resources, so every install and upgrade renders them; the Role can only get one named pod and its log)
 
     Watch the pods start. The first start runs the database migrations:
 
     ```bash
     kubectl get pods -n takumo -l app.kubernetes.io/name=cloud
     ```
+  </Step>
+
+  <Step title="Check that the content scanner is isolated">
+    Run the check once `sentinel-service` and the dashboard are up:
+
+    ```bash
+    helm test cloud --namespace takumo --logs --timeout 10m
+    ```
+
+    It runs two short pods. The first has no dashboard label and tries to reach `sentinel-service` on port 50051. The second has the dashboard label, repeats the attempt and prints the verdict. Each line ends with the pod's start time in UTC. Read Helm's own error first, and trust a verdict only when its time is from this run: if a pod could not start or was killed, `--logs` can show a line from an earlier run.
+
+    | The verdict says | What it means | What to do |
+    |------------------|---------------|------------|
+    | `enforced` | A pod without the dashboard label could not reach `sentinel-service` on port 50051, and the dashboard pod could. The check does not test any other pod, including the gateway | Nothing |
+    | `WARNING: sentinel-service is reachable from any pod` | This cluster's network plugin does not enforce NetworkPolicy, or the `sentinel-service` policy is off. Any pod can call the scanner | See [Network policy](#network-policy) |
+    | `inconclusive` | The check could not tell, for example because `sentinel-service` was still starting or the dashboard could not reach it | Check that `sentinel-service` is running, then run the command again |
+
+    A failed check does not stop the install. The WARNING exits with success.
   </Step>
 
   <Step title="Open the dashboard">
@@ -248,7 +290,7 @@ kubectl create secret tls cloud-tls -n takumo --cert=./tls.crt --key=./tls.key
 
 ### Rate limiting backend
 
-The dashboard keeps rate limits and single use tokens through the Upstash REST API, not the Redis protocol. Use an [Upstash](https://upstash.com) database, or run an Upstash compatible REST proxy such as [serverless-redis-http](https://github.com/hiett/serverless-redis-http) in front of your own Redis. The dashboard's NetworkPolicy allows egress on port 443 and 5432 only, so serve the endpoint on 443.
+The dashboard keeps rate limits and single use tokens through the Upstash REST API, not the Redis protocol. Use an [Upstash](https://upstash.com) database, or run an Upstash compatible REST proxy such as [serverless-redis-http](https://github.com/hiett/serverless-redis-http) in front of your own Redis. The dashboard's NetworkPolicy allows egress on port 443 and 5432 only (and on port 50051 to `sentinel-service` when `features.contentScan` is on), so serve the endpoint on 443.
 
 Without the endpoint the pods never become ready: `/api/health/ready` answers 503 and the dashboard's log names `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. If the endpoint is unreachable, each rate limited request waits about 5 seconds and is then allowed, and connecting GitHub fails with **GitHub could not be connected right now**.
 
@@ -260,10 +302,10 @@ Use a sender on a domain you have verified in Resend.
 
 ### Monitoring
 
-The dashboard sends traces and metrics over OpenTelemetry (OTLP over HTTP). Point it at your collector with `otel.endpoint`. An https endpoint works anywhere; plain http works only for a service inside the cluster, such as `http://otel-collector.monitoring.svc.cluster.local:4318`. Over plain http the dashboard sends no credentials to the collector. The dashboard's NetworkPolicy allows outbound traffic on ports 443 and 5432 only, so add a rule for the collector:
+The dashboard sends traces and metrics over OpenTelemetry (OTLP over HTTP). Point it at your collector with `otel.endpoint`. An https endpoint works anywhere; plain http works only for a service inside the cluster, such as `http://otel-collector.monitoring.svc.cluster.local:4318`. Over plain http the dashboard sends no credentials to the collector. The dashboard's NetworkPolicy allows outbound traffic on ports 443 and 5432 only (and on port 50051 to `sentinel-service` when `features.contentScan` is on), so add a rule for the collector:
 
 ```bash
-helm upgrade cloud takumo/cloud --version 0.3.0 --reuse-values \
+helm upgrade cloud takumo/cloud --version 0.3.1 --reset-then-reuse-values \
   --set otel.endpoint=http://otel-collector.monitoring.svc.cluster.local:4318 \
   --set-json 'networkPolicy.extraEgress=[{"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}],"ports":[{"port":4318,"protocol":"TCP"}]}]'
 ```
@@ -273,6 +315,21 @@ helm upgrade cloud takumo/cloud --version 0.3.0 --reuse-values \
 ### Live notifications
 
 Notifications arrive in the dashboard within 30 seconds. To deliver them instantly, give the dashboard a Redis server for pub/sub with `--set features.redisPubSub=true --set features.redisPubSubUrl=redis://<redis-host>:6379`, and allow port 6379 to it with a `networkPolicy.extraEgress` rule like the one in [Monitoring](#monitoring).
+
+### Upgrading from 0.3.0
+
+Upgrade every Cloud release with `--reset-then-reuse-values`, not `--reuse-values`: `--reuse-values` keeps the old release's values and drops settings the new chart adds. Chart 0.3.1 adds `features.contentScan` and `networkPolicyCheck.enabled`, so set both on the first upgrade, after you install `sentinel-service` as in [Install the dashboard](#install-the-dashboard):
+
+```bash
+helm upgrade cloud takumo/cloud \
+  --namespace takumo \
+  --version 0.3.1 \
+  --reset-then-reuse-values \
+  --set features.contentScan=true \
+  --set networkPolicyCheck.enabled=true
+```
+
+Do not pass `--values values-onprem.yaml` to an upgrade. That file carries empty `app.url`, `app.authUrl`, `app.cookieDomain` and `app.trustedOrigins`, so it would replace your install's own values, and the chart refuses to render. Then run `helm test cloud --namespace takumo --logs --timeout 10m`.
 
 ## Sign in with GitHub or Google
 
@@ -306,8 +363,8 @@ The Secret needs all four keys. Leave the pair for a provider you do not use emp
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace takumo \
-  --version 0.3.0 \
-  --reuse-values \
+  --version 0.3.1 \
+  --reset-then-reuse-values \
   --set features.oauth=true \
   --set secrets.oauth.enabled=true
 ```
@@ -376,8 +433,8 @@ Pass the App ID with `--set-string`, so Helm keeps it as a string. The client ID
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace takumo \
-  --version 0.3.0 \
-  --reuse-values \
+  --version 0.3.1 \
+  --reset-then-reuse-values \
   --set features.githubApp=true \
   --set secrets.githubApp.enabled=true \
   --set-string app.githubAppId=<app-id> \
@@ -449,14 +506,20 @@ For the misconfigured install page, the `config.invalid` log line, the GitHub Ap
 
 ### Pods hang or time out on an enforcing CNI
 
-Takumo's charts create NetworkPolicies. CNIs such as Calico, Cilium and kindnet enforce them; flannel does not, so a policy gap shows only on an enforcing CNI. If a pod hangs while connecting or a cron Job ends in `DeadlineExceeded`, check the namespace's policies and the connection the pod needs:
+Takumo's charts create NetworkPolicies. CNIs such as Calico and Cilium enforce them; flannel does not, so a policy gap shows only on an enforcing CNI. If a pod hangs while connecting or a cron Job ends in `DeadlineExceeded`, check the namespace's policies and the connection the pod needs:
 
 ```bash
 kubectl get networkpolicy -n takumo
 kubectl describe networkpolicy -n takumo <policy-name>
 ```
 
-The dashboard admits traffic from the `ingress-nginx` namespace, from pods labelled `app.kubernetes.io/part-of: takumo` and from its own cron jobs, and sends traffic out on 53, 443 and 5432 and to the coordinator, plus the license agent when `rtb.enabled` is on. The gateway's own limits are on [On-Premises](/deployment/onprem#network-requirements).
+The dashboard admits traffic from the `ingress-nginx` namespace, from pods labelled `app.kubernetes.io/part-of: takumo` and from its own cron jobs, and sends traffic out on 53, 443 and 5432, to the coordinator, and to `sentinel-service` on 50051 when `features.contentScan` is on, plus the license agent when `rtb.enabled` is on. The gateway's own limits are on [On-Premises](/deployment/onprem#network-requirements).
+
+### Network policy
+
+The `sentinel-service` NetworkPolicy admits the dashboard's pods and the gateway on port 50051 and refuses other pods. That isolation holds only on a CNI that enforces NetworkPolicy, such as Calico or Cilium. Flannel does not enforce it: on a flannel cluster every pod in the namespace can call `sentinel-service`, and the check in the install steps prints a WARNING that says so. The scanner returns findings only for content the caller sends and reads no stored data, but to isolate it, use a CNI that enforces NetworkPolicy and keep the `sentinel-service` policy on.
+
+On a Linkerd-meshed install you can also restrict the gRPC port to named ServiceAccounts with `linkerdAuthz`; `values-onprem.yaml` in the `sentinel-service` chart shows the block, and `cloud-sa` is the dashboard's ServiceAccount. The check tests NetworkPolicy only. With `linkerdAuthz` on, the mesh proxy accepts the connection, so the check prints the WARNING even though authorization refuses the call.
 
 ### The image pull is denied
 
