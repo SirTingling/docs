@@ -178,7 +178,7 @@ Install `takumo-rtb` and add your license before you install the components. In 
 kubectl -n takumo create secret generic takumo-rtb-bootstrap --from-file=token=./bootstrap-token.txt
 ```
 
-In an air-gapped install, follow [License](/deployment/self-hosted-dashboard#license) to read the fingerprint and store the license file.
+In an air-gapped install, follow [License](/deployment/self-hosted-dashboard#license) to save the fingerprint, upload it and store the license file.
 
 Once enforcement is on, an unlicensed cluster has 28 days from the later of its creation and the day enforcement starts. After that the pre-upgrade check refuses to install any component. With `takumo-rtb` installed but no license, it prints `this cluster has no Takumo license: install takumo-rtb with your license first`. With no `takumo-rtb` at all, it prints `this cluster has no Takumo license bundle: upgrade takumo-rtb first (0.3.0 or later), or install it with your license`. A cluster that is older than that and has no license when you install a component hits this at once, so license first. In this release the check prints the same line as a warning and exits 0.
 
@@ -301,11 +301,13 @@ If the agent and the bundle are both gone, and the state Secret is gone too, not
 
 A rebuilt cluster has a new identity, so its old license is for another cluster. The services report `its license was issued for another cluster` and follow the no-license dates from the new cluster's creation, so you have 28 days from creation.
 
-Install `takumo-rtb` on the new cluster first and register it. For a connected install, issue a new bootstrap token under **Installations** and create the `takumo-rtb-bootstrap` Secret. For an air-gapped install, read the new fingerprint, add the install in Takumo Cloud and store the new license file:
+Install `takumo-rtb` on the new cluster first and register it. For a connected install, issue a new bootstrap token under **Installations** and create the `takumo-rtb-bootstrap` Secret. For an air-gapped install, save the new fingerprint to a file, upload it under **Add air-gapped install** in Takumo Cloud, and store the new license file:
 
 ```bash
-kubectl -n takumo exec deploy/takumo-rtb -- takumo-rtb fingerprint
+kubectl -n takumo exec deploy/takumo-rtb -- takumo-rtb fingerprint > takumo-fingerprint.txt
 ```
+
+Then follow [License](/deployment/self-hosted-dashboard#license) from the upload step.
 
 Restoring the old cluster's state Secret or bundle onto the new cluster does not help. Each is bound to the old cluster's identity.
 
