@@ -52,7 +52,7 @@ The Cloud API checks ten scopes. Each one unlocks the routes listed in [Key scop
 | `scan:read` | Read scan results, violations, repositories and compliance data |
 | `scan:write` | Send scan results and spend scan credits |
 | `issues:read` | Read issues |
-| `issues:write` | Acknowledge incidents and act on them |
+| `issues:write` | Acknowledge incidents and act on them. Needs the Security Lead, Admin or Owner role |
 | `policies:read` | Read policies, rules and the extension policy |
 | `policies:write` | Create, change, publish and delete rules |
 | `audit:read` | Read the audit log |
@@ -76,7 +76,7 @@ A key can't do more than the person who creates it. The dialog only offers the s
 |------|----------------------------|
 | Owner, Admin | All ten |
 | Security Lead | All except `notifications:write` |
-| Member | `scan:read`, `scan:write`, `issues:read`, `issues:write`, `policies:read`, `audit:read`, `reports:read` |
+| Member | `scan:read`, `scan:write`, `issues:read`, `policies:read`, `audit:read`, `reports:read` |
 | Viewer | `scan:read`, `issues:read`, `policies:read`, `audit:read`, `reports:read` |
 | Billing Admin | `audit:read` |
 

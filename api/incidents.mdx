@@ -18,7 +18,7 @@ There is no `GET /incidents` list endpoint. Incidents are viewed through the [Vi
 
 Acknowledge an incident. If the violation was already acknowledged, the response includes `alreadyAcknowledged: true` with the original acknowledgment details.
 
-**Scope:** `issues:write`
+**Scope:** `issues:write`. The key's owner also needs the `violations.manage` permission, so a key created by a Member can't call this route.
 
 ```bash
 curl -X POST "https://cloud.takumo.io/api/v1/incidents/viol_abc123/acknowledge" \
@@ -70,7 +70,7 @@ Returns `404` if the violation does not exist, belongs to a different organizati
 
 Execute an action on a violation. The action is recorded as a `violationEvent` and audit-logged.
 
-**Scope:** `issues:write`
+**Scope:** `issues:write`. The key's owner also needs the `violations.manage` permission, so a key created by a Member can't call this route.
 
 ```bash
 curl -X POST "https://cloud.takumo.io/api/v1/incidents/viol_abc123/actions" \
