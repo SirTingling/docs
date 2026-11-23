@@ -1,72 +1,138 @@
 ---
 title: Workbench
-description: Policy rule testing and on-demand scanning (coming soon)
+description: Write a detection rule, test it on your code, then add it to a policy
 icon: "code"
 ---
 
-<Note>
-The Workbench is not yet available. The page currently shows a preview of the planned interface behind a "Coming Soon" overlay. The features described below reflect what is being built. They are not functional today.
-</Note>
+Write a detection rule, test it on your code, then add it to a policy. Patterns run on the same engine as pull request checks. Each line is matched on its own.
 
-The Workbench will be an interactive environment for writing custom detection rules, testing them against real code, and running on-demand scans from the dashboard.
+Workbench is in the dashboard sidebar. It is on the Pro plan and above.
 
 ---
 
-## Planned capabilities
+## Plans and limits
 
-| Feature | Description |
-|---------|-------------|
-| **Scan launcher** | Run Shield scans, policy evaluations, and Sentinel AI reviews on-demand against any connected repository |
-| **YAML rule editor** | Write custom detection rules with a built-in editor (requires Pro plan or above) |
-| **Review queue** | View and filter Sentinel AI code reviews across all repositories (requires Pro plan or above) |
-| **Credit tracking** | See credit cost before running a scan, with live balance indicator |
-| **Recent scan history** | View results of past scans with conclusion badges and credit usage |
+| | |
+|--|--|
+| **Plans** | Pro, Enterprise and Custom. On Free, the sidebar item shows a **Pro** badge and the page explains the upgrade. |
+| **Rules** | Up to 25 per organization |
+| **Previews** | 120 a minute for each user |
+| **Pattern checks, saves and exports** | 240 a minute for each organization |
+| **Repository tests** | 10 an hour for each organization |
 
----
+Workbench does not use credits. The rate limits above are its only limits on use.
 
-## Scan types (planned)
-
-Three scan types are planned for the scan launcher:
-
-| Type | Credits | Description |
-|------|---------|-------------|
-| **Shield Scan** | 1 | Check a repository for known secret fingerprints via Vault |
-| **Policy Check** | 1 | Evaluate all active policies against a repository |
-| **AI Review** | 2 | Queue a Sentinel AI review for a specific pull request |
+If an organization drops to Free, the policies it already exported from Workbench keep enforcing, and the Workbench page shows the upgrade explanation again.
 
 ---
 
-## Rule editor (planned)
+## How a rule runs
 
-The rule editor will accept YAML-format detection rules:
+A Workbench rule is a regular expression with a name, a severity and a message. It runs in pull request checks, on the lines a pull request adds. The check reports the rule name and the line of the first match.
 
-```yaml
-name: custom-secret-detection
-type: security
-severity: critical
-description: Detect exposed API keys and tokens
+| Behavior | What it means |
+|----------|---------------|
+| **One line at a time** | Each line is matched on its own, so a pattern cannot span lines. The engine reports the first match on each line. |
+| **Long lines** | A line over 32 KiB is not checked. If a Block rule applies and a changed file has such a line, the check is incomplete rather than passed, and follows the **When a check can't finish** setting. See [Policies](/concepts/policies#when-a-check-cant-finish). |
+| **Comment lines** | A comment line starts with `#`, `//`, `/*` or `*` after any spaces. **Match comment lines** is on by default. Turn it off to skip them. |
+| **Pattern syntax** | Up to 1,000 characters. Look around and backreferences are not supported. A pattern that matches every line is refused. |
 
-patterns:
-  - regex: "AKIA[0-9A-Z]{16}"
-    description: "AWS Access Key ID"
-  - regex: "[0-9a-zA-Z/+]{40}"
-    context: aws_secret
-    description: "AWS Secret Access Key"
-
-scope:
-  include: ["*.py", "*.js", "*.env"]
-  exclude: ["*_test.*", "*.example"]
-```
-
-The editor will validate rule structure and report errors, warnings, or success before you export to a policy.
+A rule flags what its pattern matches. It finds the detected secrets and other values you describe, not every secret in your code.
 
 ---
 
-## What exists today
+## Write a rule
 
-The Workbench page renders a blurred, non-interactive preview of the planned interface with a "Coming Soon" overlay. No scan, rule editing, or review functionality is available from this page yet.
+<Steps>
+  <Step title="Open Workbench">
+    Select **Workbench** in the sidebar and click **New rule**.
+  </Step>
+  <Step title="Fill in the rule">
+    Set the **Name**, an optional **Description**, the **Pattern**, the **Severity** (Critical, High, Medium or Low) and the **Message shown on a match**. The engine checks the pattern as you type and says when it accepts it or why it does not.
+  </Step>
+  <Step title="Choose how comment lines are handled">
+    Leave **Match comment lines** on to match inside comment lines, or turn it off to skip them. The preview updates when you change it.
+  </Step>
+  <Step title="Save the rule">
+    Click **Save rule**. A saved rule can be tested on a repository and added to a policy.
+  </Step>
+</Steps>
 
-To manage detection rules now, use [Security Policies](/dashboard/rules) to create policies with rules directly.
+**Copy as YAML** copies the rule to your clipboard.
+
+### Pattern builder
+
+Click **Build a pattern** if you would rather not write the expression by hand. Choose what the token **Starts with**, what comes **Then**, and the **Shortest** and **Longest** length. The builder writes the pattern and an example line. Click **Use this pattern** to put it in the form. With no start, a token must be at least 6 characters long, because a shorter one would match almost every line.
+
+---
+
+## Try it on a sample
+
+Paste up to 20 KB of text under **Try it on a sample**. Matches are marked as you type, using the same engine that runs on pull requests.
+
+---
+
+## Test on a GitHub repository
+
+Choose a connected GitHub repository and click **Run test**. Takumo tests the default branch at its latest commit and shows the commit it read.
+
+- GitHub only. GitLab and Bitbucket repositories are not offered.
+- GitHub must be connected with the Takumo app. If it is not, the page asks you to reconnect.
+- Takumo reads one snapshot of the repository in memory and does not store your code.
+- For 24 hours after a test, Takumo keeps the locations of matches: the file path, the line and the byte range, up to 500. After that the locations are cleared and the counts stay. Run the test again to see locations.
+
+A test reads at most 50 MiB, 5,000 files and 1 MiB per file, and stops after 120 seconds. Files in UTF-16 are decoded and scanned.
+
+The result shows the files scanned, the number of matches, and what was skipped, by reason. Each match links to the file on GitHub.
+
+### Incomplete results
+
+A test never reports a result as clean when it did not check every file. It finishes as **incomplete**, and says so, when it skipped any of these:
+
+- files over 1 MiB
+- files with a line over 32 KiB
+- files with unreadable bytes, meaning binary files that Takumo does not recognize as a known binary type
+- files past the 5,000 file or 50 MiB limit
+- files not reached before the time limit
+- files with a path Takumo will not report
+- files with more matches than the engine returns
+- files in a damaged archive
+
+Known binary files, symbolic links and special files are counted but do not make a result incomplete.
+
+### Mark as not a secret
+
+Click **Mark as not a secret** on a match to record that it is a false positive. The rule then shows **Marked not a secret in the latest test: x of y**. Marking only labels the match in that test. It does not change what pull request checks do.
+
+---
+
+## Add a rule to a policy
+
+A Workbench rule runs on pull request checks once it is in a policy. Click **Add to a policy** on a saved rule, make your choices, then click **Add to policy**.
+
+| Choice | Options |
+|--------|---------|
+| **Policy** | **Create a new policy**, or **Add to an existing policy** |
+| **When it matches** | Block the pull request, Warn on the pull request, Notify only, or Monitor only |
+| **How should this policy start?** | **Activate immediately**, **Grace period** (1 to 90 days) or **Save as draft** |
+
+A new policy is a Security policy for all repositories, and it starts the way you choose. An existing policy keeps its own status and activation. Adding the same rule to a policy again replaces it in that policy and adds a policy version.
+
+The policy keeps its own copy of the pattern. After you edit a rule, add it to the policy again to update the copy.
+
+The policy card shows **Matches comment lines: Yes** or **No** for each Workbench rule. A Workbench rule can only be added to a policy from Workbench. The policy wizard cannot add or change one. See [Security Policies](/dashboard/rules) and [Policies](/concepts/policies).
+
+---
+
+## Who can use Workbench
+
+| Action | Permission needed |
+|--------|-------------------|
+| See rules | View policies |
+| Preview, run a repository test | Run scans. Members have it, Viewers do not. |
+| Save, check, add to a policy, mark a match | Create policies. Owners, Admins and Security Leads have it. |
+
+See [Members](/dashboard/members) for what each role can do.
 
 ---
 
@@ -75,6 +141,6 @@ To manage detection rules now, use [Security Policies](/dashboard/rules) to crea
     Create and manage policies with enforcement rules
   </Card>
   <Card title="Custom Rules in Studio" icon="monitor" href="/studio/custom-rules">
-    Write rules from selected code in your editor
+    Write Sentinel rules from selected code in your editor
   </Card>
 </CardGroup>
