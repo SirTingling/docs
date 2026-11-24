@@ -15,13 +15,11 @@ The dashboard image, `cr.takumo.io/takumo-cloud`, is private. Pulling it needs a
 | A Takumo workspace on Pro or Enterprise | Created with the **On-Prem** deployment mode. Its deploy token pulls the dashboard image. See [The image pull is denied](#the-image-pull-is-denied) |
 | Kubernetes and Helm | The same cluster as [On-Premises](/deployment/onprem), with Helm 3.14 or later, or Helm 4. The upgrade commands on this page use `--reset-then-reuse-values`, which older Helm 3 releases do not have |
 | PostgreSQL | A database for the dashboard. The coordinator reads tables the dashboard creates, so point `coordinator-database` at this same database |
-| An Upstash compatible REST endpoint | Holds rate limits and single use tokens. See [Rate limiting backend](#rate-limiting-backend) |
-| An email provider | [Resend](https://resend.com). The dashboard verifies each new account by email. See [Email](#email) |
+| Redis | None to provide: the chart runs its own. To use your own, see [Redis](#redis) |
+| An email provider | Optional. [Resend](https://resend.com) sends invitations and verification emails. Without it, an admin copies each invite link. See [Email](#email) |
 | A hostname | For example `takumo.example.com`, pointed at your ingress controller |
 | An ingress controller | The chart's Ingress uses class `nginx`. See [DNS and TLS](#dns-and-tls) |
 | cert-manager and a ClusterIssuer | Issues the TLS certificate. You can bring your own certificate instead. See [DNS and TLS](#dns-and-tls) |
-
-<Note>Support for a plain Redis endpoint, and for creating the first admin account without email, is planned. Until then, the REST endpoint and the email provider are both required.</Note>
 
 ### Outbound access
 
@@ -30,10 +28,10 @@ What the install must reach depends on the features you turn on. Allow only thes
 | Destination | Needed for |
 |------------|------------|
 | Your registry, or `cr.takumo.io` with a [deploy token](/dashboard/deploy-tokens) | Pulling images. Each node's container runtime pulls, so allow this from every node, not only from pods |
-| Your PostgreSQL and your Upstash compatible endpoint | Always |
+| Your PostgreSQL, and your own Redis if you do not use the bundled one | Always |
 | `github.com`, `api.github.com` | GitHub sign-in and your GitHub App |
 | `oauth2.googleapis.com`, `www.googleapis.com` | Google sign-in. Users' browsers also reach `accounts.google.com` |
-| `api.resend.com` | Email |
+| `api.resend.com` | Email, only when you turn it on |
 | `api.anthropic.com`, `api.openai.com` | The gateway, for the providers you configure |
 | `rtb.takumo.io` | The license agent in a connected install only |
 
@@ -43,7 +41,7 @@ Your GitHub App's webhooks travel the other way: `github.com` must reach `https:
 
 ### Air-gapped installs
 
-With no route out, mirror every image into your own registry (see [Images](#images)) and use an [air-gapped license](#license). The dashboard verifies each new account by email, so allow `api.resend.com` for [email](#email). If you cannot, contact Takumo support at [support@takumo.io](mailto:support@takumo.io) before you install.
+With no route out, mirror every image into your own registry (see [Images](#images)) and use an [air-gapped license](#license). Email is optional, so you do not need `api.resend.com`. See [Email](#email) for how invitations work without it.
 
 ## Images
 
@@ -79,7 +77,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
       digest=$(crane digest "cr.takumo.io/$image:<tag>")
       crane copy "cr.takumo.io/$image@$digest" "<your-registry>/$image:<tag>"
     done
-    crane copy cr.takumo.io/mirror/redis:7-alpine <your-registry>/mirror/redis:7-alpine
+    crane copy cr.takumo.io/mirror/redis:7.4.12-alpine <your-registry>/mirror/redis:7.4.12-alpine
     ```
 
     The dashboard image has its own version, the chart's app version (`0.3.3` for chart `0.3.2`). Copy it the same way:
@@ -88,6 +86,8 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     digest=$(crane digest cr.takumo.io/takumo-cloud:0.3.3)
     crane copy "cr.takumo.io/takumo-cloud@$digest" <your-registry>/takumo-cloud:0.3.3
     ```
+
+    The dashboard chart and the gateway chart both run Redis `7.4.12-alpine` from `mirror/redis`. Set `redis.image.repository` on each chart to your copy.
 
     Add `--insecure` to `crane copy` if your registry serves plain HTTP. Check that both platforms arrived:
 
@@ -136,8 +136,10 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
 
     ```bash
     helm repo update
-    helm pull takumo/cloud --version 0.3.2 --untar --untardir ./takumo-charts
+    helm pull takumo/cloud --version <chart-version> --untar --untardir ./takumo-charts
     ```
+
+    <Note>The first admin setup token and the bundled Redis need a `cloud` chart newer than 0.3.3. Use that release for `<chart-version>` in every command on this page, and find it with `helm search repo takumo/cloud --versions`.</Note>
   </Step>
 
   <Step title="Create the database Secret">
@@ -171,34 +173,6 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     <Warning>`encryption-key` encrypts the integration credentials the dashboard stores. Back it up. A new key cannot read what the old one wrote.</Warning>
   </Step>
 
-  <Step title="Create the rate limiting Secret">
-    Paste the REST URL and token of your Upstash compatible endpoint:
-
-    ```bash
-    (
-      printf 'REST URL: ' >&2; read -rs REDIS_URL || exit 1; echo >&2
-      printf 'REST token: ' >&2; read -rs REDIS_TOKEN || exit 1; echo >&2
-      kubectl create secret generic cloud-redis -n takumo \
-        --from-file=upstash-redis-rest-url=<(printf '%s' "$REDIS_URL") \
-        --from-file=upstash-redis-rest-token=<(printf '%s' "$REDIS_TOKEN")
-    )
-    ```
-  </Step>
-
-  <Step title="Create the email Secret">
-    Paste your Resend API key when asked:
-
-    ```bash
-    (
-      printf 'Paste your Resend API key, then press Enter: ' >&2
-      read -rs RESEND_API_KEY || exit 1
-      echo >&2
-      printf '%s' "$RESEND_API_KEY" \
-        | kubectl create secret generic cloud-email -n takumo --from-file=resend-api-key=/dev/stdin
-    )
-    ```
-  </Step>
-
   <Step title="Install the content scanner">
     The dashboard's pull request check scans the files in a pull request for detected secrets through `sentinel-service`, so install it before the dashboard:
 
@@ -225,26 +199,25 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     ```bash
     helm install cloud takumo/cloud \
       --namespace takumo \
-      --version 0.3.2 \
+      --version <chart-version> \
       --values ./takumo-charts/cloud/values-onprem.yaml \
       --set app.url=https://<your-dashboard-host> \
       --set app.authUrl=https://<your-dashboard-host> \
       --set app.trustedOrigins=https://<your-dashboard-host> \
       --set app.cookieDomain=.<your-domain> \
-      --set features.email=true \
-      --set secrets.email.enabled=true \
-      --set app.fromEmail='Takumo <takumo@<your-domain>>' \
       --set ingress.enabled=true \
       --set ingress.hostname=<your-dashboard-host> \
       --set ingress.tls.issuer=<your-cluster-issuer>
     ```
 
-    The chart pulls `cr.takumo.io/takumo-cloud:0.3.3` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty, or while `app.fromEmail` is empty with `features.email=true`. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
+    The chart pulls `cr.takumo.io/takumo-cloud:0.3.3` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty, or while `ingress.hostname` is still `takumo.example.com`. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
 
     `values-onprem.yaml` sets:
     - `app.installMode: onprem`, so every organization created on this dashboard is an on-prem organization
     - `worker.enabled: true`, the background worker that turns detected secrets and vulnerabilities into issues, syncs Bitbucket and resets annual credits. Without NATS it logs `running in HTTP push + cron only mode`, which is expected
-    - `networkPolicy.enabled: true`, `replicaCount: 2` and billing, email and OAuth off, so the email flags above turn email on
+    - `networkPolicy.enabled: true`, `replicaCount: 2` and billing, email and OAuth off. To turn email on, see [Email](#email)
+    - `setupToken.create: true`, which creates the Secret `cloud-setup-token` for the first admin. See [Create the first admin](#create-the-first-admin)
+    - `redis.enabled: true`, which runs a Redis for the dashboard. See [Redis](#redis)
     - `features.contentScan: true`, which lets the dashboard reach `sentinel-service` on port 50051 for the pull request check's file scan
     - `networkPolicyCheck.enabled: true`, which adds the two pods that `helm test` runs in the next step, and the ServiceAccount, Role and RoleBinding the second pod uses (they are ordinary resources, so every install and upgrade renders them; the Role can only get one named pod and its log)
 
@@ -288,24 +261,143 @@ kubectl create secret tls cloud-tls -n takumo --cert=./tls.crt --key=./tls.key
 
 <Warning>The dashboard's NetworkPolicy admits traffic only from the namespace named `ingress-nginx`. If your ingress controller runs in another namespace and your CNI enforces NetworkPolicy, requests time out. Run the controller in `ingress-nginx`, or install with `--set networkPolicy.enabled=false` and apply your own policy.</Warning>
 
-### Rate limiting backend
+### Create the first admin
 
-The dashboard keeps rate limits and single use tokens through the Upstash REST API, not the Redis protocol. Use an [Upstash](https://upstash.com) database, or run an Upstash compatible REST proxy such as [serverless-redis-http](https://github.com/hiett/serverless-redis-http) in front of your own Redis. The dashboard's NetworkPolicy allows egress on port 443 and 5432 only (and on port 50051 to `sentinel-service` when `features.contentScan` is on), so serve the endpoint on 443.
+A self-hosted dashboard has no public sign-up before setup. The first admin is created at `/setup` with a one time token, and `values-onprem.yaml` has the chart create it as the Secret `cloud-setup-token`. Until setup is complete, every sign-up is refused with `setup_required`.
 
-Without the endpoint the pods never become ready: `/api/health/ready` answers 503 and the dashboard's log names `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. If the endpoint is unreachable, each rate limited request waits about 5 seconds and is then allowed, and connecting GitHub fails with **GitHub could not be connected right now**.
+Read the token:
+
+```bash
+kubectl get secret cloud-setup-token -n takumo -o jsonpath='{.data.token}' | base64 -d; echo
+```
+
+Open `https://<your-dashboard-host>/setup` and fill in the setup token, your name, your email address and a password of 8 to 128 characters, then choose **Create admin**. You are signed in and taken to creating your organization. The admin's email address is marked verified without sending an email, so this works with no email provider.
+
+- The token is 40 random characters and expires 7 days after the install. Read the expiry with `kubectl get secret cloud-setup-token -n takumo -o jsonpath='{.data.expiresAt}' | base64 -d; echo`. The Secret survives `helm upgrade` and `helm uninstall`, so the token and its expiry stay the same.
+- The page works once. After the first admin exists it shows **Setup is complete** and the token does nothing.
+- The page allows 10 attempts per 10 minutes for each client IP. After that it says **Too many attempts**.
+- If the token has expired, the page says so. Create a new one under another name and point the chart at it:
+
+  ```bash
+  kubectl create secret generic cloud-setup-token-2 -n takumo \
+    --from-file=token=<(openssl rand -hex 20 | tr -d '\n') \
+    --from-literal=expiresAt="$(date -u -d '+7 days' +%Y-%m-%dT%H:%M:%SZ)"
+
+  helm upgrade cloud takumo/cloud \
+    --namespace takumo \
+    --version <chart-version> \
+    --reset-then-reuse-values \
+    --set setupToken.create=false \
+    --set setupToken.existingSecret=cloud-setup-token-2
+  ```
+
+  The `date -d` form is GNU date. On macOS, use `date -u -v+7d +%Y-%m-%dT%H:%M:%SZ`.
+
+Under ArgoCD or Flux, create your own Secret once with the keys `token` and `expiresAt`, and install with `--set setupToken.create=false --set setupToken.existingSecret=<name>`. A Secret the chart renders under those tools would get a new token on every sync.
+
+<Warning>Have your ingress overwrite the `X-Forwarded-For` header with the client's address instead of passing the caller's value through. Takumo reads the client IP from that header to limit setup attempts, and a caller who can set it can fill another address's limit.</Warning>
+
+#### Organizations and invitations
+
+A self-hosted install is one company. After setup, only the install admin creates organizations. Everyone else joins an organization by invitation from an owner or admin of that organization, and a user with no invitation sees **Ask your Takumo admin to invite you.** when they try to create one.
+
+An install that had an admin before this release has no recorded install admin. There, a user with an active owner or admin membership can still create organizations.
+
+### Redis
+
+The dashboard keeps rate limits, single use tokens, SSO and SAML state, GitHub install state, webhook delivery records and live notifications in Redis, over the Redis protocol. A self-hosted install needs no Upstash account and no REST proxy.
+
+`values-onprem.yaml` sets `redis.enabled: true`. The chart runs a Redis next to the dashboard with `noeviction`, an append-only file on a 1Gi volume, a password from a Secret, and a NetworkPolicy that admits the dashboard pods only (on a CNI that enforces NetworkPolicy). The Secret `cloud-redis-auth` (keys `password` and `redis-url`) keeps its password across `helm upgrade`. Notifications reach the dashboard instantly over the same Redis.
+
+Under ArgoCD or Flux, create the Secret once and point the chart at it, because a Secret the chart renders would change its password on every sync. `redis-url` has the form `redis://:<password>@cloud-redis.takumo.svc:6379`:
+
+```bash
+(
+  REDIS_PASSWORD=$(openssl rand -hex 32 | tr -d '\n')
+  kubectl create secret generic cloud-redis-auth -n takumo \
+    --from-file=password=<(printf '%s' "$REDIS_PASSWORD") \
+    --from-file=redis-url=<(printf 'redis://:%s@cloud-redis.takumo.svc:6379' "$REDIS_PASSWORD")
+)
+```
+
+```bash
+helm upgrade cloud takumo/cloud \
+  --namespace takumo \
+  --version <chart-version> \
+  --reset-then-reuse-values \
+  --set redis.auth.existingSecret=cloud-redis-auth
+```
+
+To use your own Redis, turn the bundled one off and give the chart a Secret with the key `redis-url`, a `redis://` or `rediss://` address:
+
+```bash
+(
+  printf 'Redis URL: ' >&2; read -rs REDIS_URL || exit 1; echo >&2
+  kubectl create secret generic cloud-redis-external -n takumo \
+    --from-file=redis-url=<(printf '%s' "$REDIS_URL")
+)
+```
+
+```bash
+helm upgrade cloud takumo/cloud \
+  --namespace takumo \
+  --version <chart-version> \
+  --reset-then-reuse-values \
+  --set redis.enabled=false \
+  --set redis.external.existingSecret=cloud-redis-external \
+  --set redis.external.cidr=<redis-address>/32 \
+  --set redis.external.port=6379
+```
+
+The dashboard's NetworkPolicy blocks other egress, so `redis.external.cidr` and `redis.external.port` add the rule that lets the dashboard and its worker reach your Redis. Leave `cidr` empty and add your own rule under `networkPolicy.extraEgress` if you prefer. If a private certificate authority signed a `rediss://` certificate, put its certificate in a Secret and set `--set redis.ca.secretName=<name>`, or use `redis.ca.configMapName=<name>`, with `redis.ca.key` as the file name (default `ca.crt`). The chart mounts it read-only and keeps certificate checks on.
+
+An install that already runs on an Upstash compatible endpoint keeps working with the values it has, until you set a `REDIS_URL`.
+
+Without a Redis the pods never become ready: `/api/health/ready` answers 503 and the dashboard's log has a `config.invalid` line for `REDIS_URL`. When Redis stops after the pods are running:
+
+- General rate limits let the request through, and the log shows `redis.command.failed`.
+- Setup, the **Check now** button on an SSO domain, and the actions on the **Installations** page (issuing a bootstrap token, adding an air-gapped install) refuse the request instead, because each does work that its limit is there to bound.
+- GitHub connection callbacks fail with **GitHub could not be connected right now**.
 
 ### Email
 
-The dashboard sends email through Resend, set up in [Install the dashboard](#install-the-dashboard). Without it, nothing is sent: sign-up says a verification link was sent, but an account created with email and password stays unverified and cannot sign in, and password reset emails never arrive.
+Email is optional. With a Resend API key the dashboard sends invitations and verification emails. Without one, nothing is sent, and an invitation works as a link:
 
-Use a sender on a domain you have verified in Resend.
+- On **Settings > Members**, an admin with permission to invite chooses **Show link** on a pending invitation, copies the link and passes it on. Each reveal is recorded in the audit log as `invite.link_revealed`.
+- The invitee opens the link, enters a name and a password of 8 to 128 characters, and joins with a verified account for the invited address. Possession of the link is the proof.
+- The sign-up page says the install cannot verify new addresses and tells people to ask an admin for an invite link. Password reset emails are not sent, so ask an admin for help.
+- If an unverified account already holds the invited address, the invite page refuses until an admin chooses **Remove unverified account** next to the invitation.
+
+To turn email on, create the Secret and upgrade:
+
+```bash
+(
+  printf 'Paste your Resend API key, then press Enter: ' >&2
+  read -rs RESEND_API_KEY || exit 1
+  echo >&2
+  printf '%s' "$RESEND_API_KEY" \
+    | kubectl create secret generic cloud-email -n takumo --from-file=resend-api-key=/dev/stdin
+)
+```
+
+```bash
+helm upgrade cloud takumo/cloud \
+  --namespace takumo \
+  --version <chart-version> \
+  --reset-then-reuse-values \
+  --set features.email=true \
+  --set secrets.email.enabled=true \
+  --set app.fromEmail='Takumo <takumo@<your-domain>>'
+```
+
+The chart refuses to render with `features.email=true` and an empty `app.fromEmail`. Use a sender on a domain you have verified in Resend. With email on, a new account created with email and password must verify its address before it signs in.
 
 ### Monitoring
 
-The dashboard sends traces and metrics over OpenTelemetry (OTLP over HTTP). Point it at your collector with `otel.endpoint`. An https endpoint works anywhere; plain http works only for a service inside the cluster, such as `http://otel-collector.monitoring.svc.cluster.local:4318`. Over plain http the dashboard sends no credentials to the collector. The dashboard's NetworkPolicy allows outbound traffic on ports 443 and 5432 only (and on port 50051 to `sentinel-service` when `features.contentScan` is on), so add a rule for the collector:
+The dashboard sends traces and metrics over OpenTelemetry (OTLP over HTTP). Point it at your collector with `otel.endpoint`. An https endpoint works anywhere; plain http works only for a service inside the cluster, such as `http://otel-collector.monitoring.svc.cluster.local:4318`. Over plain http the dashboard sends no credentials to the collector. The dashboard's NetworkPolicy allows outbound traffic on ports 443 and 5432 only (and on port 50051 to `sentinel-service` when `features.contentScan` is on, and to the Redis the chart runs), so add a rule for the collector:
 
 ```bash
-helm upgrade cloud takumo/cloud --version 0.3.2 --reset-then-reuse-values \
+helm upgrade cloud takumo/cloud --version <chart-version> --reset-then-reuse-values \
   --set otel.endpoint=http://otel-collector.monitoring.svc.cluster.local:4318 \
   --set-json 'networkPolicy.extraEgress=[{"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}],"ports":[{"port":4318,"protocol":"TCP"}]}]'
 ```
@@ -314,7 +406,7 @@ helm upgrade cloud takumo/cloud --version 0.3.2 --reset-then-reuse-values \
 
 ### Live notifications
 
-Notifications arrive in the dashboard within 30 seconds. To deliver them instantly, give the dashboard a Redis server for pub/sub with `--set features.redisPubSub=true --set features.redisPubSubUrl=redis://<redis-host>:6379`, and allow port 6379 to it with a `networkPolicy.extraEgress` rule like the one in [Monitoring](#monitoring).
+With the bundled Redis, or your own through `redis.external`, notifications reach the dashboard instantly. To send them through a different Redis server, use `--set features.redisPubSub=true --set features.redisPubSubUrl=redis://<redis-host>:6379`, and allow port 6379 to it with a `networkPolicy.extraEgress` rule like the one in [Monitoring](#monitoring).
 
 ### Upgrading from 0.3.0
 
@@ -323,7 +415,7 @@ Upgrade every Cloud release with `--reset-then-reuse-values`, not `--reuse-value
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace takumo \
-  --version 0.3.2 \
+  --version <chart-version> \
   --reset-then-reuse-values \
   --set features.contentScan=true \
   --set networkPolicyCheck.enabled=true
@@ -363,7 +455,7 @@ The Secret needs all four keys. Leave the pair for a provider you do not use emp
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace takumo \
-  --version 0.3.2 \
+  --version <chart-version> \
   --reset-then-reuse-values \
   --set features.oauth=true \
   --set secrets.oauth.enabled=true
@@ -433,7 +525,7 @@ Pass the App ID with `--set-string`, so Helm keeps it as a string. The client ID
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace takumo \
-  --version 0.3.2 \
+  --version <chart-version> \
   --reset-then-reuse-values \
   --set features.githubApp=true \
   --set secrets.githubApp.enabled=true \
@@ -513,7 +605,7 @@ kubectl get networkpolicy -n takumo
 kubectl describe networkpolicy -n takumo <policy-name>
 ```
 
-The dashboard admits traffic from the `ingress-nginx` namespace, from pods labelled `app.kubernetes.io/part-of: takumo` and from its own cron jobs, and sends traffic out on 53, 443 and 5432, to the coordinator, and to `sentinel-service` on 50051 when `features.contentScan` is on, plus the license agent when `rtb.enabled` is on. The gateway's own limits are on [On-Premises](/deployment/onprem#network-requirements).
+The dashboard admits traffic from the `ingress-nginx` namespace, from pods labelled `app.kubernetes.io/part-of: takumo` and from its own cron jobs, and sends traffic out on 53, 443 and 5432, to the coordinator, to its Redis, and to `sentinel-service` on 50051 when `features.contentScan` is on, plus the license agent when `rtb.enabled` is on. The gateway's own limits are on [On-Premises](/deployment/onprem#network-requirements).
 
 ### Network policy
 
@@ -550,6 +642,6 @@ kubectl logs -n takumo deploy/cloud --since=10m | grep -iE 'github|config.invali
 | **not configured on this Takumo install** | The `config.invalid` line names `GITHUB_APP_CLIENT_ID` or `GITHUB_APP_CLIENT_SECRET`: set `app.githubAppClientId` and the Secret's `github-app-client-secret` key |
 | GitHub says **This GitHub App must be configured with a callback URL** | The app's **Callback URL** is empty. On the app's **General** page, add `https://<your-dashboard-host>/api/integrations/github/authorize/callback` and click **Save changes** at the bottom of the page |
 | **Ask a GitHub organization owner to connect Takumo** | Only an owner of the GitHub organization can connect it. GitHub must have asked them to authorize the app: check that the app's callback URL is set |
-| **GitHub could not be connected right now** | The [rate limiting backend](#rate-limiting-backend) is reachable |
+| **GitHub could not be connected right now** | [Redis](#redis) is reachable |
 | **belongs to a different GitHub App** | You installed another app. Install the one whose slug you configured |
 | Repositories connect but no checks run | GitHub reaches your webhook URL: the app's **Advanced** tab lists each delivery and its response |
