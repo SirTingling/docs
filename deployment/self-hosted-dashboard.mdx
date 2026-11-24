@@ -15,7 +15,7 @@ The dashboard image, `cr.takumo.io/takumo-cloud`, is private. Pulling it needs a
 | A Takumo workspace on Pro or Enterprise | Created with the **On-Prem** deployment mode. Its deploy token pulls the dashboard image. See [The image pull is denied](#the-image-pull-is-denied) |
 | Kubernetes and Helm | The same cluster as [On-Premises](/deployment/onprem), with Helm 3.14 or later, or Helm 4. The upgrade commands on this page use `--reset-then-reuse-values`, which older Helm 3 releases do not have |
 | PostgreSQL | A database for the dashboard. The coordinator reads tables the dashboard creates, so point `coordinator-database` at this same database |
-| Redis | None to provide: the chart runs its own. To use your own, see [Redis](#redis) |
+| Redis | None to provide: the chart runs its own. It needs a PersistentVolumeClaim of 1Gi, so the cluster needs a default StorageClass, or set `redis.persistence.storageClass`. To use your own Redis, or to run without a volume, see [Redis](#redis) |
 | An email provider | Optional. [Resend](https://resend.com) sends invitations and verification emails. Without it, an admin copies each invite link. See [Email](#email) |
 | A hostname | For example `takumo.example.com`, pointed at your ingress controller |
 | An ingress controller | The chart's Ingress uses class `nginx`. See [DNS and TLS](#dns-and-tls) |
@@ -109,10 +109,10 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
 
 <Steps>
   <Step title="Create the image pull Secret">
-    Skip this step if you created `takumo-pull-secret` in the `takumo` namespace for [On-Premises](/deployment/onprem). Otherwise, create the namespace if it does not exist yet:
+    Skip this step if you created `takumo-pull-secret` in the `<namespace>` namespace for [On-Premises](/deployment/onprem). Otherwise, create the namespace if it does not exist yet:
 
     ```bash
-    kubectl create namespace takumo
+    kubectl create namespace <namespace>
     ```
 
     Then issue a deploy token in the Takumo dashboard (**Settings > Deploy Tokens**) of the Pro or Enterprise workspace. The username is your workspace ID, which that page shows, and the password is the token. Replace `<workspace-id>` below, paste the whole block, then paste the token when asked. The token is read without echo, so it stays out of shell history, the screen and process arguments:
@@ -123,7 +123,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
       read -rs TAKUMO_DEPLOY_TOKEN || exit 1
       echo >&2
       printf '{"auths":{"cr.takumo.io":{"username":"%s","password":"%s"}}}' "<workspace-id>" "$TAKUMO_DEPLOY_TOKEN" \
-        | kubectl create secret generic takumo-pull-secret -n takumo \
+        | kubectl create secret generic takumo-pull-secret -n <namespace> \
             --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
     )
     ```
@@ -139,7 +139,9 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     helm pull takumo/cloud --version <chart-version> --untar --untardir ./takumo-charts
     ```
 
-    <Note>The first admin setup token and the bundled Redis need a `cloud` chart newer than 0.3.3. Use that release for `<chart-version>` in every command on this page, and find it with `helm search repo takumo/cloud --versions`.</Note>
+    <Note>The first admin setup token and the bundled Redis need the first `cloud` chart release after 0.3.3 (`<cloud-min-version>`). Use that release or later for `<chart-version>` in every command on this page, and find it with `helm search repo takumo/cloud --versions`.</Note>
+
+    <Note>Commands on this page use `<namespace>` for the Kubernetes namespace. Replace it with yours, for example `takumo`, in every command. The dashboard, the coordinator and the gateway share it.</Note>
   </Step>
 
   <Step title="Create the database Secret">
@@ -149,7 +151,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     (
       printf 'Pooled database URL: ' >&2; read -rs DB_URL || exit 1; echo >&2
       printf 'Direct database URL: ' >&2; read -rs DB_URL_DIRECT || exit 1; echo >&2
-      kubectl create secret generic cloud-database -n takumo \
+      kubectl create secret generic cloud-database -n <namespace> \
         --from-file=database-url=<(printf '%s' "$DB_URL") \
         --from-file=database-url-direct=<(printf '%s' "$DB_URL_DIRECT")
     )
@@ -160,13 +162,13 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     Each value is 64 hex characters with no trailing newline. A newline breaks the value, so keep `tr -d '\n'`:
 
     ```bash
-    kubectl create secret generic cloud-auth -n takumo \
+    kubectl create secret generic cloud-auth -n <namespace> \
       --from-file=better-auth-secret=<(openssl rand -hex 32 | tr -d '\n') \
       --from-file=encryption-key=<(openssl rand -hex 32 | tr -d '\n') \
       --from-file=hmac-key=<(openssl rand -hex 32 | tr -d '\n') \
       --from-file=sso-encryption-key=<(openssl rand -hex 32 | tr -d '\n')
 
-    kubectl create secret generic cloud-cron -n takumo \
+    kubectl create secret generic cloud-cron -n <namespace> \
       --from-file=cron-secret=<(openssl rand -hex 32 | tr -d '\n')
     ```
 
@@ -179,7 +181,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     ```bash
     helm pull takumo/sentinel-service --version 0.1.6 --untar --untardir ./takumo-charts
     helm install sentinel-service takumo/sentinel-service \
-      --namespace takumo \
+      --namespace <namespace> \
       --version 0.1.6 \
       --values ./takumo-charts/sentinel-service/values-onprem.yaml \
       --set secrets.imagePull.enabled=true \
@@ -189,7 +191,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     If you mirrored the image, add `--set image.repository=<your-registry>/sentinel-service --set image.tag=<tag>`. `values-onprem.yaml` admits the dashboard's pods on port 50051, and the dashboard chart sends its scan traffic there (`features.contentScan`). Wait for the pod before you continue:
 
     ```bash
-    kubectl rollout status deploy/sentinel-service -n takumo
+    kubectl rollout status deploy/sentinel-service -n <namespace>
     ```
 
     Without it the dashboard still runs, but a pull request check cannot scan file contents. The check then says so in plain words and follows the organization's fail open or fail closed setting.
@@ -198,7 +200,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
   <Step title="Install the chart">
     ```bash
     helm install cloud takumo/cloud \
-      --namespace takumo \
+      --namespace <namespace> \
       --version <chart-version> \
       --values ./takumo-charts/cloud/values-onprem.yaml \
       --set app.url=https://<your-dashboard-host> \
@@ -224,7 +226,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     Watch the pods start. The first start runs the database migrations:
 
     ```bash
-    kubectl get pods -n takumo -l app.kubernetes.io/name=cloud
+    kubectl get pods -n <namespace> -l app.kubernetes.io/name=cloud
     ```
   </Step>
 
@@ -232,7 +234,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     Run the check once `sentinel-service` and the dashboard are up:
 
     ```bash
-    helm test cloud --namespace takumo --logs --timeout 10m
+    helm test cloud --namespace <namespace> --logs --timeout 10m
     ```
 
     It runs two short pods. The first has no dashboard label and tries to reach `sentinel-service` on port 50051. The second has the dashboard label, repeats the attempt and prints the verdict. Each line ends with the pod's start time in UTC. Read Helm's own error first, and trust a verdict only when its time is from this run: if a pod could not start or was killed, `--logs` can show a line from an earlier run.
@@ -247,7 +249,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
   </Step>
 
   <Step title="Open the dashboard">
-    Go to `https://<your-dashboard-host>`, create your account, then create your organization.
+    Go to `https://<your-dashboard-host>/setup` and create the first admin, then create your organization. Sign-up is closed until setup is done. See [Create the first admin](#create-the-first-admin).
   </Step>
 </Steps>
 
@@ -256,7 +258,7 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
 Point `<your-dashboard-host>` at your ingress controller. The chart's Ingress uses class `nginx` (`ingress.className`) and the TLS Secret `cloud-tls` (`ingress.tls.secretName`). With `ingress.tls.issuer` set, cert-manager issues the certificate through that ClusterIssuer. To use your own certificate, set `--set ingress.tls.issuer=""` and create the Secret yourself:
 
 ```bash
-kubectl create secret tls cloud-tls -n takumo --cert=./tls.crt --key=./tls.key
+kubectl create secret tls cloud-tls -n <namespace> --cert=./tls.crt --key=./tls.key
 ```
 
 <Warning>The dashboard's NetworkPolicy admits traffic only from the namespace named `ingress-nginx`. If your ingress controller runs in another namespace and your CNI enforces NetworkPolicy, requests time out. Run the controller in `ingress-nginx`, or install with `--set networkPolicy.enabled=false` and apply your own policy.</Warning>
@@ -268,23 +270,23 @@ A self-hosted dashboard has no public sign-up before setup. The first admin is c
 Read the token:
 
 ```bash
-kubectl get secret cloud-setup-token -n takumo -o jsonpath='{.data.token}' | base64 -d; echo
+kubectl get secret cloud-setup-token -n <namespace> -o jsonpath='{.data.token}' | base64 -d; echo
 ```
 
 Open `https://<your-dashboard-host>/setup` and fill in the setup token, your name, your email address and a password of 8 to 128 characters, then choose **Create admin**. You are signed in and taken to creating your organization. The admin's email address is marked verified without sending an email, so this works with no email provider.
 
-- The token is 40 random characters and expires 7 days after the install. Read the expiry with `kubectl get secret cloud-setup-token -n takumo -o jsonpath='{.data.expiresAt}' | base64 -d; echo`. The Secret survives `helm upgrade` and `helm uninstall`, so the token and its expiry stay the same.
+- The token is 40 random characters and expires 7 days after the install. Read the expiry with `kubectl get secret cloud-setup-token -n <namespace> -o jsonpath='{.data.expiresAt}' | base64 -d; echo`. The Secret survives `helm upgrade` and `helm uninstall`, so the token and its expiry stay the same.
 - The page works once. After the first admin exists it shows **Setup is complete** and the token does nothing.
-- The page allows 10 attempts per 10 minutes for each client IP. After that it says **Too many attempts**.
+- The page allows 10 attempts per 10 minutes for each client IP. After that it says **Too many attempts**. Each dashboard pod also keeps its own in-memory block for that IP, so deleting the limiter's key in Redis does not lift it. The block clears when the 10 minutes pass or the pod restarts.
 - If the token has expired, the page says so. Create a new one under another name and point the chart at it:
 
   ```bash
-  kubectl create secret generic cloud-setup-token-2 -n takumo \
+  kubectl create secret generic cloud-setup-token-2 -n <namespace> \
     --from-file=token=<(openssl rand -hex 20 | tr -d '\n') \
     --from-literal=expiresAt="$(date -u -d '+7 days' +%Y-%m-%dT%H:%M:%SZ)"
 
   helm upgrade cloud takumo/cloud \
-    --namespace takumo \
+    --namespace <namespace> \
     --version <chart-version> \
     --reset-then-reuse-values \
     --set setupToken.create=false \
@@ -307,22 +309,22 @@ An install that had an admin before this release has no recorded install admin. 
 
 The dashboard keeps rate limits, single use tokens, SSO and SAML state, GitHub install state, webhook delivery records and live notifications in Redis, over the Redis protocol. A self-hosted install needs no Upstash account and no REST proxy.
 
-`values-onprem.yaml` sets `redis.enabled: true`. The chart runs a Redis next to the dashboard with `noeviction`, an append-only file on a 1Gi volume, a password from a Secret, and a NetworkPolicy that admits the dashboard pods only (on a CNI that enforces NetworkPolicy). The Secret `cloud-redis-auth` (keys `password` and `redis-url`) keeps its password across `helm upgrade`. Notifications reach the dashboard instantly over the same Redis.
+`values-onprem.yaml` sets `redis.enabled: true`. The chart runs a Redis next to the dashboard with `noeviction`, an append-only file on a 1Gi PersistentVolumeClaim from the default StorageClass (set `redis.persistence.storageClass` to name another, or `redis.persistence.enabled=false` to use a temporary volume that a pod restart empties), a password from a Secret, and a NetworkPolicy that admits the dashboard pods only (on a CNI that enforces NetworkPolicy). The Secret `cloud-redis-auth` (keys `password` and `redis-url`) keeps its password across `helm upgrade`. Notifications reach the dashboard instantly over the same Redis.
 
-Under ArgoCD or Flux, create the Secret once and point the chart at it, because a Secret the chart renders would change its password on every sync. `redis-url` has the form `redis://:<password>@cloud-redis.takumo.svc:6379`:
+Under ArgoCD or Flux, create the Secret once and point the chart at it, because a Secret the chart renders would change its password on every sync. `redis-url` has the form `redis://:<password>@cloud-redis.<namespace>.svc:6379`:
 
 ```bash
 (
   REDIS_PASSWORD=$(openssl rand -hex 32 | tr -d '\n')
-  kubectl create secret generic cloud-redis-auth -n takumo \
+  kubectl create secret generic cloud-redis-auth -n <namespace> \
     --from-file=password=<(printf '%s' "$REDIS_PASSWORD") \
-    --from-file=redis-url=<(printf 'redis://:%s@cloud-redis.takumo.svc:6379' "$REDIS_PASSWORD")
+    --from-file=redis-url=<(printf 'redis://:%s@cloud-redis.<namespace>.svc:6379' "$REDIS_PASSWORD")
 )
 ```
 
 ```bash
 helm upgrade cloud takumo/cloud \
-  --namespace takumo \
+  --namespace <namespace> \
   --version <chart-version> \
   --reset-then-reuse-values \
   --set redis.auth.existingSecret=cloud-redis-auth
@@ -333,14 +335,14 @@ To use your own Redis, turn the bundled one off and give the chart a Secret with
 ```bash
 (
   printf 'Redis URL: ' >&2; read -rs REDIS_URL || exit 1; echo >&2
-  kubectl create secret generic cloud-redis-external -n takumo \
+  kubectl create secret generic cloud-redis-external -n <namespace> \
     --from-file=redis-url=<(printf '%s' "$REDIS_URL")
 )
 ```
 
 ```bash
 helm upgrade cloud takumo/cloud \
-  --namespace takumo \
+  --namespace <namespace> \
   --version <chart-version> \
   --reset-then-reuse-values \
   --set redis.enabled=false \
@@ -376,13 +378,13 @@ To turn email on, create the Secret and upgrade:
   read -rs RESEND_API_KEY || exit 1
   echo >&2
   printf '%s' "$RESEND_API_KEY" \
-    | kubectl create secret generic cloud-email -n takumo --from-file=resend-api-key=/dev/stdin
+    | kubectl create secret generic cloud-email -n <namespace> --from-file=resend-api-key=/dev/stdin
 )
 ```
 
 ```bash
 helm upgrade cloud takumo/cloud \
-  --namespace takumo \
+  --namespace <namespace> \
   --version <chart-version> \
   --reset-then-reuse-values \
   --set features.email=true \
@@ -414,14 +416,14 @@ Upgrade every Cloud release with `--reset-then-reuse-values`, not `--reuse-value
 
 ```bash
 helm upgrade cloud takumo/cloud \
-  --namespace takumo \
+  --namespace <namespace> \
   --version <chart-version> \
   --reset-then-reuse-values \
   --set features.contentScan=true \
   --set networkPolicyCheck.enabled=true
 ```
 
-Do not pass `--values values-onprem.yaml` to an upgrade. That file carries empty `app.url`, `app.authUrl`, `app.cookieDomain` and `app.trustedOrigins`, so it would replace your install's own values, and the chart refuses to render. Then run `helm test cloud --namespace takumo --logs --timeout 10m`.
+Do not pass `--values values-onprem.yaml` to an upgrade. That file carries empty `app.url`, `app.authUrl`, `app.cookieDomain` and `app.trustedOrigins`, so it would replace your install's own values, and the chart refuses to render. Then run `helm test cloud --namespace <namespace> --logs --timeout 10m`.
 
 ## Sign in with GitHub or Google
 
@@ -444,7 +446,7 @@ The Secret needs all four keys. Leave the pair for a provider you do not use emp
   printf 'GitHub client secret: ' >&2; read -rs GH_SECRET || exit 1; echo >&2
   printf 'Google client ID: ' >&2; read -rs GOOGLE_ID || exit 1; echo >&2
   printf 'Google client secret: ' >&2; read -rs GOOGLE_SECRET || exit 1; echo >&2
-  kubectl create secret generic cloud-oauth -n takumo \
+  kubectl create secret generic cloud-oauth -n <namespace> \
     --from-file=github-client-id=<(printf '%s' "$GH_ID") \
     --from-file=github-client-secret=<(printf '%s' "$GH_SECRET") \
     --from-file=google-client-id=<(printf '%s' "$GOOGLE_ID") \
@@ -454,7 +456,7 @@ The Secret needs all four keys. Leave the pair for a provider you do not use emp
 
 ```bash
 helm upgrade cloud takumo/cloud \
-  --namespace takumo \
+  --namespace <namespace> \
   --version <chart-version> \
   --reset-then-reuse-values \
   --set features.oauth=true \
@@ -513,7 +515,7 @@ After you create the app, note its **App ID**, its **Client ID** and its slug (t
 ```bash
 printf 'GitHub App client secret: ' >&2; read -rs GH_APP_SECRET; echo >&2
 printf '%s' "$GH_APP_SECRET" > client-secret.txt; unset GH_APP_SECRET
-kubectl create secret generic cloud-github-app -n takumo \
+kubectl create secret generic cloud-github-app -n <namespace> \
   --from-file=github-app-private-key=./<your-app>.private-key.pem \
   --from-file=github-webhook-secret=./webhook-secret.txt \
   --from-file=github-app-client-secret=./client-secret.txt
@@ -524,7 +526,7 @@ Pass the App ID with `--set-string`, so Helm keeps it as a string. The client ID
 
 ```bash
 helm upgrade cloud takumo/cloud \
-  --namespace takumo \
+  --namespace <namespace> \
   --version <chart-version> \
   --reset-then-reuse-values \
   --set features.githubApp=true \
@@ -540,7 +542,7 @@ If your app was already connected before you added the client secret, add it to 
 
 ```bash
 printf 'GitHub App client secret: ' >&2; read -rs GH_APP_SECRET; echo >&2
-kubectl -n takumo patch secret cloud-github-app --type merge --patch-file /dev/stdin \
+kubectl -n <namespace> patch secret cloud-github-app --type merge --patch-file /dev/stdin \
   <<<"{\"data\":{\"github-app-client-secret\":\"$(printf '%s' "$GH_APP_SECRET" | base64)\"}}"
 unset GH_APP_SECRET
 ```
@@ -555,7 +557,7 @@ Each install runs the `takumo-rtb` license agent. In an air-gapped install, the 
   <Step title="Install the agent">
     ```bash
     helm install takumo-rtb takumo/takumo-rtb \
-      --namespace takumo \
+      --namespace <namespace> \
       --version 0.3.0 \
       --set rtb.airGapped=true \
       --set image.repository=<your-registry>/takumo-rtb \
@@ -566,7 +568,7 @@ Each install runs the `takumo-rtb` license agent. In an air-gapped install, the 
 
   <Step title="Read the install's fingerprint">
     ```bash
-    kubectl -n takumo exec deploy/takumo-rtb -- takumo-rtb fingerprint
+    kubectl -n <namespace> exec deploy/takumo-rtb -- takumo-rtb fingerprint
     ```
   </Step>
 
@@ -576,7 +578,7 @@ Each install runs the `takumo-rtb` license agent. In an air-gapped install, the 
 
   <Step title="Store the license">
     ```bash
-    kubectl -n takumo create secret generic takumo-license --from-file=license=./license-<install-id>.json
+    kubectl -n <namespace> create secret generic takumo-license --from-file=license=./license-<install-id>.json
     ```
   </Step>
 </Steps>
@@ -584,13 +586,13 @@ Each install runs the `takumo-rtb` license agent. In an air-gapped install, the 
 A license is valid for 60 days. From day 46, use **Download refreshed license** on the same install's page and replace the Secret:
 
 ```bash
-kubectl -n takumo create secret generic takumo-license --from-file=license=./license-<install-id>.json \
+kubectl -n <namespace> create secret generic takumo-license --from-file=license=./license-<install-id>.json \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-The agent's logs show its status: `kubectl -n takumo logs deploy/takumo-rtb`.
+The agent's logs show its status: `kubectl -n <namespace> logs deploy/takumo-rtb`.
 
-To see the stage every service reports, run `kubectl -n takumo exec deploy/takumo-rtb -- takumo-rtb check -n takumo`. For the stages and recovery steps, see [On-Prem Licensing](/deployment/onprem-licensing).
+To see the stage every service reports, run `kubectl -n <namespace> exec deploy/takumo-rtb -- takumo-rtb check -n <namespace>`. For the stages and recovery steps, see [On-Prem Licensing](/deployment/onprem-licensing).
 
 ## Troubleshooting
 
@@ -601,8 +603,8 @@ For the misconfigured install page, the `config.invalid` log line, the GitHub Ap
 Takumo's charts create NetworkPolicies. CNIs such as Calico and Cilium enforce them; flannel does not, so a policy gap shows only on an enforcing CNI. If a pod hangs while connecting or a cron Job ends in `DeadlineExceeded`, check the namespace's policies and the connection the pod needs:
 
 ```bash
-kubectl get networkpolicy -n takumo
-kubectl describe networkpolicy -n takumo <policy-name>
+kubectl get networkpolicy -n <namespace>
+kubectl describe networkpolicy -n <namespace> <policy-name>
 ```
 
 The dashboard admits traffic from the `ingress-nginx` namespace, from pods labelled `app.kubernetes.io/part-of: takumo` and from its own cron jobs, and sends traffic out on 53, 443 and 5432, to the coordinator, to its Redis, and to `sentinel-service` on 50051 when `features.contentScan` is on, plus the license agent when `rtb.enabled` is on. The gateway's own limits are on [On-Premises](/deployment/onprem#network-requirements).
@@ -618,10 +620,10 @@ On a Linkerd-meshed install you can also restrict the gRPC port to named Service
 If the dashboard pods stay in `ImagePullBackOff`, read the pull error:
 
 ```bash
-kubectl describe pods -n takumo -l app.kubernetes.io/name=cloud --show-events=true | grep -iA3 'failed to pull'
+kubectl describe pods -n <namespace> -l app.kubernetes.io/name=cloud --show-events=true | grep -iA3 'failed to pull'
 ```
 
-An error that says `denied`, `403 Forbidden`, or `This workspace is not entitled to the self-hosted dashboard image`, means the deploy token in `takumo-pull-secret` works but its workspace cannot pull the dashboard image. The workspace must be on the Pro or Enterprise plan and must have been created with the **On-Prem** deployment mode. Some container runtimes show only `denied`, or containerd only `403 Forbidden`, without the message. Issue a token from a workspace that meets both conditions, delete the old Secret with `kubectl delete secret takumo-pull-secret -n takumo`, and create it again as in [Install the dashboard](#install-the-dashboard).
+An error that says `denied`, `403 Forbidden`, or `This workspace is not entitled to the self-hosted dashboard image`, means the deploy token in `takumo-pull-secret` works but its workspace cannot pull the dashboard image. The workspace must be on the Pro or Enterprise plan and must have been created with the **On-Prem** deployment mode. Some container runtimes show only `denied`, or containerd only `403 Forbidden`, without the message. Issue a token from a workspace that meets both conditions, delete the old Secret with `kubectl delete secret takumo-pull-secret -n <namespace>`, and create it again as in [Install the dashboard](#install-the-dashboard).
 
 An error that says `unauthorized` means the workspace ID or the token is wrong, or the token was revoked or has expired. See [Deploy Tokens](/dashboard/deploy-tokens).
 
@@ -632,7 +634,7 @@ An error that says `i/o timeout` means the node cannot reach `cr.takumo.io`. Eac
 The error on the **Integrations** page names the step that failed. Then read the dashboard's logs around the time you clicked:
 
 ```bash
-kubectl logs -n takumo deploy/cloud --since=10m | grep -iE 'github|config.invalid'
+kubectl logs -n <namespace> deploy/cloud --since=10m | grep -iE 'github|config.invalid'
 ```
 
 | What you see | Check |
