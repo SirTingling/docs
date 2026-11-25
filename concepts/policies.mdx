@@ -74,6 +74,12 @@ These are detected secrets, not every secret. Takumo scans with the Sentinel sec
 
 Dependency rules match on lock file changes only. License rules never match, because license lists are not checked against real licenses yet. The OWASP Top 10, SOC 2 Baseline, PCI DSS, License Compliance and Supply Chain Health templates are not available yet, because CVE, license and package health checks do not run. See [Security Policies](/dashboard/rules) for the criteria and their current behavior.
 
+### Custom patterns from Workbench
+
+A Security policy rule can also carry detection patterns you write in [Workbench](/dashboard/workbench). Pull request checks match each pattern on the lines a pull request adds, one line at a time, on the Sentinel service. A pattern does not satisfy the secret rule, and the secret rule does not satisfy a pattern. Workbench is on the Pro plan and above.
+
+A pattern has a **Match comment lines** setting, and the policy card shows it as **Matches comment lines: Yes** or **No**. A line over 32 KiB is not checked. If a Block rule applies and a changed file has such a line, the check is incomplete, not passed. Patterns can only be added to a policy from Workbench. The policy wizard cannot add or change them.
+
 ## When a check can't finish
 
 Takumo can hit an error, or find a pull request it can't fully read. That happens when:
