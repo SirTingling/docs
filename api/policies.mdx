@@ -6,7 +6,7 @@ icon: "shield"
 
 <Note>This page covers the local daemon at `localhost:19532`. To read your policies from the Cloud API, use [`GET /rules`](/api/rules) or `GET /brain/policies` with the `policies:read` scope.</Note>
 
-Retrieve organization policies. Policies are configured in the dashboard and apply to pull request checks. Gateways do not receive or apply them; the editor daemon reads them to guide AI rewrites and does not enforce them.
+Retrieve organization policies. Policies are configured in the dashboard and apply to pull request checks. The hosted gateway also applies the Workbench rules in policies scoped to all repositories (see [Workbench](/dashboard/workbench#on-gateway-requests)) and no other part of a policy. The editor daemon reads policies to guide AI rewrites and does not enforce them.
 
 ## GET /policies
 

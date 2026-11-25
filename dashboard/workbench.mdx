@@ -28,7 +28,7 @@ If an organization drops to Free, the policies it already exported from Workbenc
 
 ## How a rule runs
 
-A Workbench rule is a regular expression with a name, a severity and a message. It runs in pull request checks, on the lines a pull request adds. The check reports the rule name and the line of the first match.
+A Workbench rule is a regular expression with a name, a severity and a message. It runs in pull request checks, on the lines a pull request adds. The check reports the rule name and the line of the first match. In a policy scoped to all repositories, it also runs on AI requests through the hosted gateway. See [On gateway requests](#on-gateway-requests).
 
 | Behavior | What it means |
 |----------|---------------|
@@ -108,7 +108,7 @@ Click **Mark as not a secret** on a match to record that it is a false positive.
 
 ## Add a rule to a policy
 
-A Workbench rule runs on pull request checks once it is in a policy. Click **Add to a policy** on a saved rule, make your choices, then click **Add to policy**.
+A Workbench rule runs on pull request checks once it is in a policy, and on gateway requests when that policy is scoped to all repositories. Click **Add to a policy** on a saved rule, make your choices, then click **Add to policy**.
 
 | Choice | Options |
 |--------|---------|
@@ -121,6 +121,53 @@ A new policy is a Security policy for all repositories, and it starts the way yo
 The policy keeps its own copy of the pattern. After you edit a rule, add it to the policy again to update the copy.
 
 The policy card shows **Matches comment lines: Yes** or **No** for each Workbench rule. A Workbench rule can only be added to a policy from Workbench. The policy wizard cannot add or change one. See [Security Policies](/dashboard/rules) and [Policies](/concepts/policies).
+
+---
+
+## On gateway requests
+
+The hosted gateway checks every AI request against the Workbench rules in your organization's active policies scoped to **All repositories**, before the model is called. It reads the text of the messages and the system prompt, one line at a time, with the same engine as pull request checks.
+
+A gateway request has no repository, so a policy scoped to **Repositories** or **Tags**, or with include path filters, is not applied to it. The policy card shows **Not applied to gateway requests**. Exclude path filters do not stop a policy from applying. Self-hosted gateways do not apply Workbench rules.
+
+| Mode | What happens |
+|------|--------------|
+| **Block** | The request is refused with `422` and the model is not called, so the request costs nothing. The response names the policy, the rule and where it matched. |
+| **Warn**, **Notify**, **Monitor** | The request goes to the model. Takumo records the match. |
+
+A Block policy in its grace period acts as Warn until the grace period ends.
+
+```json
+{
+  "error": {
+    "type": "custom_rule_blocked",
+    "message": "Your organization's policy \"Block production tokens\" blocked this request: rule \"Internal token\" matched in messages[0].content, line 1. Start a new conversation without the detected value.",
+    "policy": "Block production tokens",
+    "rule": "Internal token",
+    "location": { "path": "messages[0].content", "line": 1 }
+  }
+}
+```
+
+### What Takumo records
+
+Matches show in [Activity](/dashboard/activity) and the [Audit log](/dashboard/audit-log), with the API key that sent the request as the actor. Takumo writes one row for each API key, rule and result in each 60 second window, with a count of the requests. Blocked requests and passed matches get separate rows. The rows hold IDs, the policy and rule names and the counts. Takumo does not store or log the prompt text or the matched content.
+
+### Limits and failures
+
+| When | Organization with a Block rule | Organization with only Warn, Notify or Monitor rules |
+|------|-------------------------------|-----------------------------------------------------|
+| The request has more than 2 MiB of text | Refused with `413` `custom_rules_request_too_large` | Passes. The first 2 MiB are checked and the request is recorded as not fully checked. |
+| A line is over 32 KiB | Refused with `422` `custom_rules_unscannable`, naming where the line is | Passes. That line is not checked and the request is recorded as not fully checked. |
+| The rules cannot be read or checked in time | Refused with `503` `custom_rules_unavailable` and `Retry-After: 30` | Passes, and the request is recorded as not fully checked. |
+
+A `422` `custom_rules_unscannable` can also mean your rules could not all be prepared in time for this request. Try again in a minute, or send a shorter conversation.
+
+### When a change takes effect
+
+A change to a policy or a rule reaches the gateway within about 70 seconds. Until then, requests are checked against the previous rules.
+
+See [Error Codes](/reference/error-codes) for every gateway error.
 
 ---
 
