@@ -566,20 +566,27 @@ Each install runs the `takumo-rtb` license agent. In an air-gapped install, the 
     ```
   </Step>
 
-  <Step title="Read the install's fingerprint">
+  <Step title="Save the install's fingerprint to a file">
     ```bash
-    kubectl -n <namespace> exec deploy/takumo-rtb -- takumo-rtb fingerprint
+    kubectl -n <namespace> exec deploy/takumo-rtb -- takumo-rtb fingerprint > takumo-fingerprint.txt
     ```
+
+    The file holds one line, `sha256:` followed by 64 hex characters. The fingerprint ties the license to this cluster, so it cannot be used on another.
   </Step>
 
   <Step title="Add the install in the Takumo dashboard">
-    In your workspace on the Takumo dashboard, open **Installations**, choose **Add air-gapped install**, enter the fingerprint, and choose **Add and download license** to get the license file, `license-<install-id>.json`.
+    In your workspace on the Takumo dashboard, open **Installations**, choose **Add air-gapped install**, choose **Upload fingerprint file**, pick `takumo-fingerprint.txt`, and choose **Add and download license** to get the license file, `license-<install-id>.json`.
+
+    If the file cannot leave the cluster's network, choose **Or paste it** and paste the line instead. The dashboard accepts the value with spaces, capitals or no `sha256:` prefix, and names the problem if the length or a character is wrong.
   </Step>
 
-  <Step title="Store the license">
+  <Step title="Store the license and restart the agent">
     ```bash
     kubectl -n <namespace> create secret generic takumo-license --from-file=license=./license-<install-id>.json
+    kubectl -n <namespace> rollout restart deploy/takumo-rtb
     ```
+
+    The agent reads the `takumo-license` Secret when it starts, so restart it after you create or replace the Secret.
   </Step>
 </Steps>
 
@@ -588,6 +595,7 @@ A license is valid for 60 days. From day 46, use **Download refreshed license** 
 ```bash
 kubectl -n <namespace> create secret generic takumo-license --from-file=license=./license-<install-id>.json \
   --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n <namespace> rollout restart deploy/takumo-rtb
 ```
 
 The agent's logs show its status: `kubectl -n <namespace> logs deploy/takumo-rtb`.
