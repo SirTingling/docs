@@ -45,13 +45,17 @@ The Cloud API (`cloud.takumo.io/api/v1`) returns a shorter format, `{ "error": "
 | `403` | `forbidden` | Key lacks required scope, feature not available on your plan |
 | `404` | `not_found` | Endpoint doesn't exist, resource not found |
 | `413` | `payload_too_large` | Request body exceeds maximum size |
+| `413` | `custom_rules_request_too_large` | More than 2 MiB of text, from an organization with a Workbench Block rule. See [Workbench](/dashboard/workbench#limits-and-failures) |
 | `422` | `governance_violation` | Sentinel blocked the AI response (policy violation) |
+| `422` | `custom_rule_blocked` | A Workbench rule in one of your organization's policies matched the request. The body names the `policy`, the `rule` and the `location`. The model was not called |
+| `422` | `custom_rules_unscannable` | A line over 32 KiB, or rules that could not be prepared in time, for an organization with a Workbench Block rule |
 | `429` | `rate_limited` | Too many requests. Respect the `Retry-After` header |
 | `500` | `internal_error` | Server error. These are our fault. Contact support with the `x-aegis-request-id` header |
 | `502` | `upstream_error` | The upstream AI provider returned an error |
 | `503` | `too_many_concurrent` | Too many concurrent requests. Check `Retry-After` header |
 | `503` | `circuit_open` | Circuit breaker tripped for upstream provider. Retry after cooldown |
 | `503` | `cloud_unavailable` | Coordinator or cloud service temporarily unreachable |
+| `503` | `custom_rules_unavailable` | Your organization's Workbench rules could not be checked in time, and it has a Block rule. Check `Retry-After` header |
 | `504` | `upstream_timeout` | The upstream AI provider timed out |
 
 ## Handling errors in code

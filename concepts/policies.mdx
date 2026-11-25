@@ -9,7 +9,7 @@ icon: "file-check"
 Policies define how Takumo checks your pull requests: which findings fail a check, which only warn, and which only comment. Block and Warn results are also recorded as violations.
 
 <Note>
-Policies apply to pull request checks on GitHub, GitLab and Bitbucket Server. The gateway, the editor extension and the CLI do not apply organization policies.
+Policies apply to pull request checks on GitHub, GitLab and Bitbucket Server. The hosted gateway also applies the Workbench rules in policies scoped to all repositories, before the model is called. See [Workbench](/dashboard/workbench#on-gateway-requests). Self-hosted gateways, the editor extension and the CLI do not apply organization policies.
 </Note>
 
 ## What a policy contains
@@ -79,6 +79,8 @@ Dependency rules match on lock file changes only. License rules never match, bec
 A Security policy rule can also carry detection patterns you write in [Workbench](/dashboard/workbench). Pull request checks match each pattern on the lines a pull request adds, one line at a time, on the Sentinel service. A pattern does not satisfy the secret rule, and the secret rule does not satisfy a pattern. Workbench is on the Pro plan and above.
 
 A pattern has a **Match comment lines** setting, and the policy card shows it as **Matches comment lines: Yes** or **No**. A line over 32 KiB is not checked. If a Block rule applies and a changed file has such a line, the check is incomplete, not passed. Patterns can only be added to a policy from Workbench. The policy wizard cannot add or change them.
+
+In a policy scoped to all repositories, the hosted gateway also checks AI requests against these patterns, and a Block rule refuses the request before the model is called. See [On gateway requests](/dashboard/workbench#on-gateway-requests).
 
 ## When a check can't finish
 
