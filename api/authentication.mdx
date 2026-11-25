@@ -39,7 +39,7 @@ The gateway (`gateway.takumo.io/v1/messages` and `/v1/chat/completions`) takes t
 6. If your organization has an IP allowlist, a request from outside it is refused with `403`.
 7. Otherwise the request proceeds.
 
-Every request is checked against the database, so disabling, deleting or expiring a key takes effect on the next request to the Cloud API. At the gateway, a key stops at the moment it expires too, and disabling or deleting it takes up to 5 minutes (see [Using a key at the gateway](#using-a-key-at-the-gateway)).
+Every request is checked against the database, so disabling, deleting or expiring a key takes effect on the next request to the Cloud API. At the gateway, a key stops at the moment it expires too, and disabling or deleting it takes up to 1 minute (see [Using a key at the gateway](#using-a-key-at-the-gateway)).
 
 The raw key is never stored. It exists only at creation time. After you close the creation dialog in the dashboard, the only copy is the one you saved.
 
@@ -62,7 +62,7 @@ The gateway takes the same key as `Authorization: Bearer`. The key must hold the
 
 Requests over either limit get `429 Too Many Requests` with a `Retry-After` header. See [Gateway limits by plan](/api/rate-limits#gateway-limits-by-plan).
 
-A key you revoke, disable or delete stops working at the gateway within 5 minutes, because the gateway keeps the token it exchanged until the token expires. On the Cloud API the key is rejected at once. A key that reaches its expiry date stops at that moment on both: the token the gateway holds never outlives the key.
+A key you revoke, disable or delete stops working at the gateway within 1 minute, because the gateway keeps the token it exchanged until the token expires. On the Cloud API the key is rejected at once. A key that reaches its expiry date stops at that moment on both: the token the gateway holds never outlives the key.
 
 <Note>An organization with an IP allowlist cannot use API keys at the gateway yet. The gateway returns `401` for those keys. They keep working on the Cloud API, where the allowlist applies.</Note>
 
@@ -133,7 +133,7 @@ For zero-downtime rotation:
 3. Verify requests succeed with the new key.
 4. Revoke the old key.
 
-A revoked key returns `401 unauthorized` from the Cloud API at once and from the gateway within 5 minutes. You can enable a disabled key again from the **API Keys** page while your organization is under its key limit. A deleted key cannot be restored.
+A revoked key returns `401 unauthorized` from the Cloud API at once and from the gateway within 1 minute. You can enable a disabled key again from the **API Keys** page while your organization is under its key limit. A deleted key cannot be restored.
 
 ## Error responses
 
