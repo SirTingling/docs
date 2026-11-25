@@ -55,7 +55,7 @@ The prefix is a label, not part of the key. Send the key exactly as it was shown
 
 ### Key scopes
 
-Scopes control what an API key can do. Assign the minimum scopes needed. The Cloud API checks ten scopes, in colon notation: `scan:read`, `scan:write`, `issues:read`, `issues:write`, `policies:read`, `policies:write`, `audit:read`, `reports:read`, `reports:write` and `notifications:write`. A refused request returns `403` and names the missing scope. See [Key scopes](/api/authentication#key-scopes) for the routes each one unlocks and [API Keys](/dashboard/api-keys#permission-scopes) for how the dashboard assigns them.
+Scopes control what an API key can do. Assign the minimum scopes needed. The Cloud API checks ten scopes, in colon notation: `scan:read`, `scan:write`, `issues:read`, `issues:write`, `policies:read`, `policies:write`, `audit:read`, `reports:read`, `reports:write` and `notifications:write`. A refused request returns `403` and names the missing scope. The gateway checks one more, `gateway:proxy`. See [Key scopes](/api/authentication#key-scopes) for the routes each one unlocks and [API Keys](/dashboard/api-keys#permission-scopes) for how the dashboard assigns them.
 
 ### Rotation
 

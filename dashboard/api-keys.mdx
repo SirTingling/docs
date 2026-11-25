@@ -38,14 +38,14 @@ Every API key has the following properties:
 | **Name** | Human-readable label you assigned at creation |
 | **Prefix** | Visible identifier (e.g., `tk_live_a1b2...`) used for recognition without exposing the full key |
 | **Status** | **Active**, **Disabled** or **Expired** |
-| **Scopes** | Granular permissions attached to this key. A key with no scopes shows **Full Access (all scopes)** |
+| **Scopes** | Granular permissions attached to this key. A key with no scopes shows **Full Access (all scopes)**, and a note with the date until which it can still use the gateway |
 | **Expires** | When the key stops working, or never |
 | **Created by** | Which team member created the key |
 | **Last used** | Timestamp of the most recent API call made with this key |
 
 ## Permission Scopes
 
-The Cloud API checks ten scopes. Each one unlocks the routes listed in [Key scopes](/api/authentication#key-scopes):
+The Cloud API checks ten scopes, and the gateway checks one more. Each one unlocks the routes listed in [Key scopes](/api/authentication#key-scopes):
 
 | Scope | What it unlocks |
 |-------|-----------------|
@@ -59,12 +59,13 @@ The Cloud API checks ten scopes. Each one unlocks the routes listed in [Key scop
 | `reports:read` | List and download reports and read report schedules |
 | `reports:write` | Generate reports and manage report schedules |
 | `notifications:write` | Send the weekly digest notification |
+| `gateway:proxy` | Send AI traffic through the Takumo gateway. Needs the Member, Security Lead, Admin or Owner role |
 
 The presets map to these scopes:
 
 | Preset | Scopes |
 |--------|--------|
-| **Full Access** | All ten. **Select all** in **Custom** picks the same set |
+| **Full Access** | All eleven, including `gateway:proxy`. **Select all** in **Custom** picks the same set |
 | **Scans Only** | `scan:read`, `scan:write` |
 | **Read Only** | Every `:read` scope: `scan:read`, `issues:read`, `policies:read`, `audit:read`, `reports:read` |
 
@@ -74,9 +75,9 @@ A key can't do more than the person who creates it. The dialog only offers the s
 
 | Role | Scopes it can put on a key |
 |------|----------------------------|
-| Owner, Admin | All ten |
+| Owner, Admin | All eleven |
 | Security Lead | All except `notifications:write` |
-| Member | `scan:read`, `scan:write`, `issues:read`, `policies:read`, `audit:read`, `reports:read` |
+| Member | `scan:read`, `scan:write`, `issues:read`, `policies:read`, `audit:read`, `reports:read`, `gateway:proxy` |
 | Viewer | `scan:read`, `issues:read`, `policies:read`, `audit:read`, `reports:read` |
 | Billing Admin | `audit:read` |
 

@@ -35,11 +35,11 @@ The gateway (`gateway.takumo.io/v1/messages` and `/v1/chat/completions`) takes t
 2. It computes a SHA-256 hash of the raw key.
 3. The hash is looked up in the database.
 4. A deleted, disabled or expired key is refused with `401`. A key stops working at the moment it expires.
-5. A key without the scope the route needs is refused with `403`, and the response names the scope.
+5. A key without the scope the route needs is refused with `403`, and the response names the scope. The gateway checks one scope, `gateway:proxy`, and its `403` does not name it.
 6. If your organization has an IP allowlist, a request from outside it is refused with `403`.
 7. Otherwise the request proceeds.
 
-Every request is checked against the database, so disabling, deleting or expiring a key takes effect on the next request to the Cloud API.
+Every request is checked against the database, so disabling, deleting or expiring a key takes effect on the next request to the Cloud API. At the gateway, a key stops at the moment it expires too, and disabling or deleting it takes up to 1 minute (see [Using a key at the gateway](#using-a-key-at-the-gateway)).
 
 The raw key is never stored. It exists only at creation time. After you close the creation dialog in the dashboard, the only copy is the one you saved.
 
@@ -53,7 +53,7 @@ The **API Keys** page labels each key with its first 12 characters, for example 
 
 ## Using a key at the gateway
 
-The gateway takes the same key as `Authorization: Bearer`. It exchanges the key for a short-lived token that carries your organization, your plan and the plan's limits, and applies them to every request:
+The gateway takes the same key as `Authorization: Bearer`. The key must hold the `gateway:proxy` scope, and the person who made it must still have a role that can run scans (Owner, Admin, Security Lead or Member). The gateway exchanges the key for a short-lived token that carries your organization, your plan and the plan's limits, and applies them to every request:
 
 | Gateway requests a minute | Free | Pro | Enterprise | Custom |
 |---|---|---|---|---|
@@ -62,9 +62,11 @@ The gateway takes the same key as `Authorization: Bearer`. It exchanges the key 
 
 Requests over either limit get `429 Too Many Requests` with a `Retry-After` header. See [Gateway limits by plan](/api/rate-limits#gateway-limits-by-plan).
 
-A key you revoke or disable stops working at the gateway within 5 minutes, because the gateway keeps the token it exchanged until the token expires. On the Cloud API the key is rejected at once.
+A key you revoke, disable or delete stops working at the gateway within 1 minute, because the gateway keeps the token it exchanged until the token expires. On the Cloud API the key is rejected at once. A key that reaches its expiry date stops at that moment on both: the token the gateway holds never outlives the key.
 
 <Note>An organization with an IP allowlist cannot use API keys at the gateway yet. The gateway returns `401` for those keys. They keep working on the Cloud API, where the allowlist applies.</Note>
+
+A key without `gateway:proxy`, such as a Read Only key, is refused at the gateway with `403` and the message `Insufficient permissions`. The message does not name the scope, so give the key `gateway:proxy` to use the gateway. A key whose creator no longer has a role that can run scans, such as a Viewer or Billing Admin, is refused the same way. Service account keys are not checked against a person's role.
 
 ## Key scopes
 
@@ -82,6 +84,7 @@ Each key has a set of scopes. A request to a route that needs a scope the key do
 | `reports:read` | `GET /reports`, `/reports/:id`, `/reports/schedules` |
 | `reports:write` | `POST /reports/generate`, schedule create, update and delete |
 | `notifications:write` | `POST /notifications/digest` |
+| `gateway:proxy` | The gateway: `gateway.takumo.io/v1/messages` and `/v1/chat/completions`. No Cloud API route checks it |
 
 `GET /credits/check` is the only route that takes any valid key with no scope, because it returns your own organization's credit balance. Every other route checks a scope.
 
@@ -94,9 +97,9 @@ A refused request returns `403` and names the missing scope:
 }
 ```
 
-A key with an empty scope list passes every scope check. Keys made by the device flow before 19 November 2026 and service account keys have an empty list. Keys made on the **API Keys** page always have at least one scope.
+A key with an empty scope list passes every Cloud API scope check. Keys made by the device flow before 19 November 2026 and service account keys can have an empty list. Keys made on the **API Keys** page always have at least one scope. An empty list also keeps working at the gateway until 24 December 2026. After that date a key needs `gateway:proxy`, so create a scoped key before then. The **API Keys** page shows the date next to each such key.
 
-The gateway does not check these scopes yet. Any valid key can send AI traffic through the gateway, whatever its scopes.
+The gateway checks one scope, `gateway:proxy`. The Cloud API scopes above do not affect what a key can do at the gateway, and `gateway:proxy` does not unlock any Cloud API route.
 
 Assign the minimum scopes needed. See [API Keys](/dashboard/api-keys) for how to set them.
 
@@ -130,7 +133,7 @@ For zero-downtime rotation:
 3. Verify requests succeed with the new key.
 4. Revoke the old key.
 
-A revoked key returns `401 unauthorized` from the Cloud API at once and from the gateway within 5 minutes. You can enable a disabled key again from the **API Keys** page while your organization is under its key limit. A deleted key cannot be restored.
+A revoked key returns `401 unauthorized` from the Cloud API at once and from the gateway within 1 minute. You can enable a disabled key again from the **API Keys** page while your organization is under its key limit. A deleted key cannot be restored.
 
 ## Error responses
 
