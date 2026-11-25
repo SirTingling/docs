@@ -10,7 +10,7 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
 
 A self-hosted gateway authenticates developers with the Takumo API keys of your organization, registers with a join key, and appears on the **Fleet** page of your [self-hosted dashboard](/deployment/self-hosted-dashboard). It calls your AI provider with your own provider key.
 
-<Note>The on-prem values overlays used on this page need `aegis-shield` chart 0.3.5 or later and `gateway-coordinator` chart 0.1.8 or later. The commands on this page use those versions; list newer releases with `helm search repo takumo --versions`.</Note>
+<Note>The on-prem values overlays used on this page need `aegis-shield` chart 0.3.5 or later and `gateway-coordinator` chart 0.1.8 or later. The commands on this page use `aegis-shield` 0.3.5 and `gateway-coordinator` 0.1.9, which signs gateway tokens for 60 seconds so a deleted key stops working within a minute; list newer releases with `helm search repo takumo --versions`.</Note>
 
 <Note>Commands on this page use `<namespace>` for the Kubernetes namespace. Replace it with yours, for example `takumo`, in every command. The coordinator and the gateway must share it.</Note>
 
@@ -126,7 +126,7 @@ A self-hosted gateway authenticates developers with the Takumo API keys of your 
     chart. Pull both charts and unpack them into a local folder:
 
     ```bash
-    helm pull takumo/gateway-coordinator --version 0.1.8 --untar --untardir ./takumo-charts
+    helm pull takumo/gateway-coordinator --version 0.1.9 --untar --untardir ./takumo-charts
     helm pull takumo/aegis-shield --version 0.3.5 --untar --untardir ./takumo-charts
     ```
 
@@ -175,7 +175,7 @@ A self-hosted gateway authenticates developers with the Takumo API keys of your 
     ```bash
     helm install gateway-coordinator takumo/gateway-coordinator \
       --namespace <namespace> \
-      --version 0.1.8 \
+      --version 0.1.9 \
       --values ./takumo-charts/gateway-coordinator/values-onprem.yaml \
       --set secrets.imagePull.enabled=true \
       --set secrets.imagePull.secretName=takumo-pull-secret
@@ -275,7 +275,7 @@ If you run the gateway without a join key, set `--set connector.orgBound=false`.
 ```bash
 helm upgrade gateway-coordinator takumo/gateway-coordinator \
   --namespace <namespace> \
-  --version 0.1.8 \
+  --version 0.1.9 \
   --reset-then-reuse-values \
   --set gatewayScope.require=true
 ```
