@@ -6,7 +6,7 @@ icon: "server"
 
 The Fleet page shows every Aegis Shield gateway instance connected to your organization. Monitor health, manage join keys, and track connection state.
 
-<Note>Fleet management requires an Enterprise or Custom plan. It's enabled by default for on-prem deployments.</Note>
+<Note>Fleet management requires the Pro or Enterprise plan and an On-Prem deployment. On a self-hosted install, your signed license sets the plan. See [Plan and Fleet access](/deployment/onprem#plan-and-fleet-access).</Note>
 
 ## Fleet Overview
 
@@ -41,24 +41,22 @@ Click any instance to view its full details and recent activity.
 
 ## Join Keys
 
-<Warning>Registering a self-hosted gateway with a join key is not yet available, so a self-hosted gateway does not appear on the **Fleet** page. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
-
 Join keys authenticate gateway instances with the coordinator. A gateway needs a valid join key to register and begin communicating.
 
 ### Creating a Join Key
 
 <Steps>
   <Step title="Open Join Keys">
-    Navigate to the **Fleet** page and find the Join Keys section.
+    Go to **Settings > Gateway**.
   </Step>
   <Step title="Create a new key">
-    Click **Create Join Key** and give it a descriptive name (e.g., `production-cluster`, `staging-east`).
+    Click **Create join key** and give it a descriptive name (e.g., `production-cluster`, `staging-east`).
   </Step>
   <Step title="Copy the key">
     Copy the key immediately. It is shown exactly once.
   </Step>
   <Step title="Configure your gateway">
-    Add the join key to your gateway's deployment configuration.
+    Store the join key in the Secret your gateway reads, then restart the gateway. See [On-Premises](/deployment/onprem#deployment).
   </Step>
 </Steps>
 

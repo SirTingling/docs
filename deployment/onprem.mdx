@@ -8,7 +8,11 @@ For organizations that need full control over where their data flows. Deploy the
 
 To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/deployment/self-hosted-dashboard).
 
-<Warning>Authenticating a self-hosted gateway with Takumo API keys or join keys is not yet available. The steps on this page deploy the coordinator and gateway, but developers can't send requests through the gateway with their Takumo API keys, and the gateway does not appear on the **Fleet** page. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+A self-hosted gateway authenticates developers with the Takumo API keys of your organization, registers with a join key, and appears on the **Fleet** page of your [self-hosted dashboard](/deployment/self-hosted-dashboard). It calls your AI provider with your own provider key.
+
+<Note>The on-prem values overlays used on this page need `aegis-shield` chart 0.3.5 or later and `gateway-coordinator` chart 0.1.8 or later. The commands on this page use `aegis-shield` 0.3.5 and `gateway-coordinator` 0.1.9, which signs gateway tokens for 60 seconds so a deleted key stops working within a minute; list newer releases with `helm search repo takumo --versions`.</Note>
+
+<Note>Commands on this page use `<namespace>` for the Kubernetes namespace. Replace it with yours, for example `takumo`, in every command. The coordinator and the gateway must share it.</Note>
 
 ## Prerequisites
 
@@ -32,7 +36,7 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
 
   <Step title="Create namespace and secrets">
     ```bash
-    kubectl create namespace takumo
+    kubectl create namespace <namespace>
     ```
 
     Create the database credentials for the coordinator. `database-url` is the
@@ -48,7 +52,7 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
 
     ```bash
     openssl rand -hex 32 | tr -d '\n' \
-      | kubectl create secret generic <secret-name> -n takumo --from-file=<key>=/dev/stdin
+      | kubectl create secret generic <secret-name> -n <namespace> --from-file=<key>=/dev/stdin
     ```
 
     Writing the value to a file with `openssl rand -hex 32 > file` and then using `--from-file`, or piping `echo "$VALUE"`, keeps the newline, and a header or token built from that value is rejected.
@@ -58,7 +62,7 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
     (
       printf 'Pooled database URL: ' >&2; read -rs DB_URL || exit 1; echo >&2
       printf 'Direct database URL: ' >&2; read -rs DB_URL_DIRECT || exit 1; echo >&2
-      kubectl create secret generic coordinator-database -n takumo \
+      kubectl create secret generic coordinator-database -n <namespace> \
         --from-file=database-url=<(printf '%s' "$DB_URL") \
         --from-file=database-url-direct=<(printf '%s' "$DB_URL_DIRECT")
     )
@@ -75,7 +79,7 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
 
     ```bash
     kubectl create secret generic coordinator-jwt-signing \
-      --namespace takumo \
+      --namespace <namespace> \
       --from-file=signing.pem=./signing.pem \
       --from-file=verification.pem=./verification.pem
     ```
@@ -84,7 +88,7 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
 
     ```bash
     kubectl create secret generic aegis-jwt-key \
-      --namespace takumo \
+      --namespace <namespace> \
       --from-file=public.pem=./verification.pem
     ```
 
@@ -102,7 +106,7 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
       read -rs TAKUMO_DEPLOY_TOKEN || exit 1
       echo >&2
       printf '{"auths":{"cr.takumo.io":{"username":"%s","password":"%s"}}}' "<workspace-id>" "$TAKUMO_DEPLOY_TOKEN" \
-        | kubectl create secret generic takumo-pull-secret -n takumo \
+        | kubectl create secret generic takumo-pull-secret -n <namespace> \
             --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
     )
     ```
@@ -122,8 +126,8 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
     chart. Pull both charts and unpack them into a local folder:
 
     ```bash
-    helm pull takumo/gateway-coordinator --version 0.1.2 --untar --untardir ./takumo-charts
-    helm pull takumo/aegis-shield --version 0.2.2 --untar --untardir ./takumo-charts
+    helm pull takumo/gateway-coordinator --version 0.1.9 --untar --untardir ./takumo-charts
+    helm pull takumo/aegis-shield --version 0.3.5 --untar --untardir ./takumo-charts
     ```
 
     `helm show values` prints only the base `values.yaml`, not the overlay,
@@ -136,12 +140,12 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
     Every Takumo service checks its license itself, so install `takumo-rtb` and add your license before the coordinator and the gateway. In a connected install, issue a bootstrap token under **Installations** in Takumo Cloud, save it to a file, and create the Secret from the file so the token stays out of your shell history:
 
     ```bash
-    kubectl -n takumo create secret generic takumo-rtb-bootstrap --from-file=token=./bootstrap-token.txt
+    kubectl -n <namespace> create secret generic takumo-rtb-bootstrap --from-file=token=./bootstrap-token.txt
     ```
 
     ```bash
     helm install takumo-rtb takumo/takumo-rtb \
-      --namespace takumo \
+      --namespace <namespace> \
       --version 0.3.0 \
       --set 'imagePullSecrets[0].name=takumo-pull-secret'
     ```
@@ -149,13 +153,13 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
     Wait for the agent to roll out:
 
     ```bash
-    kubectl -n takumo rollout status deploy/takumo-rtb
+    kubectl -n <namespace> rollout status deploy/takumo-rtb
     ```
 
     Then check that the agent holds a license:
 
     ```bash
-    kubectl -n takumo exec deploy/takumo-rtb -- takumo-rtb check -n takumo
+    kubectl -n <namespace> exec deploy/takumo-rtb -- takumo-rtb check -n <namespace>
     ```
 
     The first check can show no license until the agent finishes registering. Run it again after a short wait.
@@ -166,14 +170,13 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
   <Step title="Deploy the coordinator">
     The coordinator uses the `manual` secrets provider for on-prem, meaning it expects you to create Kubernetes secrets yourself (done in the Create namespace and secrets step).
 
-    Deploy initially with the join key disabled (you'll create it in a later step):
+    The coordinator does not read a join key, so nothing waits on one:
 
     ```bash
     helm install gateway-coordinator takumo/gateway-coordinator \
-      --namespace takumo \
-      --version 0.1.2 \
+      --namespace <namespace> \
+      --version 0.1.9 \
       --values ./takumo-charts/gateway-coordinator/values-onprem.yaml \
-      --set secrets.joinKey.enabled=false \
       --set secrets.imagePull.enabled=true \
       --set secrets.imagePull.secretName=takumo-pull-secret
     ```
@@ -182,6 +185,9 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
     - `secrets.provider: manual`
     - `secrets.database.enabled: true` with secret name `coordinator-database`
     - `secrets.jwtSigning.enabled: true` with secret name `coordinator-jwt-signing`
+    - `secrets.joinKey.optional: true`, so the pod starts without a `coordinator-join-key` Secret
+    - `sentinel.upstreamUrl: http://sentinel-service:50051`, the in-namespace [content scanner](/deployment/self-hosted-dashboard#install-the-dashboard)
+    - `gatewayScope.require: false`, so the coordinator does not require the `gateway:proxy` scope on a Takumo API key. See [Require the gateway scope](#require-the-gateway-scope)
 
     The overlay turns the image pull Secret off, so the two `secrets.imagePull`
     flags point the pods at `takumo-pull-secret`. Without them the pods cannot
@@ -192,86 +198,104 @@ To run the dashboard on your own domain as well, see [Self-Hosted Dashboard](/de
     Verify the coordinator is running:
 
     ```bash
-    kubectl get pods -n takumo -l app.kubernetes.io/name=gateway-coordinator
+    kubectl get pods -n <namespace> -l app.kubernetes.io/name=gateway-coordinator
     ```
   </Step>
 
   <Step title="Deploy the gateway">
-    Deploy with the join key disabled here too, since its Secret does not exist yet:
+    The join key Secret does not exist yet, and the gateway starts without it:
 
     ```bash
     helm install aegis-shield takumo/aegis-shield \
-      --namespace takumo \
-      --version 0.2.2 \
+      --namespace <namespace> \
+      --version 0.3.5 \
       --values ./takumo-charts/aegis-shield/values-onprem.yaml \
-      --set connector.grpcUrl="gateway-coordinator.takumo.svc.cluster.local:9090" \
-      --set secrets.joinKey.enabled=false \
       --set secrets.imagePull.enabled=true \
       --set secrets.imagePull.secretName=takumo-pull-secret
     ```
 
-    This configures the gateway to connect to the coordinator over gRPC on port 9090 and disables the cloud connector (`cloud.enabled: false`).
+    The overlay sets the gateway's connector to the coordinator in the same namespace: gRPC at `http://gateway-coordinator:9090` for registration, the key exchange at `http://gateway-coordinator:8080/v1/auth/exchange` and the signing keys at `http://gateway-coordinator:8080/.well-known/jwks.json`. Keep the `http://` in `connector.grpcUrl` if you override it. It also turns off the cloud connector (`cloud.enabled: false`), turns on a password for the gateway's Redis, and makes the join key Secret optional.
+
+    Without the join key the gateway starts with its connector off and logs `TAKUMO_JOIN_KEY is required when connector is enabled`. It serves no requests yet. See [Organization binding](#organization-binding).
 
     Verify the gateway is running:
 
     ```bash
-    kubectl get pods -n takumo -l app.kubernetes.io/name=aegis-shield
+    kubectl get pods -n <namespace> -l app.kubernetes.io/name=aegis-shield
     ```
+
+    <Tip>To reach the gateway from your machine, forward to the Deployment: `kubectl port-forward -n <namespace> deploy/aegis-gateway 8080:8080`. The `aegis-gateway` Service also selects the gateway's Redis pod, so `port-forward svc/aegis-gateway` can fail. Traffic through the Service is not affected, because it targets the named port `http`.</Tip>
   </Step>
 
   <Step title="Create a join key in the dashboard">
-    <Warning>Registering a self-hosted gateway with a join key is not yet available, so a self-hosted gateway does not appear on the **Fleet** page. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
-
-    Go to **Settings > Gateway** in the dashboard and click **Create join key**. Give it a name (for example `production-cluster`). Copy the key immediately.
+    Sign in to your [self-hosted dashboard](/deployment/self-hosted-dashboard) as an admin of the organization and go to **Settings > Gateway**. Click **Create join key**, give it a name (for example `production-cluster`) and copy the key immediately. The page opens once the organization's plan is Pro or Enterprise. See [Plan and Fleet access](#plan-and-fleet-access).
   </Step>
 
-  <Step title="Configure the gateway and coordinator with the join key">
-    Create the join key Secrets for both the gateway and the coordinator. Paste
-    the join key when asked; it is read without echo:
+  <Step title="Give the gateway the join key">
+    Create the join key Secret the gateway reads, then restart the gateway so it registers. Paste the join key when asked; it is read without echo:
 
     ```bash
     (
       printf 'Paste the join key, then press Enter: ' >&2
       read -rs TAKUMO_JOIN_KEY || exit 1
       echo >&2
-      for name in aegis-join-key coordinator-join-key; do
-        printf '%s' "$TAKUMO_JOIN_KEY" \
-          | kubectl create secret generic "$name" -n takumo --from-file=join-key=/dev/stdin
-      done
+      printf '%s' "$TAKUMO_JOIN_KEY" \
+        | kubectl create secret generic aegis-join-key -n <namespace> --from-file=join-key=/dev/stdin
     )
     ```
 
-    Upgrade the gateway to use it:
-
     ```bash
-    helm upgrade aegis-shield takumo/aegis-shield \
-      --namespace takumo \
-      --version 0.2.2 \
-      --reuse-values \
-      --set secrets.joinKey.enabled=true \
-      --set secrets.joinKey.secretName=aegis-join-key
+    kubectl rollout restart deployment/aegis-gateway -n <namespace>
+    kubectl rollout status deployment/aegis-gateway -n <namespace>
     ```
 
-    Upgrade the coordinator to use it:
-
-    ```bash
-    helm upgrade gateway-coordinator takumo/gateway-coordinator \
-      --namespace takumo \
-      --version 0.1.2 \
-      --reuse-values \
-      --set secrets.joinKey.enabled=true
-    ```
+    The overlay already points the gateway at `aegis-join-key` (key `join-key`), so no `helm upgrade` is needed. The chart reads that Secret into the `TAKUMO_JOIN_KEY` environment variable on the gateway pods, which is the name the join key dialog shows. The coordinator logs `Gateway registered` with your organization's ID, and the gateway appears on the **Fleet** page.
   </Step>
 
 </Steps>
 
 <Warning>The join key is shown once. Store it in your secrets management system (Vault, AWS Secrets Manager, etc.) before closing the dialog.</Warning>
 
+## Organization binding
+
+A self-hosted gateway serves only the Takumo API keys of the organization its join key belongs to. The overlay sets `connector.orgBound: true`, and the gateway learns its organization when it registers with the coordinator.
+
+- A gateway that has never registered answers every request with `503 gateway_org_unregistered`. That is the state after the install, until you create the join key Secret and restart.
+- The gateway keeps its organization in memory only, so it registers again after every restart. With the coordinator running, a replacement pod went from refusing connections to answering `200` within a second in a test run, so a restart shows clients at most a brief connection error.
+- While the coordinator is down, a gateway that has restarted cannot register. Clients get `503` with the type `cloud_unavailable`. In the test run, the first `200` came 28 seconds after the coordinator returned. Clients can retry the 503.
+- A key from another organization gets `403 gateway_org_mismatch`. This is not retryable.
+- Revoking the join key does not unbind a running gateway. After its next restart, registration fails and it serves nothing.
+
+If you run the gateway without a join key, set `--set connector.orgBound=false`. The gateway then accepts a valid Takumo API key from any organization on the install.
+
+## Require the gateway scope
+
+`gatewayScope.require` in the `gateway-coordinator` chart is off by default. While it is off, the coordinator exchanges any valid Takumo API key for a gateway token, whatever scopes the key has. Turn it on once every key your developers use through the gateway carries the `gateway:proxy` scope:
+
+```bash
+helm upgrade gateway-coordinator takumo/gateway-coordinator \
+  --namespace <namespace> \
+  --version 0.1.9 \
+  --reset-then-reuse-values \
+  --set gatewayScope.require=true
+```
+
+With `true`, the coordinator refuses a key without `gateway:proxy`, and the gateway answers that request with `403`. Repeated refused requests are then answered with `429 rate_limited`. Create new keys with the scope before you turn it on.
+
+## Plan and Fleet access
+
+A self-hosted install has no billing. Every organization starts on the Free plan, and your signed license sets the plan. The license names one organization and a tier (Free, Developer, Pro or Enterprise). While the license is in force, the dashboard sets that organization's plan to the license's tier, within about a minute and without anyone opening a page. See [On-Prem Licensing](/deployment/onprem-licensing) for the license stages.
+
+- Only the organization named on the license changes, and only on a self-hosted install. Each change is recorded in the audit log as `org.plan_synced_from_license`.
+- The **Fleet** page and **Settings > Gateway** open for the Pro and Enterprise plans. A Free or Developer license leaves them closed.
+- An organization whose `fleetEnabled` setting is false stays closed, whatever its plan.
+- With no license yet, the plan stays Free and **Settings > Gateway** is closed, so you cannot create a join key. An admin sees **Fleet comes with Pro and Enterprise** there. Install the license first, in the license agent step of [Deployment](#deployment), then wait about a minute for the plan to sync before you create the join key. See [On-Prem Licensing](/deployment/onprem-licensing).
+
 ## Add the Anthropic provider key
 
-<Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+The gateway calls your AI provider with a key you store in a Secret, so developers' tools send no provider key and Takumo supplies none. A gateway with no key answers `503 provider_key_not_configured` instead of calling the provider.
 
-The gateway calls Anthropic with a provider key you store in a Secret, so developers' tools send no Anthropic key.
+The gateway replaces detected secrets in a request with tokens before it calls the provider. It does not block the request.
 
 Create the Secret in bash or zsh. Paste your Anthropic API key when asked; it is read without echo:
 
@@ -281,7 +305,7 @@ Create the Secret in bash or zsh. Paste your Anthropic API key when asked; it is
   read -rs ANTHROPIC_PROVIDER_KEY || exit 1
   echo >&2
   printf '%s' "$ANTHROPIC_PROVIDER_KEY" \
-    | kubectl create secret generic aegis-provider-anthropic-key -n takumo --from-file=api-key=/dev/stdin
+    | kubectl create secret generic aegis-provider-anthropic-key -n <namespace> --from-file=api-key=/dev/stdin
 )
 ```
 
@@ -289,11 +313,13 @@ Upgrade the gateway to use it:
 
 ```bash
 helm upgrade aegis-shield takumo/aegis-shield \
-  --namespace takumo \
-  --version 0.2.2 \
+  --namespace <namespace> \
+  --version 0.3.5 \
   --reuse-values \
   --set secrets.providerKeys.anthropic.enabled=true
 ```
+
+To use an Anthropic compatible server of your own, set `providers.anthropicUrl`. For OpenAI compatible servers such as vLLM or Ollama, set `providers.openaiUrl`. Each must be `https`, or plain `http` to `localhost` or `127.0.0.1` only, or the gateway refuses to start.
 
 A request that carries its own `x-api-key` header uses that key instead of this one, unless the value is a Takumo key (a `tk_live_` or `tk_test_` key, a 64-character hex dashboard key, or a JWT). The gateway refuses that request with `400 takumo_key_in_upstream_header` and never sends the key to Anthropic.
 
@@ -309,7 +335,7 @@ Create the Secret in bash or zsh. Paste your OpenAI API key when asked; it is re
   read -rs OPENAI_PROVIDER_KEY || exit 1
   echo >&2
   printf '%s' "$OPENAI_PROVIDER_KEY" \
-    | kubectl create secret generic aegis-provider-openai-key -n takumo --from-file=api-key=/dev/stdin
+    | kubectl create secret generic aegis-provider-openai-key -n <namespace> --from-file=api-key=/dev/stdin
 )
 ```
 
@@ -317,8 +343,8 @@ Upgrade the gateway to use it:
 
 ```bash
 helm upgrade aegis-shield takumo/aegis-shield \
-  --namespace takumo \
-  --version 0.2.2 \
+  --namespace <namespace> \
+  --version 0.3.5 \
   --reuse-values \
   --set secrets.providerKeys.openai.enabled=true
 ```
@@ -331,14 +357,14 @@ helm upgrade aegis-shield takumo/aegis-shield \
 |------------|------|-------------|
 | `coordinator-database` | `database-url`, `database-url-direct` | PostgreSQL connection strings (pooled and direct) |
 | `coordinator-jwt-signing` | `signing.pem`, `verification.pem` | JWT signing and verification key pair |
-| `coordinator-join-key` | `join-key` | Join key for gateway authentication (optional) |
+| `coordinator-join-key` | `join-key` | Not read by the coordinator. You can leave it out |
 
 ### Gateway
 
 | Secret Name | Keys | Description |
 |------------|------|-------------|
 | `aegis-jwt-key` | `public.pem` | JWT public key for auth verification |
-| `aegis-join-key` | `join-key` | Join key for coordinator registration |
+| `aegis-join-key` | `join-key` | Join key for coordinator registration. Optional at install, required before the gateway serves requests |
 | `aegis-provider-anthropic-key` | `api-key` | Anthropic API key the gateway uses upstream (optional, see [Add the Anthropic provider key](#add-the-anthropic-provider-key)) |
 | `aegis-provider-openai-key` | `api-key` | OpenAI API key the gateway uses upstream (optional, see [Add the OpenAI provider key](#add-the-openai-provider-key)) |
 | `takumo-pull-secret` | Docker registry credentials | Image pull secret for `cr.takumo.io` (per-tenant deploy token from Takumo dashboard) |
@@ -359,7 +385,7 @@ The coordinator needs:
 
 Both services create NetworkPolicy resources by default (`networkPolicy.enabled: true`).
 
-<Warning>The gateway's NetworkPolicy in chart 0.2.2 allows egress only on ports 53 and 443. If your CNI enforces NetworkPolicy, it blocks the gateway's connections to the coordinator on 9090 and to its Redis on 6379. Add a NetworkPolicy that allows that egress from the gateway pods, or install the gateway with `--set networkPolicy.enabled=false` and apply your own.</Warning>
+<Warning>The gateway's NetworkPolicy allows egress on ports 53 and 443, and to the coordinator pods on 9090 and 8080 in the namespace named `<namespace>`. It has no rule for the gateway's own Redis on 6379. If your CNI enforces NetworkPolicy, the gateway cannot reach that Redis. Add a NetworkPolicy that allows egress from the gateway pods to it, or install the gateway with `--set networkPolicy.enabled=false` and apply your own. If the coordinator runs in another namespace, do the same for 9090 and 8080.</Warning>
 
 ## Troubleshooting the self-hosted dashboard
 
@@ -370,7 +396,7 @@ The dashboard checks its settings when each pod starts. It checks the format of 
 If a page shows **This Takumo install is misconfigured. An administrator can see which setting in the server logs.**, a setting the request needed is missing or malformed. The page shows a request ID. Find the cause in the pod logs:
 
 ```bash
-kubectl logs -n takumo deploy/cloud | grep -E 'config.invalid|<request-id>'
+kubectl logs -n <namespace> deploy/cloud | grep -E 'config.invalid|<request-id>'
 ```
 
 Each problem is one `config.invalid` line with the variable and the problem, for example `{"variable":"ENCRYPTION_KEY","problem":"not 64 hex characters","msg":"config.invalid"}`. A `config.whitespace_trimmed` warning names a variable whose value has a leading or trailing newline or space. Takumo trims those values, so the warning is safe to leave, but regenerate the value when you can.
@@ -385,18 +411,18 @@ The same results are exported as metrics:
 
 With `alerting.enabled: true` in the cloud chart, the `TakumoConfigInvalid` alert fires when `takumo_config_valid` stays at `0` for 5 minutes.
 
-A problem with `ENCRYPTION_KEY`, `BETTER_AUTH_SECRET`, `DATABASE_URL`, `BETTER_AUTH_URL` or `NEXT_PUBLIC_APP_URL` also keeps the pod out of the Ready state, so `kubectl get pods -n takumo` shows it as `0/1`. Problems with optional integrations (Upstash, GitHub App, OAuth, SSO) leave the pod Ready and show only in the logs and metrics.
+A problem with `ENCRYPTION_KEY`, `BETTER_AUTH_SECRET`, `DATABASE_URL`, `BETTER_AUTH_URL` or `NEXT_PUBLIC_APP_URL` also keeps the pod out of the Ready state, so `kubectl get pods -n <namespace>` shows it as `0/1`. Problems with optional integrations (GitHub App, OAuth, SSO) leave the pod Ready and show only in the logs and metrics.
 
 To regenerate a 64 hex character key without a trailing newline, replace the key in the `cloud-auth` Secret and restart the dashboard:
 
 ```bash
-kubectl create secret generic cloud-auth -n takumo \
-  --from-literal=better-auth-secret="$(kubectl get secret cloud-auth -n takumo -o jsonpath='{.data.better-auth-secret}' | base64 -d)" \
+kubectl create secret generic cloud-auth -n <namespace> \
+  --from-literal=better-auth-secret="$(kubectl get secret cloud-auth -n <namespace> -o jsonpath='{.data.better-auth-secret}' | base64 -d)" \
   --from-literal=encryption-key="$(openssl rand -hex 32 | tr -d '\n')" \
-  --from-literal=hmac-key="$(kubectl get secret cloud-auth -n takumo -o jsonpath='{.data.hmac-key}' | base64 -d)" \
-  --from-literal=sso-encryption-key="$(kubectl get secret cloud-auth -n takumo -o jsonpath='{.data.sso-encryption-key}' | base64 -d)" \
+  --from-literal=hmac-key="$(kubectl get secret cloud-auth -n <namespace> -o jsonpath='{.data.hmac-key}' | base64 -d)" \
+  --from-literal=sso-encryption-key="$(kubectl get secret cloud-auth -n <namespace> -o jsonpath='{.data.sso-encryption-key}' | base64 -d)" \
   --dry-run=client -o yaml | kubectl apply -f -
-kubectl rollout restart deploy/cloud -n takumo
+kubectl rollout restart deploy/cloud -n <namespace>
 ```
 
 <Warning>A new `encryption-key` cannot decrypt credentials stored with the old one. Replace a malformed key before any integration is connected, or keep the old value and only remove its newline.</Warning>
@@ -406,7 +432,7 @@ kubectl rollout restart deploy/cloud -n takumo
 The `github-app-private-key` key of the `cloud-github-app` Secret accepts the `.pem` file GitHub downloads as is, the base64 encoding of that file, or the PEM with literal `\n` escapes on one line. Create it straight from the downloaded file:
 
 ```bash
-kubectl create secret generic cloud-github-app -n takumo \
+kubectl create secret generic cloud-github-app -n <namespace> \
   --from-file=github-app-private-key=./your-app.private-key.pem \
   --from-literal=github-webhook-secret='<webhook-secret>'
 ```
@@ -420,8 +446,8 @@ Set the App ID as a string, for example `--set-string app.githubAppId=<your-app-
 The cloud chart runs CronJobs that call the dashboard with `CRON_SECRET`. With `alerting.enabled: true`, the `TakumoCloudCronJobFailing` alert fires when one of their Jobs has failed pods for 30 minutes. Read the failed Job's pod log:
 
 ```bash
-kubectl get jobs -n takumo
-kubectl logs -n takumo job/<job-name>
+kubectl get jobs -n <namespace>
+kubectl logs -n <namespace> job/<job-name>
 ```
 
 A `401` or an invalid header error usually means the `cron-secret` value carries a trailing newline or differs from the one the dashboard reads. Recreate it with `openssl rand -hex 32 | tr -d '\n'` as shown above.
