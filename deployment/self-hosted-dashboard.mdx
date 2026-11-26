@@ -82,11 +82,11 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
     crane copy cr.takumo.io/mirror/redis:7.4.12-alpine <your-registry>/mirror/redis:7.4.12-alpine
     ```
 
-    The dashboard image has its own version, the chart's app version (`0.3.4` for chart `0.3.4`). Copy it the same way:
+    The dashboard image has its own version, the chart's app version (`0.3.6` for chart `0.3.11`). Copy it the same way:
 
     ```bash
-    digest=$(crane digest cr.takumo.io/takumo-cloud:0.3.4)
-    crane copy "cr.takumo.io/takumo-cloud@$digest" <your-registry>/takumo-cloud:0.3.4
+    digest=$(crane digest cr.takumo.io/takumo-cloud:0.3.6)
+    crane copy "cr.takumo.io/takumo-cloud@$digest" <your-registry>/takumo-cloud:0.3.6
     ```
 
     The dashboard chart and the gateway chart both run Redis `7.4.12-alpine` from `mirror/redis`. Set `redis.image.repository` on each chart to your copy.
@@ -140,10 +140,10 @@ These steps install the `cloud` chart on its own. To install it with the rest of
 
     ```bash
     helm repo update
-    helm pull takumo/cloud --version 0.3.4 --untar --untardir ./takumo-charts
+    helm pull takumo/cloud --version 0.3.11 --untar --untardir ./takumo-charts
     ```
 
-    <Note>The first admin setup token and the bundled Redis need `cloud` chart 0.3.4 or later. The commands on this page use 0.3.4; list newer releases with `helm search repo takumo/cloud --versions`.</Note>
+    <Note>The first admin setup token and the bundled Redis need `cloud` chart 0.3.4 or later. The commands on this page use 0.3.11; list newer releases with `helm search repo takumo/cloud --versions`.</Note>
 
     <Note>Commands on this page use `<namespace>` for the Kubernetes namespace. Replace it with yours, for example `takumo`, in every command. The dashboard, the coordinator and the gateway share it.</Note>
   </Step>
@@ -205,7 +205,7 @@ These steps install the `cloud` chart on its own. To install it with the rest of
     ```bash
     helm install cloud takumo/cloud \
       --namespace <namespace> \
-      --version 0.3.4 \
+      --version 0.3.11 \
       --values ./takumo-charts/cloud/values-onprem.yaml \
       --set app.url=https://<your-dashboard-host> \
       --set app.authUrl=https://<your-dashboard-host> \
@@ -216,7 +216,7 @@ These steps install the `cloud` chart on its own. To install it with the rest of
       --set ingress.tls.issuer=<your-cluster-issuer>
     ```
 
-    The chart pulls `cr.takumo.io/takumo-cloud:0.3.4` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty, or while `ingress.hostname` is still `takumo.example.com`. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
+    The chart pulls `cr.takumo.io/takumo-cloud:0.3.6` with `takumo-pull-secret`. It refuses to install while `app.url`, `app.authUrl`, `app.cookieDomain` or `ingress.hostname` is empty, or while `ingress.hostname` is still `takumo.example.com`. If you mirrored the image, add `--set image.repository=<your-registry>/takumo-cloud --set imagePull.existingSecret=takumo-pull-secret`.
 
     `values-onprem.yaml` sets:
     - `app.installMode: onprem`, so every organization created on this dashboard is an on-prem organization
@@ -291,7 +291,7 @@ Open `https://<your-dashboard-host>/setup` and fill in the setup token, your nam
 
   helm upgrade cloud takumo/cloud \
     --namespace <namespace> \
-    --version 0.3.4 \
+    --version 0.3.11 \
     --reset-then-reuse-values \
     --set setupToken.create=false \
     --set setupToken.existingSecret=cloud-setup-token-2
@@ -329,7 +329,7 @@ Under ArgoCD or Flux, create the Secret once and point the chart at it, because 
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace <namespace> \
-  --version 0.3.4 \
+  --version 0.3.11 \
   --reset-then-reuse-values \
   --set redis.auth.existingSecret=cloud-redis-auth
 ```
@@ -347,7 +347,7 @@ To use your own Redis, turn the bundled one off and give the chart a Secret with
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace <namespace> \
-  --version 0.3.4 \
+  --version 0.3.11 \
   --reset-then-reuse-values \
   --set redis.enabled=false \
   --set redis.external.existingSecret=cloud-redis-external \
@@ -389,7 +389,7 @@ To turn email on, create the Secret and upgrade:
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace <namespace> \
-  --version 0.3.4 \
+  --version 0.3.11 \
   --reset-then-reuse-values \
   --set features.email=true \
   --set secrets.email.enabled=true \
@@ -403,7 +403,7 @@ The chart refuses to render with `features.email=true` and an empty `app.fromEma
 The dashboard sends traces and metrics over OpenTelemetry (OTLP over HTTP). Point it at your collector with `otel.endpoint`. An https endpoint works anywhere; plain http works only for a service inside the cluster, such as `http://otel-collector.monitoring.svc.cluster.local:4318`. Over plain http the dashboard sends no credentials to the collector. The dashboard's NetworkPolicy allows outbound traffic on ports 443 and 5432 only (and on port 50051 to `sentinel-service` when `features.contentScan` is on, and to the Redis the chart runs), so add a rule for the collector:
 
 ```bash
-helm upgrade cloud takumo/cloud --version 0.3.4 --reset-then-reuse-values \
+helm upgrade cloud takumo/cloud --version 0.3.11 --reset-then-reuse-values \
   --set otel.endpoint=http://otel-collector.monitoring.svc.cluster.local:4318 \
   --set-json 'networkPolicy.extraEgress=[{"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}],"ports":[{"port":4318,"protocol":"TCP"}]}]'
 ```
@@ -421,7 +421,7 @@ Upgrade every Cloud release with `--reset-then-reuse-values`, not `--reuse-value
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace <namespace> \
-  --version 0.3.4 \
+  --version 0.3.11 \
   --reset-then-reuse-values \
   --set features.contentScan=true \
   --set networkPolicyCheck.enabled=true
@@ -463,7 +463,7 @@ The Secret needs all four keys. Leave the pair for a provider you do not use emp
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace <namespace> \
-  --version 0.3.4 \
+  --version 0.3.11 \
   --reset-then-reuse-values \
   --set features.oauth=true \
   --set secrets.oauth.enabled=true
@@ -533,7 +533,7 @@ Pass the App ID with `--set-string`, so Helm keeps it as a string. The client ID
 ```bash
 helm upgrade cloud takumo/cloud \
   --namespace <namespace> \
-  --version 0.3.4 \
+  --version 0.3.11 \
   --reset-then-reuse-values \
   --set features.githubApp=true \
   --set secrets.githubApp.enabled=true \
