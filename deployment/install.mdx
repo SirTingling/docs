@@ -10,6 +10,8 @@ This page is the way to install. The per-chart steps in [On-Premises](/deploymen
 
 <Note>Commands on this page use `takumo-onprem` chart 0.1.3 and the namespace `takumo`, which is the `install.sh` default. To use another namespace, add `-n <namespace>` to every `install.sh` command and use the same name in every `kubectl` command.</Note>
 
+<Warning>The connected install does not complete on chart 0.1.3: the license agent and several services cannot pull their images from `cr.takumo.io`, and the gateway does not start. Use the [air-gapped install](#air-gapped-install) until a fixed chart is published. Both paths are also not yet proven on a cluster whose CNI enforces NetworkPolicy.</Warning>
+
 ## Two ways to install
 
 | | Connected | Air-gapped |
@@ -105,6 +107,8 @@ Each URL starts with `postgres://` or `postgresql://`. The `cloud` database also
 **Connected only: the bootstrap token**, `bootstrap-token.txt`. Issue it under **Installations** in Takumo Cloud and save it the same way. The preflight checks only that it is well formed. Registration proves the rest, because the token works once.
 
 ## Connected install
+
+<Warning>This path does not complete on chart 0.1.3. See the note at the top of the page.</Warning>
 
 <Steps>
   <Step title="Download the chart">
