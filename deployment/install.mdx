@@ -8,9 +8,7 @@ The `takumo-onprem` chart installs the self-hosted stack as one Helm release: th
 
 This page is the way to install. The per-chart steps in [On-Premises](/deployment/onprem) and [Self-Hosted Dashboard](/deployment/self-hosted-dashboard) stay available for installs that need a chart on its own.
 
-<Note>Commands on this page use `takumo-onprem` chart 0.1.3 and the namespace `takumo`, which is the `install.sh` default. To use another namespace, add `-n <namespace>` to every `install.sh` command and use the same name in every `kubectl` command.</Note>
-
-<Warning>The connected install does not complete on chart 0.1.3: the license agent and several services cannot pull their images from `cr.takumo.io`, and the gateway does not start. Use the [air-gapped install](#air-gapped-install) until a fixed chart is published. Both paths are also not yet proven on a cluster whose CNI enforces NetworkPolicy.</Warning>
+<Note>Commands on this page use `takumo-onprem` chart 0.1.4 and the namespace `takumo`, which is the `install.sh` default. To use another namespace, add `-n <namespace>` to every `install.sh` command and use the same name in every `kubectl` command.</Note>
 
 ## Two ways to install
 
@@ -23,7 +21,7 @@ This page is the way to install. The per-chart steps in [On-Premises](/deploymen
 
 Both counts include creating the provider key Secret, which must exist before the install, and reading the setup token. They leave out creating the databases and writing the files in [Prepare the files](#prepare-the-files), issuing the deploy token, and the TLS Secret you create only if you bring your own certificate.
 
-Measured on a single-node kind cluster (arm64) on the air-gapped path with chart 0.1.2, the install took about 5 minutes from `helm pull` to the first admin signed in, and about 9 minutes to the first secret tokenized at the gateway. Both times include building the bundle, the browser steps and creating a Takumo API key. `install.sh install` alone took about 2.5 minutes. The databases and the files already existed, and the license had been issued beforehand, so its download is not in the times. The connected path was not timed.
+Measured on a single-node kind cluster (arm64) with chart 0.1.4, the connected install took about 3.5 minutes from `helm pull` to the first admin signed in, and about 8 minutes to the first secret tokenized at the gateway. `install.sh install` alone took under 3 minutes. The air-gapped install took about 4 minutes to the first admin and about 6 minutes to the first secret tokenized, building the bundle included, and `install.sh install` alone took about 2 minutes. All times include the browser steps and creating a Takumo API key. The PostgreSQL server, the deploy token and the bootstrap token existed beforehand, and the time spent issuing the air-gapped license is not counted.
 
 ## Requirements
 
@@ -92,6 +90,8 @@ brain=postgres://USER:PASSWORD@HOST:5432/brain
 
 Each URL starts with `postgres://` or `postgresql://`. The `cloud` database also serves the coordinator and the vault, which read its tables. Add a `stream=` line only with the [stream stack](#the-stream-stack). From this file `install.sh` creates `cloud-database`, `coordinator-database`, `vault-database`, the Brain database Secrets and `takumo-databases`, which the preflight reads.
 
+`install.sh` also opens each database's port in the NetworkPolicies of the workloads that use it. When every host in the file is an IP address, it limits that egress to those addresses. A NetworkPolicy cannot select a host name, so with a host name the port is open to any address. A `global.database` value in your values file wins over what `install.sh` sets.
+
 **The deploy token**, `deploy-token.txt`. Issue it in Takumo Cloud under **Settings > Deploy Tokens**. Paste it when asked; it is read without echo:
 
 ```bash
@@ -108,12 +108,10 @@ Each URL starts with `postgres://` or `postgresql://`. The `cloud` database also
 
 ## Connected install
 
-<Warning>This path does not complete on chart 0.1.3. See the note at the top of the page.</Warning>
-
 <Steps>
   <Step title="Download the chart">
     ```bash
-    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.3 --untar
+    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.4 --untar
     ```
 
     This creates the folder `./takumo-onprem`, with `install.sh` inside.
@@ -157,7 +155,9 @@ Each URL starts with `postgres://` or `postgresql://`. The `cloud` database also
       --org <workspace-id>
     ```
 
-    The installer creates the pull Secret, the database Secrets, the generated keys and the bootstrap token Secret, installs the agent and restarts it, waits for it to be Ready, then installs the chart. The [preflight](#preflight) runs before any workload, and the release waits up to 15 minutes for every pod. It ends with the [NetworkPolicy check](#the-networkpolicy-check) and the next steps.
+    The installer creates the database Secrets, the generated keys, the bootstrap token Secret and the pull Secret `takumo-pull-secret`, which the agent and every workload pull their images with. It installs the agent and restarts it, waits for it to be Ready, then installs the chart. The [preflight](#preflight) runs before any workload, and the release waits up to 15 minutes for every pod. It ends with the [NetworkPolicy check](#the-networkpolicy-check) and the next steps.
+
+    Without `--deploy-token-file`, a connected install from `cr.takumo.io` stops before it creates anything, with `a connected install pulls from cr.takumo.io, which refuses anonymous pulls`.
   </Step>
 
   <Step title="Create the first admin">
@@ -192,7 +192,7 @@ The first two commands run on a machine with internet access. Everything after t
     On the connected machine:
 
     ```bash
-    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.3 --untar
+    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.4 --untar
     ```
   </Step>
 
@@ -217,7 +217,7 @@ The first two commands run on a machine with internet access. Everything after t
 
     `load` checks every file against `MANIFEST.sha256` before it pushes anything, and a single changed byte stops it with `checksum mismatch ... refused, nothing was pushed`. It then pushes each image, reads its digest back, and writes `registry-values.yaml` and `registry-agent-values.yaml`, which point the chart and the agent at your registry.
 
-    `<your-registry>` may carry a port and a path, such as `registry.internal:5000/takumo`. Add `--registry-user <user> --registry-password-file <file>` if pushing needs a login, and `--pull-registry <host>` if the cluster pulls from a different address than you push to. These steps assume the cluster pulls from your registry without credentials. Every node must trust the registry's certificate, or allow plain HTTP to it.
+    `<your-registry>` may carry a port and a path, such as `registry.internal:5000/takumo`. Add `--registry-user <user> --registry-password-file <file>` if pushing needs a login, and `--pull-registry <host>` if the cluster pulls from a different address than you push to. If the cluster needs a login to pull, add `--registry <pull-address> --registry-user <user> --registry-password-file <file>` to `install.sh fingerprint` and `install.sh install` below, where `<pull-address>` is the address the cluster pulls from. `install.sh` stores the login in `takumo-pull-secret`. Without these flags the cluster pulls without credentials. Every node must trust the registry's certificate, or allow plain HTTP to it.
 
     `--insecure` lets `load` push to a plain HTTP registry, and it turns off certificate checks for the push and for reading each digest back. A registry served over HTTPS with a certificate from a private CA needs either `--insecure` or that CA trusted on the machine that runs `load`. Without either, the push fails with an `x509` certificate error and `load` stops with `push of <image> failed`.
   </Step>
@@ -336,9 +336,9 @@ Every `FILE` flag takes a path, and `install.sh` never accepts a secret value. E
 
 | Command | Flags | What it does |
 |---------|-------|--------------|
-| `install` | `--values FILE` (repeatable), `--token-file FILE` or `--license-file FILE`, `--database-file FILE`, `--deploy-token-file FILE` with `--org ID`, `--agent-values FILE` (repeatable), `--rtb-chart CHART` | Creates the Secrets, installs the agent and restarts it, installs the chart after the preflight, and runs `helm test`. Generated keys are created once and kept on later runs |
+| `install` | `--values FILE` (repeatable), `--token-file FILE` or `--license-file FILE`, `--database-file FILE`, `--deploy-token-file FILE` with `--org ID`, `--registry REG` with `--registry-user USER` and `--registry-password-file FILE`, `--agent-values FILE` (repeatable), `--rtb-chart CHART` | Creates the Secrets, installs the agent and restarts it, installs the chart after the preflight, and runs `helm test`. Generated keys are created once and kept on later runs |
 | `license` | `--file FILE` | Replaces the air-gapped license in `takumo-license`, restarts the agent, waits for it to be Ready, and prints the license ID and status the agent reports when it can read them |
-| `fingerprint` | `--agent-values FILE`, `--rtb-chart CHART` | Prints this cluster's fingerprint |
+| `fingerprint` | `--agent-values FILE`, `--rtb-chart CHART`, `--registry REG` with `--registry-user USER` and `--registry-password-file FILE` | Prints this cluster's fingerprint |
 | `join-key` | `--file FILE` | Stores the join key for the coordinator and the gateway and restarts both |
 | `bundle` | `--arch arm64` or `--arch amd64`, `--out DIR`, `--deploy-token-file FILE` with `--org ID`, `--source REGISTRY`, `--source-user USER` with `--source-token-file FILE` | Writes `takumo-bundle-ARCH.tar` for one architecture |
 | `load` | `--bundle FILE`, `--registry REG`, `--pull-registry REG`, `--registry-user USER` with `--registry-password-file FILE`, `--insecure` (plain HTTP, or no certificate checks), `--out DIR` | Verifies the bundle, pushes it to your registry, and writes `registry-values.yaml` and `registry-agent-values.yaml` |
@@ -355,7 +355,7 @@ The chart exposes only the dashboard through the Ingress. The gateway is the `ae
 
 ### Send a first request
 
-Create a Takumo API key with the `gateway:proxy` scope on the **API Keys** page of your dashboard. See [API Keys](/dashboard/api-keys). Save it as a header file, pasting the key when asked; it is read without echo:
+Create a Takumo API key with the `gateway:proxy` scope on the **API Keys** page of your dashboard: choose **Custom** and select `gateway:proxy`. The default preset, **Scans Only**, does not include it. See [API Keys](/dashboard/api-keys). Save it as a header file, pasting the key when asked; it is read without echo:
 
 ```bash
 (
@@ -400,7 +400,7 @@ What it adds:
 - The Linkerd proxy in the pods of the dashboard, the gateway, the coordinator, Sentinel, the vault and Brain, so their traffic to each other is mutual TLS.
 - Linkerd authorization for `vault-service`: the proxy admits only the named ServiceAccounts, and it enforces that even on a CNI that does not enforce NetworkPolicy.
 
-In chart 0.1.3 the dashboard worker, the dashboard's and the gateway's Redis, and the dashboard CronJobs are not meshed, and the other services get no Linkerd authorization policy. The gateway's own HTTP policy stays off, because it needs your ingress meshed.
+In chart 0.1.4 the dashboard worker, the dashboard's and the gateway's Redis, and the dashboard CronJobs are not meshed, and the other services get no Linkerd authorization policy. The gateway's own HTTP policy stays off, because it needs your ingress meshed.
 
 ## The stream stack
 
