@@ -8,9 +8,7 @@ The `takumo-onprem` chart installs the self-hosted stack as one Helm release: th
 
 This page is the way to install. The per-chart steps in [On-Premises](/deployment/onprem) and [Self-Hosted Dashboard](/deployment/self-hosted-dashboard) stay available for installs that need a chart on its own.
 
-<Note>Commands on this page use `takumo-onprem` chart 0.1.0 and the namespace `takumo`, which is the `install.sh` default. To use another namespace, add `-n <namespace>` to every `install.sh` command and use the same name in every `kubectl` command.</Note>
-
-<Note>TODO(TAK-180 Phase 9): measured install times for the connected and air-gapped paths, from an empty image cache to the first admin and the first detected secret.</Note>
+<Note>Commands on this page use `takumo-onprem` chart 0.1.1 and the namespace `takumo`, which is the `install.sh` default. To use another namespace, add `-n <namespace>` to every `install.sh` command and use the same name in every `kubectl` command.</Note>
 
 ## Two ways to install
 
@@ -94,7 +92,7 @@ Each URL starts with `postgres://` or `postgresql://`. The `cloud` database also
 <Steps>
   <Step title="Download the chart">
     ```bash
-    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.0 --untar
+    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.1 --untar
     ```
 
     This creates the folder `./takumo-onprem`, with `install.sh` inside.
@@ -160,8 +158,6 @@ Each URL starts with `postgres://` or `postgresql://`. The `cloud` database also
 
 ## Air-gapped install
 
-<Note>TODO(TAK-180 #616): `install.sh bundle` and `install.sh load` are not in `takumo-onprem` 0.1.0, which answers `unknown command`. Replace 0.1.0 in this section with the first chart version that ships them.</Note>
-
 The first two commands run on a machine with internet access. Everything after them runs inside your network.
 
 <Steps>
@@ -169,7 +165,7 @@ The first two commands run on a machine with internet access. Everything after t
     On the connected machine:
 
     ```bash
-    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.0 --untar
+    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.1 --untar
     ```
   </Step>
 
@@ -337,7 +333,7 @@ What it adds:
 - The Linkerd proxy in the pods of the dashboard, the gateway, the coordinator, Sentinel, the vault and Brain, so their traffic to each other is mutual TLS.
 - Linkerd authorization for `vault-service`: the proxy admits only the named ServiceAccounts, and it enforces that even on a CNI that does not enforce NetworkPolicy.
 
-In chart 0.1.0 the dashboard worker, the dashboard's and the gateway's Redis, and the dashboard CronJobs are not meshed, and the other services get no Linkerd authorization policy. The gateway's own HTTP policy stays off, because it needs your ingress meshed.
+In chart 0.1.1 the dashboard worker, the dashboard's and the gateway's Redis, and the dashboard CronJobs are not meshed, and the other services get no Linkerd authorization policy. The gateway's own HTTP policy stays off, because it needs your ingress meshed.
 
 ## The stream stack
 
