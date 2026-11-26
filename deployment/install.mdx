@@ -1,0 +1,407 @@
+---
+title: Install
+description: Install the whole self-hosted Takumo stack with one chart and one script
+icon: "download"
+---
+
+The `takumo-onprem` chart installs the self-hosted stack as one Helm release: the dashboard, the gateway, the coordinator, the Sentinel content scanner, the vault and Brain. It ships `install.sh`, which installs the `takumo-rtb` license agent first as its own release, creates every Secret from files you name, runs a preflight check, installs the chart and then runs `helm test`.
+
+This page is the way to install. The per-chart steps in [On-Premises](/deployment/onprem) and [Self-Hosted Dashboard](/deployment/self-hosted-dashboard) stay available for installs that need a chart on its own.
+
+<Note>Commands on this page use `takumo-onprem` chart 0.1.0 and the namespace `takumo`, which is the `install.sh` default. To use another namespace, add `-n <namespace>` to every `install.sh` command and use the same name in every `kubectl` command.</Note>
+
+<Note>TODO(TAK-180 Phase 9): measured install times for the connected and air-gapped paths, from an empty image cache to the first admin and the first detected secret.</Note>
+
+## Two ways to install
+
+| | Connected | Air-gapped |
+|---|---|---|
+| Images | Pulled from `cr.takumo.io` with a [deploy token](/dashboard/deploy-tokens) | Carried in an offline bundle and pushed to your registry |
+| License | A bootstrap token. The agent registers with Takumo Cloud and renews its license | A license file for this cluster's fingerprint, which you replace every 60 days |
+| Commands | 6 | 8 |
+| Browser steps | 3: issue the bootstrap token, create the first admin, create a join key | 3: download the license, create the first admin, create a join key |
+
+Both counts include creating the provider key Secret, which must exist before the install, and reading the setup token. They leave out writing the files in [Prepare the files](#prepare-the-files) and issuing the deploy token.
+
+## Requirements
+
+| Requirement | Notes |
+|------------|-------|
+| Kubernetes 1.30 or later | Helm refuses an older cluster, for example `chart requires kubeVersion: >=1.30.0-0 which is incompatible with Kubernetes v1.29.0` |
+| `bash`, `helm`, `kubectl` and `openssl` | On the machine that runs `install.sh`. Run it with `bash`: the script in the chart package is not executable |
+| `crane` and `tar` | Air-gapped only, on the machines that run `bundle` and `load` |
+| PostgreSQL 15 or later | A database for the dashboard and one for Brain. Each user needs the CREATE privilege on its database, because the migrations run `CREATE SCHEMA` |
+| A default StorageClass | The dashboard's Redis, Brain's Redis and Qdrant use persistent volumes, and NATS too with the [stream stack](#the-stream-stack) |
+| An ingress controller | The chart's Ingress uses the IngressClass `nginx` and ingress-nginx annotations. Set `global.ingress.className` for another class |
+| TLS for the dashboard host | A cert-manager ClusterIssuer, or a `kubernetes.io/tls` Secret you create. See [TLS and ingress](#tls-and-ingress) |
+| A provider key | An Anthropic or OpenAI API key. The gateway calls the provider with it |
+| A deploy token | From a Takumo workspace on the Pro or Enterprise plan created with the **On-Prem** deployment mode. See [Deploy Tokens](/dashboard/deploy-tokens) |
+
+### TLS and ingress
+
+The dashboard serves `https://<your-dashboard-host>`, and the chart builds its sign-in URL, its trusted origin and its cookie domain from `global.domain`. Point that host at your ingress controller. The chart refuses a host that ends in `example.com`, so use your real one.
+
+Set one of these in your values file:
+
+- `global.tls.clusterIssuer`: cert-manager issues the certificate through that ClusterIssuer into the Secret `cloud-tls`.
+- `global.tls.secretName`: a `kubernetes.io/tls` Secret you created in the `takumo` namespace.
+
+<Warning>The dashboard's NetworkPolicy admits traffic only from the namespace named `ingress-nginx`. If your ingress controller runs in another namespace and your CNI enforces NetworkPolicy, requests time out.</Warning>
+
+## Prepare the files
+
+`install.sh` takes paths only. It refuses a flag that would carry a value, such as `--token` or `--password`, and never prints what a file holds. Write each file with an editor, or with a block like the ones below, so its contents stay out of your shell history.
+
+**The values file**, `takumo-values.yaml`:
+
+```yaml
+global:
+  domain: <your-dashboard-host>
+  tls:
+    clusterIssuer: <your-cluster-issuer>
+  providers:
+    anthropic:
+      secretName: aegis-provider-anthropic-key
+```
+
+These are the required values. Use `global.tls.secretName: <your-tls-secret>` instead of `clusterIssuer` to bring your own certificate, and `global.providers.openai.secretName` for an OpenAI key. You do not set `license.mode`: `install.sh` sets it to `connected` when you pass `--token-file` and to `airGapped` when you pass `--license-file`.
+
+**The database file**, `databases.txt`, one `name=URL` line per database:
+
+```text
+cloud=postgres://USER:PASSWORD@HOST:5432/takumo
+brain=postgres://USER:PASSWORD@HOST:5432/brain
+```
+
+Each URL starts with `postgres://` or `postgresql://`. The `cloud` database also serves the coordinator and the vault, which read its tables. Add a `stream=` line only with the [stream stack](#the-stream-stack). From this file `install.sh` creates `cloud-database`, `coordinator-database`, `vault-database`, the Brain database Secrets and `takumo-databases`, which the preflight reads.
+
+**The deploy token**, `deploy-token.txt`. Issue it in Takumo Cloud under **Settings > Deploy Tokens**. Paste it when asked; it is read without echo:
+
+```bash
+(
+  umask 077
+  printf 'Paste the deploy token, then press Enter: ' >&2
+  read -rs TAKUMO_DEPLOY_TOKEN || exit 1
+  echo >&2
+  printf '%s' "$TAKUMO_DEPLOY_TOKEN" > ./deploy-token.txt
+)
+```
+
+**Connected only: the bootstrap token**, `bootstrap-token.txt`. Issue it under **Installations** in Takumo Cloud and save it the same way. The preflight checks only that it is well formed. Registration proves the rest, because the token works once.
+
+## Connected install
+
+<Steps>
+  <Step title="Download the chart">
+    ```bash
+    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.0 --untar
+    ```
+
+    This creates the folder `./takumo-onprem`, with `install.sh` inside.
+  </Step>
+
+  <Step title="Create the namespace">
+    ```bash
+    kubectl create namespace takumo
+    ```
+  </Step>
+
+  <Step title="Store the provider key">
+    The install refuses to start until the Secret named in `global.providers` exists. Paste your Anthropic API key when asked; it is read without echo:
+
+    ```bash
+    (
+      printf 'Paste your Anthropic API key, then press Enter: ' >&2
+      read -rs ANTHROPIC_PROVIDER_KEY || exit 1
+      echo >&2
+      printf '%s' "$ANTHROPIC_PROVIDER_KEY" \
+        | kubectl create secret generic aegis-provider-anthropic-key -n takumo --from-file=api-key=/dev/stdin
+    )
+    ```
+
+    For OpenAI, name the Secret in `global.providers.openai.secretName` and store the key under the same key, `api-key`.
+  </Step>
+
+  <Step title="Run the installer">
+    Replace `<workspace-id>` with the workspace ID that **Settings > Deploy Tokens** shows. It is the registry user name:
+
+    ```bash
+    bash takumo-onprem/install.sh install \
+      --values takumo-values.yaml \
+      --token-file bootstrap-token.txt \
+      --database-file databases.txt \
+      --deploy-token-file deploy-token.txt \
+      --org <workspace-id>
+    ```
+
+    The installer creates the pull Secret, the database Secrets, the generated keys and the bootstrap token Secret, installs the agent and restarts it, waits for it to be Ready, then installs the chart. The [preflight](#preflight) runs before any workload, and the release waits up to 15 minutes for every pod. It ends with the [NetworkPolicy check](#the-networkpolicy-check) and the next steps.
+  </Step>
+
+  <Step title="Create the first admin">
+    Read the setup token:
+
+    ```bash
+    kubectl -n takumo get secret cloud-setup-token -o jsonpath='{.data.token}' | base64 -d; echo
+    ```
+
+    Open `https://<your-dashboard-host>/setup` and create the first admin with it. The token expires 7 days after the install. See [Create the first admin](/deployment/self-hosted-dashboard#create-the-first-admin).
+  </Step>
+
+  <Step title="Connect the gateway">
+    In the dashboard, go to **Settings > Gateway**, choose **Create join key**, and save the key to `join-key.txt` the same way as the deploy token. The page opens once the organization's plan is Pro or Enterprise, which your license sets. See [Plan and Fleet access](/deployment/onprem#plan-and-fleet-access). Then:
+
+    ```bash
+    bash takumo-onprem/install.sh join-key --file join-key.txt
+    ```
+
+    This stores the key in `coordinator-join-key` and `aegis-join-key`, restarts the coordinator and the gateway, and waits for both to be Ready.
+  </Step>
+</Steps>
+
+## Air-gapped install
+
+<Note>TODO(TAK-180 #616): `install.sh bundle` and `install.sh load` are not in `takumo-onprem` 0.1.0, which answers `unknown command`. Replace 0.1.0 in this section with the first chart version that ships them.</Note>
+
+The first two commands run on a machine with internet access. Everything after them runs inside your network.
+
+<Steps>
+  <Step title="Download the chart">
+    On the connected machine:
+
+    ```bash
+    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.0 --untar
+    ```
+  </Step>
+
+  <Step title="Build the offline bundle">
+    Pick the architecture of your cluster's nodes, `amd64` or `arm64`. A bundle carries one:
+
+    ```bash
+    bash takumo-onprem/install.sh bundle --arch amd64 --deploy-token-file deploy-token.txt --org <workspace-id>
+    ```
+
+    It pulls every image the chart can run, the stream stack included, and writes `takumo-bundle-amd64.tar` with the images, the chart, `install.sh` and `MANIFEST.sha256`. If `cr.takumo.io` refuses the pull, the command stops with `not entitled` and names the plan and the deploy token as what to check.
+
+    Copy `takumo-bundle-amd64.tar`, the `takumo-onprem` folder and your files into your network.
+  </Step>
+
+  <Step title="Load the bundle into your registry">
+    On a machine that reaches your registry:
+
+    ```bash
+    bash takumo-onprem/install.sh load --bundle takumo-bundle-amd64.tar --registry <your-registry>
+    ```
+
+    `load` checks every file against `MANIFEST.sha256` before it pushes anything, and a single changed byte stops it with `checksum mismatch ... refused, nothing was pushed`. It then pushes each image, reads its digest back, and writes `registry-values.yaml` and `registry-agent-values.yaml`, which point the chart and the agent at your registry.
+
+    `<your-registry>` may carry a port and a path, such as `registry.internal:5000/takumo`. Add `--insecure` for a plain HTTP registry, `--registry-user <user> --registry-password-file <file>` if pushing needs a login, and `--pull-registry <host>` if the cluster pulls from a different address than you push to. These steps assume the cluster pulls from your registry without credentials. Every node must trust the registry's certificate, or allow plain HTTP to it.
+  </Step>
+
+  <Step title="Save the cluster's fingerprint">
+    ```bash
+    bash takumo-onprem/install.sh fingerprint --agent-values registry-agent-values.yaml > takumo-fingerprint.txt
+    ```
+
+    This creates the `takumo` namespace if it is missing, runs the agent image once in a short-lived pod, prints the fingerprint, and removes the pod and its RBAC. The file holds one line, `sha256:` followed by 64 hex characters.
+  </Step>
+
+  <Step title="Download the license">
+    On a machine that reaches Takumo Cloud, open **Installations**, choose **Add air-gapped install**, upload `takumo-fingerprint.txt` and choose **Add and download license**. Carry `license-<install-id>.json` into your network. See [License](/deployment/self-hosted-dashboard#license).
+  </Step>
+
+  <Step title="Store the provider key">
+    Run the provider key block from the [connected install](#connected-install). The namespace already exists.
+  </Step>
+
+  <Step title="Run the installer">
+    ```bash
+    bash takumo-onprem/install.sh install \
+      --values takumo-values.yaml \
+      --values registry-values.yaml \
+      --agent-values registry-agent-values.yaml \
+      --license-file license-<install-id>.json \
+      --database-file databases.txt
+    ```
+
+    The installer stores the license in `takumo-license`, installs the agent and restarts it, reads the fingerprint again, and installs the chart with the license bound to it. The preflight refuses a license issued for any other cluster.
+  </Step>
+
+  <Step title="Create the first admin">
+    Read the setup token and open `https://<your-dashboard-host>/setup`, as in the [connected install](#connected-install).
+  </Step>
+
+  <Step title="Connect the gateway">
+    Create a join key in the dashboard, save it to `join-key.txt`, then:
+
+    ```bash
+    bash takumo-onprem/install.sh join-key --file join-key.txt
+    ```
+  </Step>
+</Steps>
+
+An air-gapped license is valid for 60 days. From day 46, download the refreshed license and replace it with `install.sh license --file`. See [Refresh an air-gapped license](/deployment/onprem-licensing#refresh-an-air-gapped-license).
+
+## Preflight
+
+Two sets of checks run before any workload exists. If one refuses, `install.sh` stops and no Deployment is created.
+
+**When Helm renders the release**, it stops with `preflight refused:` and the reason when:
+
+- the cluster has no StorageClass;
+- the cluster has no IngressClass, or none named `global.ingress.className`;
+- the Secret `takumo-databases` does not exist in the namespace (`install.sh install --database-file` creates it);
+- the Secret named in `global.providers.anthropic.secretName` or `global.providers.openai.secretName` does not exist.
+
+A missing or malformed required value stops Helm earlier, with the path of the value, for example `at '/global/domain': minLength: got 0, want 1`.
+
+**The preflight Job** then runs once, for up to 180 seconds, and is not retried. If it refuses, `install.sh` prints the last lines of its log. To read the whole log:
+
+```bash
+kubectl -n takumo logs job/takumo-preflight --all-containers
+```
+
+For each database it prints `ok database <name>: connects, PostgreSQL 15 or later, can create schemas`, or `preflight refused: database <name>:` with one of these reasons. The preflight never prints the database's own error text, which can carry the host and user name.
+
+| Reason | What it means |
+|--------|---------------|
+| `E_AUTH` | The server refused the user name or password in the database file |
+| `E_TLS` | TLS could not be negotiated. Check `sslmode` in the URL and the server's certificate |
+| `E_UNREACHABLE` | The host does not resolve, or does not answer on that port from inside the cluster |
+| `E_NO_DATABASE` | The server answers, but the database in the URL does not exist |
+| `E_CONNECT` | Any other connection failure |
+| `the server is older than PostgreSQL 15` | Upgrade the server |
+| `the user has no CREATE privilege on the database` | Grant `CREATE` on the database to that user |
+| `a socket host is not supported` | The URL uses `host=/...`. Use a TCP host |
+
+In a connected install it also checks the bootstrap token: `the bootstrap token file is empty`, `the bootstrap token has whitespace inside`, or `the bootstrap token is too short to be a Takumo token`.
+
+In an air-gapped install it first verifies the license with `takumo-rtb license verify --expect-cluster`, which prints `valid <kid>` or `refused <reason>`:
+
+| Reason | What it means |
+|--------|---------------|
+| `wrong_fingerprint` | The license was issued for another cluster. Upload this cluster's fingerprint and download a new license |
+| `bad_signature` | The file was changed after it was signed. Download it again |
+| `license_expired` | The license has expired. Download the refreshed license |
+| `license_not_yet_valid` | The license starts later than now. Check the cluster's clock |
+| `license_invalid`, `license_shape`, `malformed_envelope`, `malformed_payload`, `unknown_kid` | The file is not a license this agent accepts. Download it again from **Installations** |
+
+## The NetworkPolicy check
+
+`install.sh install` ends with `helm test`, which checks that only the dashboard can reach `sentinel-service`. On a CNI that enforces NetworkPolicy, such as Calico or Cilium, it prints:
+
+```text
+NetworkPolicy check: enforced. A pod without the Cloud label could not reach sentinel-service on port 50051, and the Cloud pod could.
+```
+
+Flannel does not enforce NetworkPolicy. Whether kindnet, the default CNI of kind, enforces it depends on the kind release, so read the verdict rather than assume. Where it is not enforced, the check prints:
+
+```text
+WARNING: sentinel-service is reachable from any pod in takumo on port 50051. Either this cluster's CNI does not enforce NetworkPolicy (flannel, the default in k3s and many kubeadm clusters, does not enforce NetworkPolicy), or the sentinel-service NetworkPolicy is off. Any pod can call the Takumo content scanner. To isolate it, use a CNI that enforces NetworkPolicy, such as Calico or Cilium, and keep the sentinel-service policy on. See https://docs.takumo.io/deployment/self-hosted-dashboard#network-policy.
+```
+
+Each verdict ends with the check pod's start time in UTC. The warning does not stop the install. See [Network policy](/deployment/self-hosted-dashboard#network-policy).
+
+## install.sh reference
+
+Every `FILE` flag takes a path, and `install.sh` never accepts a secret value. Every command takes `-n <namespace>` (default `takumo`). It exits 0 on success, 1 when it refuses or fails, and 2 for a usage error. `bash takumo-onprem/install.sh --help` prints the same list.
+
+| Command | Flags | What it does |
+|---------|-------|--------------|
+| `install` | `--values FILE` (repeatable), `--token-file FILE` or `--license-file FILE`, `--database-file FILE`, `--deploy-token-file FILE` with `--org ID`, `--agent-values FILE` (repeatable), `--rtb-chart CHART` | Creates the Secrets, installs the agent and restarts it, installs the chart after the preflight, and runs `helm test`. Generated keys are created once and kept on later runs |
+| `license` | `--file FILE` | Replaces the air-gapped license in `takumo-license`, restarts the agent, waits for it to be Ready, and prints the license ID and status the agent reports when it can read them |
+| `fingerprint` | `--agent-values FILE`, `--rtb-chart CHART` | Prints this cluster's fingerprint |
+| `join-key` | `--file FILE` | Stores the join key for the coordinator and the gateway and restarts both |
+| `bundle` | `--arch arm64` or `--arch amd64`, `--out DIR`, `--deploy-token-file FILE` with `--org ID`, `--source REGISTRY`, `--source-user USER` with `--source-token-file FILE` | Writes `takumo-bundle-ARCH.tar` for one architecture |
+| `load` | `--bundle FILE`, `--registry REG`, `--pull-registry REG`, `--registry-user USER` with `--registry-password-file FILE`, `--insecure`, `--out DIR` | Verifies the bundle, pushes it to your registry, and writes `registry-values.yaml` and `registry-agent-values.yaml` |
+
+`install.sh` creates and replaces Secrets with `kubectl create` and `kubectl replace`, never `kubectl apply`, so no copy of a Secret lands in the `last-applied-configuration` annotation.
+
+## The gateway
+
+The chart exposes only the dashboard through the Ingress. The gateway is the `aegis-gateway` Service on port 8080 inside the cluster. Expose it the way you expose internal services, or forward a port to test it. See [Deploy the gateway](/deployment/onprem#deployment) for the port-forward tip.
+
+- On a fresh install the coordinator requires the `gateway:proxy` scope on every Takumo API key used through the gateway (`gatewayScope.require` is `true`). An upgrade keeps the value the install already has. See [Require the gateway scope](/deployment/onprem#require-the-gateway-scope).
+- The gateway replaces detected secrets in a request with tokens before it calls the provider. It does not block the request.
+- The gateway trusts only public certificate authorities. A provider endpoint set with `aegis-shield.providers.anthropicUrl` or `aegis-shield.providers.openaiUrl` behind a private CA does not work yet. Each URL must be `https`, or plain `http` to `localhost` or `127.0.0.1`.
+
+## Linkerd
+
+Linkerd is off by default. If Linkerd already runs on your cluster, add the overlay that ships in the chart to `install.sh install`:
+
+```bash
+--values takumo-onprem/values-linkerd.yaml
+```
+
+What it adds:
+
+- The Linkerd proxy in the pods of the dashboard, the gateway, the coordinator, Sentinel, the vault and Brain, so their traffic to each other is mutual TLS.
+- Linkerd authorization for `vault-service`: the proxy admits only the named ServiceAccounts, and it enforces that even on a CNI that does not enforce NetworkPolicy.
+
+In chart 0.1.0 the dashboard worker, the dashboard's and the gateway's Redis, and the dashboard CronJobs are not meshed, and the other services get no Linkerd authorization policy. The gateway's own HTTP policy stays off, because it needs your ingress meshed.
+
+## The stream stack
+
+The stream stack (NATS, Stream Ingest and Stream Router) is off by default, and `install.sh` does not create its Secrets yet. The offline bundle carries its images, so you can turn it on later without network access.
+
+Create these Secrets in the `takumo` namespace first:
+
+| Secret | Keys | What it holds |
+|--------|------|---------------|
+| `stream-nats-auth` | `auth.conf` | The NATS `authorization { ... }` block with the public NKeys of the services that connect. See [NATS authentication](/deployment/streaming#nats-authentication) |
+| `stream-ingest-nats`, `stream-router-nats` | `nats-nkey-seed` | Each service's NKey seed |
+| `stream-ingest-database`, `stream-router-database` | `database-url`, `database-url-direct` | The stream database |
+| `cloud-stream` | `database-url` | The stream database, for the dashboard |
+| `stream-ingest-jwt` | `jwt-public-key-pem` | The PEM public key Stream Ingest verifies event tokens with |
+| `stream-router-kms` | `router-kms-key-b64` | A base64 AES-256 key (32 random bytes) that encrypts destination credentials. The dashboard reads it too. Back it up |
+| `stream-router-cloud-notify` | `shared-secret` | The secret the router and the dashboard share for the router's failure notices |
+| `stream-router-s3` | `access-key-id`, `secret-access-key` | Credentials for S3-compatible storage, for the router's archives |
+
+Add a `stream=` line to the database file, then pass a values file like this one to `install.sh install` with a second `--values`:
+
+```yaml
+stream:
+  enabled: true
+takumo-stream-ingest:
+  secrets:
+    database:
+      enabled: true
+    jwt:
+      enabled: true
+    nats:
+      enabled: true
+takumo-stream-router:
+  secrets:
+    database:
+      enabled: true
+    kms:
+      enabled: true
+    s3:
+      enabled: true
+    cloudNotify:
+      enabled: true
+    nats:
+      enabled: true
+  router:
+    cloudNotifyUrl: http://cloud:3000/api/internal/stream-notify
+cloud:
+  features:
+    streaming: true
+  secrets:
+    stream:
+      enabled: true
+    streamRouterKms:
+      enabled: true
+    streamNotify:
+      enabled: true
+```
+
+For S3-compatible storage other than AWS, also set `takumo-stream-router.router.s3EndpointUrl`, and `takumo-stream-router.router.s3ForcePathStyle: true` if your storage needs path-style URLs. The archive buckets are `takumo-stream-router.router.dlqArchive.bucket` and `takumo-stream-router.router.eventArchive.bucket`.
+
+<CardGroup cols={2}>
+  <Card title="On-Prem Licensing" icon="key" href="/deployment/onprem-licensing">
+    License stages, refreshes and recovery
+  </Card>
+  <Card title="Self-Hosted Dashboard" icon="house" href="/deployment/self-hosted-dashboard">
+    Sign-in, email, GitHub App and troubleshooting
+  </Card>
+</CardGroup>

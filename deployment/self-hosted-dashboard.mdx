@@ -6,6 +6,8 @@ icon: "house"
 
 The self-hosted dashboard is the Takumo web app (the `cloud` chart) running in your cluster on a hostname you own, with its own Postgres. Your users sign in there, and your GitHub App sends its webhooks there. Install it in the same namespace as the gateway and coordinator from [On-Premises](/deployment/onprem).
 
+<Tip>[Install](/deployment/install) installs the dashboard together with the gateway, the coordinator and the rest of the stack, and is the place to start. The install steps on this page are the advanced route: the `cloud` chart on its own. The sections on sign-in, email, the GitHub App, the license and troubleshooting apply to both.</Tip>
+
 The dashboard image, `cr.takumo.io/takumo-cloud`, is private. Pulling it needs a [deploy token](/dashboard/deploy-tokens) from a Takumo workspace on the Pro or Enterprise plan that was created with the **On-Prem** deployment mode.
 
 ## Prerequisites
@@ -104,6 +106,8 @@ Each image on `cr.takumo.io` is a multi-architecture index for `linux/amd64` and
 `<your-registry>` may carry a port, such as `registry.example.com:5000`, for every chart, including `takumo-rtb` from chart version 0.2.3. Every node must be able to pull from the registry, so configure each node's container runtime to trust its certificate, or to use plain HTTP, before you install.
 
 ## Install the dashboard
+
+These steps install the `cloud` chart on its own. To install it with the rest of the stack, use [Install](/deployment/install) instead.
 
 <Note>The blocks on this page use `read -rs` and `<(...)`, which need bash or zsh.</Note>
 
