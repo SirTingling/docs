@@ -13,13 +13,13 @@ Device flow authentication for editors and CLI tools that cannot receive browser
     The client sends `POST /api/v1/auth/device/code` with `client_id: "takumo-daemon"` and receives a `device_code`, `user_code`, and `verification_uri`.
   </Step>
   <Step title="User opens the verification URL">
-    The user opens `verification_uri_complete` in a browser, signs in if needed, and sees the code pre-filled.
+    The user opens `verification_uri_complete` in a browser, signs in if needed, and sees the code pre-filled. The first signed in account to open the link becomes the account that owns the request.
   </Step>
   <Step title="Poll for a token">
     The client polls `POST /api/v1/auth/device/token` with the `device_code` every `interval` seconds. The server responds with `authorization_pending` until the user acts.
   </Step>
   <Step title="User approves or denies">
-    In the browser, the user calls `POST /api/v1/auth/device/authorize` (approve) or `POST /api/v1/auth/device/deny` (deny). Both require an active session.
+    In the browser, the user calls `POST /api/v1/auth/device/authorize` (approve) or `POST /api/v1/auth/device/deny` (deny). Both require an active session, and only the account that owns the request can approve it. See [Who can approve or deny](#who-can-approve-or-deny).
   </Step>
   <Step title="Client receives the token">
     On the next poll, the token endpoint returns an `access_token` (an API key). The key is encrypted at rest and can only be retrieved once.
@@ -55,7 +55,7 @@ Start a new device authorization flow. Returns a user code and verification URL.
   "device_code": "a1b2c3d4e5f6...",
   "user_code": "ABCD-1234",
   "verification_uri": "https://cloud.takumo.io/auth/device",
-  "verification_uri_complete": "https://cloud.takumo.io/auth/device?code=ABCD-1234",
+  "verification_uri_complete": "https://cloud.takumo.io/auth/device?code=ABCD-1234&claim=Zm9vYmFy...",
   "expires_in": 900,
   "interval": 5
 }
@@ -66,9 +66,11 @@ Start a new device authorization flow. Returns a user code and verification URL.
 | `device_code` | `string` | Opaque code the client uses to poll for a token |
 | `user_code` | `string` | Short code the user enters in the browser |
 | `verification_uri` | `string` | Base URL the user should open |
-| `verification_uri_complete` | `string` | URL with the user code pre-filled |
+| `verification_uri_complete` | `string` | URL with the user code pre-filled and a single-use `claim` secret that ties the request to the person who opens it |
 | `expires_in` | `number` | Seconds until the flow expires (**900 = 15 minutes**) |
 | `interval` | `number` | Minimum seconds between poll requests (starts at 5) |
+
+<Warning>The `claim` value in `verification_uri_complete` is a secret. Open the URL exactly as returned, and do not log it or show it to the user. It works once and expires with the request after 15 minutes. If you only show the `user_code` for the user to type, the request is tied to the first account that enters it, so the page shows the device's IP address, app and request time for the user to check.</Warning>
 
 ### Example
 
@@ -183,9 +185,11 @@ Approve a pending device authorization request. Creates an API key for the speci
 | Status | Error | Meaning |
 |--------|-------|---------|
 | `400` | `Missing required fields: user_code, organization_id` | Missing body fields |
-| `400` | `Invalid or expired code` | Code not found, already used, or expired |
+| `400` | `Invalid or expired code` | Code not found, already used, denied, or expired |
 | `401` | `Authentication required` | No active session |
+| `403` | `This sign-in request belongs to another account` | The request is owned by a different account. An admin of that account's org cannot approve it either |
 | `403` | `Not a member of this organization` | User is not an active member of the specified org |
+| `429` | `Too many attempts` | More than 10 attempts in 60 seconds from this account. The `Retry-After` header gives the seconds to wait |
 
 ### Side effects
 
@@ -226,12 +230,27 @@ Deny a pending device authorization request.
 | Status | Error | Meaning |
 |--------|-------|---------|
 | `400` | `Missing required field: user_code` | Missing body field |
-| `400` | `Invalid or expired code` | Code not found, already used, or expired |
+| `400` | `Invalid or expired code` | Code not found, already used, denied, or expired |
 | `401` | `Authentication required` | No active session |
+| `403` | `This sign-in request belongs to another account` | The request is owned by an account you are not, and you are not an owner or admin of an org that account belongs to |
+| `429` | `Too many attempts` | More than 10 attempts in 60 seconds from this account. The `Retry-After` header gives the seconds to wait |
 
 ### Side effects
 
-- Logs an audit event: `device_flow.denied`.
+- Logs an audit event: `device_flow.denied`. When an admin denies someone else's request, the event is written in the org's audit log.
+
+---
+
+## Who can approve or deny
+
+Each request belongs to one account.
+
+- **Opened from the link.** The browser that presents the `claim` secret in `verification_uri_complete` becomes the owner. It replaces an earlier owner who only typed the code, and the secret works once. The same account can open the link again.
+- **Typed by hand.** If the user types the `user_code` into the verification page, the first signed in account to enter it becomes the owner.
+- **Approve.** Only the owner. The API key it creates belongs to the approver, so an admin cannot approve for someone else.
+- **Deny.** The owner, or an owner or admin of an org the owner belongs to.
+
+Every other attempt gets `403` and is recorded in the audit log as `device_flow.refused`. The row holds the request id, never the user code. Attempts refused only by the rate limit are logged and counted but not written to the audit log.
 
 ---
 

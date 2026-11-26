@@ -145,6 +145,12 @@ SCIM automates user lifecycle management. When someone is added or removed in yo
 | Deactivate user | Member status set to DISABLED |
 | Delete user | Member status set to REMOVED, access revoked |
 
+### What deactivation takes away
+
+When your IdP deactivates or deletes a user, Takumo revokes that person's personal API keys in the same step, and deletes the invitations they sent and any pending invitation addressed to them. Service account keys, deploy tokens and gateway join keys the person created stay active. The deactivation notification lists them so an admin can review them.
+
+Coming back does not bring old keys back. If the person is reactivated, invited again or provisioned again, they start with no personal keys and create new ones. A user your IdP sets active again while an admin has suspended them stays suspended. SCIM cannot deactivate the organization owner.
+
 ### Security
 
 - SCIM tokens are hashed with HMAC-SHA256 before storage
