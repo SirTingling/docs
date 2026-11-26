@@ -71,7 +71,7 @@ Back off for the number of seconds in `Retry-After`. Don't retry in a tight loop
 
 ## Handling errors in code
 
-<Warning>Authenticating a self-hosted gateway with Takumo API keys is not yet available. Contact Takumo support at [support@takumo.io](mailto:support@takumo.io) to set up on-prem access.</Warning>
+<Note>A self-hosted gateway accepts the Takumo API keys of the organization its join key belongs to, sent as `Authorization: Bearer`. See [Send a first request](/deployment/install#send-a-first-request).</Note>
 
 ```typescript
 const response = await fetch("https://gateway.takumo.io/v1/messages", {

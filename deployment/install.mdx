@@ -8,7 +8,7 @@ The `takumo-onprem` chart installs the self-hosted stack as one Helm release: th
 
 This page is the way to install. The per-chart steps in [On-Premises](/deployment/onprem) and [Self-Hosted Dashboard](/deployment/self-hosted-dashboard) stay available for installs that need a chart on its own.
 
-<Note>Commands on this page use `takumo-onprem` chart 0.1.1 and the namespace `takumo`, which is the `install.sh` default. To use another namespace, add `-n <namespace>` to every `install.sh` command and use the same name in every `kubectl` command.</Note>
+<Note>Commands on this page use `takumo-onprem` chart 0.1.3 and the namespace `takumo`, which is the `install.sh` default. To use another namespace, add `-n <namespace>` to every `install.sh` command and use the same name in every `kubectl` command.</Note>
 
 ## Two ways to install
 
@@ -19,7 +19,9 @@ This page is the way to install. The per-chart steps in [On-Premises](/deploymen
 | Commands | 6 | 8 |
 | Browser steps | 3: issue the bootstrap token, create the first admin, create a join key | 3: download the license, create the first admin, create a join key |
 
-Both counts include creating the provider key Secret, which must exist before the install, and reading the setup token. They leave out writing the files in [Prepare the files](#prepare-the-files) and issuing the deploy token.
+Both counts include creating the provider key Secret, which must exist before the install, and reading the setup token. They leave out creating the databases and writing the files in [Prepare the files](#prepare-the-files), issuing the deploy token, and the TLS Secret you create only if you bring your own certificate.
+
+Measured on a single-node kind cluster (arm64) on the air-gapped path with chart 0.1.2, the install took about 5 minutes from `helm pull` to the first admin signed in, and about 9 minutes to the first secret tokenized at the gateway. Both times include building the bundle, the browser steps and creating a Takumo API key. `install.sh install` alone took about 2.5 minutes. The databases and the files already existed, and the license had been issued beforehand, so its download is not in the times. The connected path was not timed.
 
 ## Requirements
 
@@ -42,7 +44,11 @@ The dashboard serves `https://<your-dashboard-host>`, and the chart builds its s
 Set one of these in your values file:
 
 - `global.tls.clusterIssuer`: cert-manager issues the certificate through that ClusterIssuer into the Secret `cloud-tls`.
-- `global.tls.secretName`: a `kubernetes.io/tls` Secret you created in the `takumo` namespace.
+- `global.tls.secretName`: a `kubernetes.io/tls` Secret you create in the release namespace, `takumo` unless you pass `-n`. It holds your certificate under `tls.crt` and its private key under `tls.key`, and it must exist before the install. With the certificate and key in PEM files:
+
+  ```bash
+  kubectl create secret tls <your-tls-secret> -n takumo --cert=tls.crt --key=tls.key
+  ```
 
 <Warning>The dashboard's NetworkPolicy admits traffic only from the namespace named `ingress-nginx`. If your ingress controller runs in another namespace and your CNI enforces NetworkPolicy, requests time out.</Warning>
 
@@ -64,7 +70,18 @@ global:
 
 These are the required values. Use `global.tls.secretName: <your-tls-secret>` instead of `clusterIssuer` to bring your own certificate, and `global.providers.openai.secretName` for an OpenAI key. You do not set `license.mode`: `install.sh` sets it to `connected` when you pass `--token-file` and to `airGapped` when you pass `--license-file`.
 
-**The database file**, `databases.txt`, one `name=URL` line per database:
+**The databases.** Create the user and the two databases on your PostgreSQL server. Connect with `psql` as a user that can create roles and databases, then run:
+
+```sql
+CREATE ROLE takumo LOGIN;
+\password takumo
+CREATE DATABASE takumo OWNER takumo;
+CREATE DATABASE brain OWNER takumo;
+```
+
+`\password` asks for the new password twice, so it stays out of your SQL history. As the owner, the user has the CREATE privilege on both databases, which the [preflight](#preflight) checks for.
+
+**The database file**, `databases.txt`, one `name=URL` line per database, with the user, password and database names from the step above:
 
 ```text
 cloud=postgres://USER:PASSWORD@HOST:5432/takumo
@@ -92,7 +109,7 @@ Each URL starts with `postgres://` or `postgresql://`. The `cloud` database also
 <Steps>
   <Step title="Download the chart">
     ```bash
-    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.1 --untar
+    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.3 --untar
     ```
 
     This creates the folder `./takumo-onprem`, with `install.sh` inside.
@@ -118,6 +135,10 @@ Each URL starts with `postgres://` or `postgresql://`. The `cloud` database also
     ```
 
     For OpenAI, name the Secret in `global.providers.openai.secretName` and store the key under the same key, `api-key`.
+  </Step>
+
+  <Step title="Store your certificate">
+    Only if you set `global.tls.secretName`: create the TLS Secret now, as in [TLS and ingress](#tls-and-ingress).
   </Step>
 
   <Step title="Run the installer">
@@ -146,13 +167,15 @@ Each URL starts with `postgres://` or `postgresql://`. The `cloud` database also
   </Step>
 
   <Step title="Connect the gateway">
-    In the dashboard, go to **Settings > Gateway**, choose **Create join key**, and save the key to `join-key.txt` the same way as the deploy token. The page opens once the organization's plan is Pro or Enterprise, which your license sets. See [Plan and Fleet access](/deployment/onprem#plan-and-fleet-access). Then:
+    In the dashboard, go to **Settings > Gateway** and choose **Create join key**. The dialog shows the key once: copy it, then save it to `join-key.txt` the same way as the deploy token, pasting it when asked. The list shows only the key's prefix afterwards.
+
+    The page opens once the organization's plan is Pro or Enterprise, which your license sets. Once the license is in force, every organization on the install gets the license's plan within about a minute, with no step from you. See [Plan and Fleet access](/deployment/onprem#plan-and-fleet-access). Then:
 
     ```bash
-    bash takumo-onprem/install.sh join-key --file join-key.txt
+    bash takumo-onprem/install.sh join-key --file join-key.txt -n takumo
     ```
 
-    This stores the key in `coordinator-join-key` and `aegis-join-key`, restarts the coordinator and the gateway, and waits for both to be Ready.
+    This stores the key in `coordinator-join-key` and `aegis-join-key`, restarts the coordinator and the gateway, and waits for both to be Ready. The install prints this command with your namespace in its next steps.
   </Step>
 </Steps>
 
@@ -165,7 +188,7 @@ The first two commands run on a machine with internet access. Everything after t
     On the connected machine:
 
     ```bash
-    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.1 --untar
+    helm pull takumo-onprem --repo https://charts.takumo.io --version 0.1.3 --untar
     ```
   </Step>
 
@@ -190,7 +213,9 @@ The first two commands run on a machine with internet access. Everything after t
 
     `load` checks every file against `MANIFEST.sha256` before it pushes anything, and a single changed byte stops it with `checksum mismatch ... refused, nothing was pushed`. It then pushes each image, reads its digest back, and writes `registry-values.yaml` and `registry-agent-values.yaml`, which point the chart and the agent at your registry.
 
-    `<your-registry>` may carry a port and a path, such as `registry.internal:5000/takumo`. Add `--insecure` for a plain HTTP registry, `--registry-user <user> --registry-password-file <file>` if pushing needs a login, and `--pull-registry <host>` if the cluster pulls from a different address than you push to. These steps assume the cluster pulls from your registry without credentials. Every node must trust the registry's certificate, or allow plain HTTP to it.
+    `<your-registry>` may carry a port and a path, such as `registry.internal:5000/takumo`. Add `--registry-user <user> --registry-password-file <file>` if pushing needs a login, and `--pull-registry <host>` if the cluster pulls from a different address than you push to. These steps assume the cluster pulls from your registry without credentials. Every node must trust the registry's certificate, or allow plain HTTP to it.
+
+    `--insecure` lets `load` push to a plain HTTP registry, and it turns off certificate checks for the push and for reading each digest back. A registry served over HTTPS with a certificate from a private CA needs either `--insecure` or that CA trusted on the machine that runs `load`. Without either, the push fails with an `x509` certificate error and `load` stops with `push of <image> failed`.
   </Step>
 
   <Step title="Save the cluster's fingerprint">
@@ -207,6 +232,10 @@ The first two commands run on a machine with internet access. Everything after t
 
   <Step title="Store the provider key">
     Run the provider key block from the [connected install](#connected-install). The namespace already exists.
+  </Step>
+
+  <Step title="Store your certificate">
+    Only if you set `global.tls.secretName`: create the TLS Secret now, as in [TLS and ingress](#tls-and-ingress).
   </Step>
 
   <Step title="Run the installer">
@@ -227,10 +256,10 @@ The first two commands run on a machine with internet access. Everything after t
   </Step>
 
   <Step title="Connect the gateway">
-    Create a join key in the dashboard, save it to `join-key.txt`, then:
+    Create a join key in **Settings > Gateway** and save it to `join-key.txt` while the dialog shows it, as in the [connected install](#connected-install). Then:
 
     ```bash
-    bash takumo-onprem/install.sh join-key --file join-key.txt
+    bash takumo-onprem/install.sh join-key --file join-key.txt -n takumo
     ```
   </Step>
 </Steps>
@@ -308,7 +337,7 @@ Every `FILE` flag takes a path, and `install.sh` never accepts a secret value. E
 | `fingerprint` | `--agent-values FILE`, `--rtb-chart CHART` | Prints this cluster's fingerprint |
 | `join-key` | `--file FILE` | Stores the join key for the coordinator and the gateway and restarts both |
 | `bundle` | `--arch arm64` or `--arch amd64`, `--out DIR`, `--deploy-token-file FILE` with `--org ID`, `--source REGISTRY`, `--source-user USER` with `--source-token-file FILE` | Writes `takumo-bundle-ARCH.tar` for one architecture |
-| `load` | `--bundle FILE`, `--registry REG`, `--pull-registry REG`, `--registry-user USER` with `--registry-password-file FILE`, `--insecure`, `--out DIR` | Verifies the bundle, pushes it to your registry, and writes `registry-values.yaml` and `registry-agent-values.yaml` |
+| `load` | `--bundle FILE`, `--registry REG`, `--pull-registry REG`, `--registry-user USER` with `--registry-password-file FILE`, `--insecure` (plain HTTP, or no certificate checks), `--out DIR` | Verifies the bundle, pushes it to your registry, and writes `registry-values.yaml` and `registry-agent-values.yaml` |
 
 `install.sh` creates and replaces Secrets with `kubectl create` and `kubectl replace`, never `kubectl apply`, so no copy of a Secret lands in the `last-applied-configuration` annotation.
 
@@ -319,6 +348,40 @@ The chart exposes only the dashboard through the Ingress. The gateway is the `ae
 - On a fresh install the coordinator requires the `gateway:proxy` scope on every Takumo API key used through the gateway (`gatewayScope.require` is `true`). An upgrade keeps the value the install already has. See [Require the gateway scope](/deployment/onprem#require-the-gateway-scope).
 - The gateway replaces detected secrets in a request with tokens before it calls the provider. It does not block the request.
 - The gateway trusts only public certificate authorities. A provider endpoint set with `aegis-shield.providers.anthropicUrl` or `aegis-shield.providers.openaiUrl` behind a private CA does not work yet. Each URL must be `https`, or plain `http` to `localhost` or `127.0.0.1`.
+
+### Send a first request
+
+Create a Takumo API key with the `gateway:proxy` scope on the **API Keys** page of your dashboard. See [API Keys](/dashboard/api-keys). Save it as a header file, pasting the key when asked; it is read without echo:
+
+```bash
+(
+  umask 077
+  printf 'Paste your Takumo API key, then press Enter: ' >&2
+  read -rs TAKUMO_API_KEY || exit 1
+  echo >&2
+  printf 'Authorization: Bearer %s\n' "$TAKUMO_API_KEY" > ./takumo-auth-header.txt
+)
+```
+
+The file holds one line, `Authorization: Bearer tk_live_...`. The gateway reads the Takumo API key only from `Authorization: Bearer`, and answers `401` to a key sent as `x-api-key`.
+
+In a second terminal, forward a local port to the gateway:
+
+```bash
+kubectl port-forward -n takumo deploy/aegis-gateway 8080:8080
+```
+
+Then send a request that carries the example AWS key `AKIAIOSFODNN7EXAMPLE`:
+
+```bash
+curl -sS http://127.0.0.1:8080/v1/messages \
+  -H @takumo-auth-header.txt \
+  -H 'content-type: application/json' \
+  -H 'anthropic-version: 2023-06-01' \
+  -d '{"model":"claude-sonnet-4-5","max_tokens":64,"messages":[{"role":"user","content":"Store this key: AKIAIOSFODNN7EXAMPLE and reply ok"}]}'
+```
+
+The answer is Anthropic's usual message. Before the gateway called Anthropic, it replaced the key with a token such as `__TAKUMO_v1_KEY_1a5d44a2dca1__`, so the provider receives the token and never the key.
 
 ## Linkerd
 
@@ -333,7 +396,7 @@ What it adds:
 - The Linkerd proxy in the pods of the dashboard, the gateway, the coordinator, Sentinel, the vault and Brain, so their traffic to each other is mutual TLS.
 - Linkerd authorization for `vault-service`: the proxy admits only the named ServiceAccounts, and it enforces that even on a CNI that does not enforce NetworkPolicy.
 
-In chart 0.1.1 the dashboard worker, the dashboard's and the gateway's Redis, and the dashboard CronJobs are not meshed, and the other services get no Linkerd authorization policy. The gateway's own HTTP policy stays off, because it needs your ingress meshed.
+In chart 0.1.3 the dashboard worker, the dashboard's and the gateway's Redis, and the dashboard CronJobs are not meshed, and the other services get no Linkerd authorization policy. The gateway's own HTTP policy stays off, because it needs your ingress meshed.
 
 ## The stream stack
 

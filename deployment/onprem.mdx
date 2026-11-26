@@ -286,9 +286,11 @@ With `true`, the coordinator refuses a key without `gateway:proxy`, and the gate
 
 ## Plan and Fleet access
 
-A self-hosted install has no billing. Every organization starts on the Free plan, and your signed license sets the plan. The license names one organization and a tier (Free, Developer, Pro or Enterprise). While the license is in force, the dashboard sets that organization's plan to the license's tier, within about a minute and without anyone opening a page. See [On-Prem Licensing](/deployment/onprem-licensing) for the license stages.
+A self-hosted install has no billing. Every organization starts on the Free plan, and your signed license sets the plan. The license carries a tier (Free, Developer, Pro or Enterprise). While the license is in force, the dashboard sets the plan of every organization on the install to the license's tier, within about a minute and without anyone opening a page. See [On-Prem Licensing](/deployment/onprem-licensing) for the license stages.
 
-- Only the organization named on the license changes, and only on a self-hosted install. Each change is recorded in the audit log as `org.plan_synced_from_license`.
+- This needs Cloud 0.3.5 or later (`cloud` chart 0.3.10, which `takumo-onprem` 0.1.2 and later install). Earlier versions change only the organization whose ID matches the one on the license, which an organization created on your install never has, so its plan stays Free.
+- Only a self-hosted install changes. Each change is recorded in the audit log as `org.plan_synced_from_license`, with the actor `system`.
+- Only the install admin creates organizations on a self-hosted install. On an install that already had users when it was upgraded to Cloud 0.3.4, any active owner or admin can still create one, and every organization there gets the license's plan too. Review the organization list after you install the license.
 - The **Fleet** page and **Settings > Gateway** open for the Pro and Enterprise plans. A Free or Developer license leaves them closed.
 - An organization whose `fleetEnabled` setting is false stays closed, whatever its plan.
 - With no license yet, the plan stays Free and **Settings > Gateway** is closed, so you cannot create a join key. An admin sees **Fleet comes with Pro and Enterprise** there. Install the license first, in the license agent step of [Deployment](#deployment), then wait about a minute for the plan to sync before you create the join key. See [On-Prem Licensing](/deployment/onprem-licensing).
