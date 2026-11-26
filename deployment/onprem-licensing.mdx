@@ -269,6 +269,23 @@ When the cluster serves the Prometheus Operator API, the `takumo-rtb` chart rend
 
 The guard also exports `takumo_rtb_guard_stage`, `takumo_rtb_guard_days_to_next`, `takumo_rtb_guard_refresh_total`, `takumo_rtb_guard_refused_total` and `takumo_rtb_guard_would_refuse_total` on each service's `/metrics`. In this release `takumo_rtb_guard_would_refuse_total` counts what a later release would refuse. Pod logs carry `rtb.guard.started`, `rtb.guard.warning`, `rtb.guard.stage_changed`, `rtb.guard.unreadable` and `rtb.guard.would_refuse`. In this release a guard writes `rtb.guard.would_refuse` for work a later release would refuse; `rtb.guard.refused` appears only once enforcement is on. To see what would be refused, run `kubectl -n <namespace> logs <pod> | grep rtb.guard.would_refuse`.
 
+## Refresh an air-gapped license
+
+An air-gapped license is valid for 60 days. From day 46, 14 days before it expires, the install's page under **Installations** in Takumo Cloud offers **Download refreshed license**. Download the file, carry it into your network, and replace the license with `install.sh` from the [`takumo-onprem` chart](/deployment/install):
+
+```bash
+bash takumo-onprem/install.sh license --file license-<install-id>.json
+```
+
+It replaces the `takumo-license` Secret, restarts the agent so it reads the new file, waits for it to be Ready, and prints the license the agent now reports:
+
+```text
+[install.sh] license replaced; the agent restarted and is Ready
+[install.sh] the agent reports license <license-id> (status: ACTIVE)
+```
+
+The command uses the same Secret and key as the per-chart steps in [License](/deployment/self-hosted-dashboard#license), so it works for those installs too. Add `-n <namespace>` if the agent does not run in `takumo`.
+
 ## Recovery
 
 After each fix, a service returns to ACTIVE in up to about a minute and needs no restart. Confirm with `takumo-rtb check -n takumo`.
@@ -321,7 +338,7 @@ kubectl -n takumo create secret generic takumo-license --from-file=license=./lic
 kubectl -n takumo rollout restart deploy/takumo-rtb
 ```
 
-Download the next license before this one expires. Warnings begin 30 days before expiry.
+With `install.sh`, replace it as in [Refresh an air-gapped license](#refresh-an-air-gapped-license). Download the next license before this one expires. Warnings begin 30 days before expiry.
 
 ## What the check does not stop
 

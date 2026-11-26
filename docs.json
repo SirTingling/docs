@@ -242,6 +242,7 @@
             "pages": [
               "deployment/overview",
               "deployment/saas",
+              "deployment/install",
               "deployment/onprem",
               "deployment/onprem-licensing",
               "deployment/self-hosted-dashboard",
