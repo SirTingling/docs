@@ -13,7 +13,7 @@ Device flow authentication for editors and CLI tools that cannot receive browser
     The client sends `POST /api/v1/auth/device/code` with `client_id: "takumo-daemon"` and receives a `device_code`, `user_code`, and `verification_uri`.
   </Step>
   <Step title="User opens the verification URL">
-    The user opens `verification_uri_complete` in a browser, signs in if needed, and sees the code pre-filled. The first signed in account to open the link becomes the account that owns the request.
+    The user opens `verification_uri_complete` in a browser, signs in if needed, and sees the code pre-filled. A browser that opens the link with its `claim` secret becomes the owner of the request. If the user only types the code, the first signed in account to enter it owns it until the link holder arrives. See [Who can approve or deny](#who-can-approve-or-deny).
   </Step>
   <Step title="Poll for a token">
     The client polls `POST /api/v1/auth/device/token` with the `device_code` every `interval` seconds. The server responds with `authorization_pending` until the user acts.
