@@ -429,6 +429,8 @@ helm upgrade cloud takumo/cloud \
 
 Do not pass `--values values-onprem.yaml` to an upgrade. That file carries empty `app.url`, `app.authUrl`, `app.cookieDomain` and `app.trustedOrigins`, so it would replace your install's own values, and the chart refuses to render. Then run `helm test cloud --namespace <namespace> --logs --timeout 10m`.
 
+If your install had users before you upgraded it to Cloud 0.3.4, any active owner or admin can still create organizations, and from Cloud 0.3.5 (`cloud` chart 0.3.10) every organization on the install gets the license's plan. Review the organization list after you install the license. See [Plan and Fleet access](/deployment/onprem#plan-and-fleet-access).
+
 ## Sign in with GitHub or Google
 
 Sign-in uses an OAuth app per provider. Set the callback URL exactly:
