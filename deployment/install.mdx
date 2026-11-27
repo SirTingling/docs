@@ -369,11 +369,13 @@ Create a Takumo API key with the `gateway:proxy` scope on the **API Keys** page 
 
 The file holds one line, `Authorization: Bearer tk_live_...`. The gateway reads the Takumo API key only from `Authorization: Bearer`, and answers `401` to a key sent as `x-api-key`.
 
-In a second terminal, forward a local port to the gateway:
+In a second terminal, forward a local port to a gateway pod:
 
 ```bash
-kubectl port-forward -n takumo deploy/aegis-gateway 8080:8080
+kubectl port-forward -n takumo "$(kubectl get pod -n takumo -l app.kubernetes.io/name=aegis-shield,app.kubernetes.io/component!=redis --field-selector=status.phase=Running -o name | head -1)" 8080:8080
 ```
+
+With `takumo-onprem` 0.1.6 or later (pull it with `--version 0.1.6`), `kubectl port-forward -n takumo svc/aegis-gateway 8080:8080` works too: on a new install at once, and after an upgrade once you run `install.sh install` a second time, because the first run only relabels the gateway pods. Don't forward to `deploy/aegis-gateway`: its selector also matches the gateway's Redis pod, so the forward can land on Redis and fail.
 
 Then send a request that carries the example AWS key `AKIAIOSFODNN7EXAMPLE`:
 
