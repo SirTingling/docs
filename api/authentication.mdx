@@ -97,7 +97,7 @@ A refused request returns `403` and names the missing scope:
 }
 ```
 
-A key with an empty scope list passes every Cloud API scope check. Keys made by the device flow before 19 November 2026 and service account keys can have an empty list. Keys made on the **API Keys** page always have at least one scope. An empty list also keeps working at the gateway until 00:00 UTC on 24 December 2026. From then the gateway refuses it like any key without `gateway:proxy`, so create a scoped key before then. The **API Keys** page shows the date next to each such key.
+A key with an empty scope list passes every Cloud API scope check. Keys made by the device flow before 19 November 2026 and service account keys can have an empty list. Keys made on the **API Keys** page always have at least one scope. From 00:00 UTC on 27 November 2026 the gateway refuses a key with an empty list like any key without `gateway:proxy`, so create a scoped key for gateway traffic. The **API Keys** page marks each such key.
 
 The gateway checks one scope, `gateway:proxy`. The Cloud API scopes above do not affect what a key can do at the gateway, and `gateway:proxy` does not unlock any Cloud API route.
 
