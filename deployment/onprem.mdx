@@ -226,7 +226,15 @@ A self-hosted gateway authenticates developers with the Takumo API keys of your 
     kubectl get pods -n <namespace> -l app.kubernetes.io/name=aegis-shield
     ```
 
-    <Tip>To reach the gateway from your machine, forward to the Deployment: `kubectl port-forward -n <namespace> deploy/aegis-gateway 8080:8080`. The `aegis-gateway` Service also selects the gateway's Redis pod, so `port-forward svc/aegis-gateway` can fail. Traffic through the Service is not affected, because it targets the named port `http`.</Tip>
+    <Tip>
+      To reach the gateway from your machine, forward to a gateway pod. This works on every `aegis-shield` chart version:
+
+      ```bash
+      kubectl port-forward -n <namespace> "$(kubectl get pod -n <namespace> -l app.kubernetes.io/name=aegis-shield,app.kubernetes.io/component!=redis --field-selector=status.phase=Running -o name | head -1)" 8080:8080
+      ```
+
+      Don't forward to `deploy/aegis-gateway`. The Deployment's selector also matches the gateway's Redis pod, and `kubectl` can pick that pod, so the forward fails. From chart 0.3.10 (set `--version 0.3.10` or later in the install command above), `kubectl port-forward -n <namespace> svc/aegis-gateway 8080:8080` works too: on a new install at once, and on an existing install after its second `helm upgrade` to 0.3.10 or later, because the first one only relabels the gateway pods. On earlier charts the Service also selects the Redis pod. Traffic through the Service is not affected on any version, because it targets the named port `http`.
+    </Tip>
   </Step>
 
   <Step title="Create a join key in the dashboard">
